@@ -25,8 +25,10 @@ export default function Sidebar({ activeTab, setActiveTab }) {
       }
     };
     loadSession();
-    // Poll for session updates from navbar switcher
-    const interval = setInterval(loadSession, 1000);
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      loadSession();
+    }, 15000);
     return () => clearInterval(interval);
   }, []);
 

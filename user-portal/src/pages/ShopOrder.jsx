@@ -164,7 +164,10 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders })
     };
 
     fetchActiveTaskAndStats();
-    const interval = setInterval(fetchActiveTaskAndStats, 15000); // Poll every 15 seconds instead of 3
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      fetchActiveTaskAndStats();
+    }, 15000); // Poll every 15 seconds instead of 3
     return () => clearInterval(interval);
   }, [orders]);
 

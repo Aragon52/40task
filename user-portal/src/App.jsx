@@ -314,7 +314,10 @@ function AppContent() {
     };
 
     syncWithDatabase();
-    const interval = setInterval(syncWithDatabase, 15000); // Poll every 15 seconds instead of 3
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      syncWithDatabase();
+    }, 15000); // Poll every 15 seconds instead of 3
     return () => clearInterval(interval);
   }, [username]);
 

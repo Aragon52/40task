@@ -256,7 +256,7 @@ export default function LanguageSwitcher() {
       selectEl.value = langCode;
       selectEl.dispatchEvent(new Event('change'));
     } else {
-      // If not yet present in DOM, poll for it up to 2.5 seconds to avoid hot refreshing
+      // If not yet present in DOM, poll for it gracefully without hard reloading the window
       let attempts = 0;
       const interval = setInterval(() => {
         selectEl = document.querySelector('.goog-te-combo');
@@ -266,10 +266,9 @@ export default function LanguageSwitcher() {
           clearInterval(interval);
         } else {
           attempts++;
-          if (attempts > 25) { // 2.5 seconds
+          if (attempts > 30) {
             clearInterval(interval);
-            // Fallback reload
-            window.location.reload();
+            // Do not force window.location.reload() to avoid unexpected page refreshing
           }
         }
       }, 100);
