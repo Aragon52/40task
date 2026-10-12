@@ -16,10 +16,16 @@ export default defineConfig(() => {
       react(), 
       tailwindcss(),
       VitePWA({
-        registerType: 'prompt',
+        registerType: 'autoUpdate',
         injectRegister: 'inline',
+        workbox: {
+          skipWaiting: true,
+          clientsClaim: true,
+          cleanupOutdatedCaches: true,
+          navigateFallbackDenylist: [/^\/admin/, /^\/admin\.html/],
+        },
         devOptions: {
-          enabled: true
+          enabled: false
         },
         manifest: {
           name: 'Walmart',

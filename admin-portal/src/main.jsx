@@ -4,7 +4,9 @@ import './index.css'
 import App from './App.jsx'
 import { initAdminPWAUpdatePrompt } from './utils/updatePrompt.jsx'
 
-// Register service worker with update toast prompt
+document.title = 'Order Picking Platform - Admin Portal';
+
+// Register service worker
 initAdminPWAUpdatePrompt()
 
 createRoot(document.getElementById('root')).render(

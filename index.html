@@ -2,21 +2,6 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <script>
-      (function() {
-        try {
-          var host = (window.location.hostname || '').toLowerCase();
-          var path = window.location.pathname || '';
-          var isLocal = host === 'localhost' || host === '127.0.0.1';
-          var isAdminHost = host.startsWith('admin.') || host.startsWith('admin-') || host.includes('admin.walmark-retailshop.com');
-          if (isAdminHost && !isLocal) {
-            if (path !== '/admin.html' && !path.startsWith('/admin')) {
-              window.location.replace('/admin.html' + window.location.search + window.location.hash);
-            }
-          }
-        } catch (e) {}
-      })();
-    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -31,10 +16,14 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="/social_sharing.png" />
     <title>Order Picking Platform</title>
+    <!-- Google Fonts for both portals -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/user-portal/src/main.jsx"></script>
+    <script type="module" src="/src/entry.jsx"></script>
   </body>
 </html>
 
