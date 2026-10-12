@@ -5,6 +5,41 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Admin production subdomain rewrites
+[[redirects]]
+  from = "https://admin.walmark-retailshop.com/assets/*"
+  to = "/assets/:splat"
+  status = 200
+
+[[redirects]]
+  from = "http://admin.walmark-retailshop.com/assets/*"
+  to = "/assets/:splat"
+  status = 200
+
+[[redirects]]
+  from = "https://admin.walmark-retailshop.com/*"
+  to = "/admin.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "http://admin.walmark-retailshop.com/*"
+  to = "/admin.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://admin.walmark-retailshop.com"
+  to = "/admin.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "http://admin.walmark-retailshop.com"
+  to = "/admin.html"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/admin"
   to = "/admin.html"

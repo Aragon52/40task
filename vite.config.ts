@@ -89,6 +89,13 @@ export default defineConfig(() => {
               res.end('// Self-destructing or empty service worker for dev\nself.addEventListener("install", () => self.skipWaiting());\n');
               return;
             }
+            const host = (req.headers.host || '').toLowerCase();
+            const isAdminHost = host.startsWith('admin.') || host.startsWith('admin-') || host.includes('admin.walmark-retailshop.com');
+            if (isAdminHost && req.url && !req.url.startsWith('/admin.html') && !req.url.startsWith('/@') && !req.url.startsWith('/assets') && !req.url.startsWith('/src') && !req.url.startsWith('/admin-portal') && !req.url.startsWith('/user-portal') && !req.url.startsWith('/node_modules')) {
+              req.url = '/admin.html';
+            } else if (req.url && (req.url === '/admin' || req.url.startsWith('/admin/'))) {
+              req.url = '/admin.html';
+            }
             next();
           });
         }
@@ -109,6 +116,9 @@ export default defineConfig(() => {
       },
     },
     server: {
+      host: '0.0.0.0',
+      port: 3000,
+      allowedHosts: true,
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
