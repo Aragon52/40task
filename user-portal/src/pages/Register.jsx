@@ -548,7 +548,7 @@ export default function Register() {
               style={{ width: '16px', height: '16px', margin: '3px 0 0 0', cursor: 'pointer', accentColor: 'var(--primary-color, #0071ce)' }}
             />
             <label htmlFor="termsCheckbox" style={{ margin: 0, fontSize: '11.5px', cursor: 'pointer', color: 'var(--text-muted, #475569)', fontWeight: 500, lineHeight: '1.4', textAlign: 'left' }}>
-              I agree to the <span style={{ color: 'var(--primary-color, #0071ce)', fontWeight: 'bold', textDecoration: 'underline' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowTermsModal(true); }}>Terms & Conditions</span> and <span style={{ color: 'var(--primary-color, #0071ce)', fontWeight: 'bold', textDecoration: 'underline' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowPoliciesModal(true); }}>Operational Policies</span> (Simulated Environment).
+              I agree to the <span style={{ color: 'var(--primary-color, #0071ce)', fontWeight: 'bold', textDecoration: 'underline' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowTermsModal(true); }}>Terms & Conditions</span> and <span style={{ color: 'var(--primary-color, #0071ce)', fontWeight: 'bold', textDecoration: 'underline' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowPoliciesModal(true); }}>Operational Policies</span>.
             </label>
           </div>
 
@@ -1152,9 +1152,6 @@ export default function Register() {
 
               <h4>5. Amendments to Terms</h4>
               <p>Walmart reserves the right to modify or update these terms at any time. Continued use of the matching portal following adjustments constitutes acceptance of the new terms.</p>
-
-              <h4>6. Development & Simulation Notice</h4>
-              <p>This website is an educational simulation platform designed solely for demonstration and software testing purposes. It is NOT affiliated with, operated by, endorsed by, or associated with Walmart Inc., Walmark, or any real-world brand. All activities, balances, orders, and matchings on this site are fully simulated, artificial, and for development validation purposes only. No real currency is involved, and no physical order fulfillment or payout services are provided.</p>
             </div>
             <div className="login-modal-footer">
               <button className="login-modal-btn" onClick={() => setShowTermsModal(false)}>Accept & Close</button>
@@ -1186,9 +1183,6 @@ export default function Register() {
 
               <h4>5. Financial Safety Policies</h4>
               <p>To prevent multi-accounting, automated script exploits, or capital washing, active balances are audited prior to withdrawal approval. Withdrawal requests are processed within 1 to 24 hours.</p>
-
-              <h4>6. Development & Simulation Notice</h4>
-              <p>This website is an educational simulation platform designed solely for demonstration and software testing purposes. It is NOT affiliated with, operated by, endorsed by, or associated with Walmart Inc., Walmark, or any real-world brand. All activities, balances, orders, and matchings on this site are fully simulated, artificial, and for development validation purposes only. No real currency is involved, and no physical order fulfillment or payout services are provided.</p>
             </div>
             <div className="login-modal-footer">
               <button className="login-modal-btn" onClick={() => setShowPoliciesModal(false)}>I Understand</button>

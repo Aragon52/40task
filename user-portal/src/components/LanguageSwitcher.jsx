@@ -155,20 +155,10 @@ export default function LanguageSwitcher() {
   };
 
   const setTranslateCookie = (langCode) => {
-    const value = `/en/${langCode}`;
-    const date = new Date();
-    date.setTime(date.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
-    const expires = `; expires=${date.toUTCString()}`;
-
-    // Clean up all existing cookies under different potential domains to prevent duplicate entries
+    // Clean up all existing cookies under different potential domains
     const hostWithDot = `.${window.location.hostname}`;
-    const domainsToClear = [
-      '',
-      window.location.hostname,
-      hostWithDot
-    ];
+    const domainsToClear = ['', window.location.hostname, hostWithDot];
 
-    // Attempt to clear parent domain if appropriate
     const hostnameParts = window.location.hostname.split('.');
     if (hostnameParts.length >= 2) {
       const mainDomain = hostnameParts.slice(-2).join('.');
@@ -181,23 +171,35 @@ export default function LanguageSwitcher() {
       document.cookie = `googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC${domStr}`;
     });
 
-    // Write new clean cookie with path=/ (Omit domain to support localhost and any subdomain seamlessly)
-    document.cookie = `googtrans=${value}${expires}; path=/;`;
+    // If English, leave googtrans cleared so Google Translate stays idle without loading frames
+    if (!langCode || langCode === 'en') {
+      return;
+    }
 
-    // Also write it with host domain if it's not localhost
+    const value = `/en/${langCode}`;
+    const date = new Date();
+    date.setTime(date.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
+    const expires = `; expires=${date.toUTCString()}`;
+
+    document.cookie = `googtrans=${value}${expires}; path=/;`;
     if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
       document.cookie = `googtrans=${value}${expires}; path=/; domain=.${window.location.hostname};`;
-      document.cookie = `googtrans=${value}${expires}; path=/; domain=${window.location.hostname};`;
     }
   };
 
   useEffect(() => {
-    // 1. Get current language and sync the cookie immediately on load so Google Translate reads it correctly
+    // 1. Get current saved language
     const initialLang = getCurrentLangCode();
     setCurrentLang(initialLang);
     setTranslateCookie(initialLang);
 
-    // 2. Set up programmatic Google Translate framework
+    // 2. Only inject Google Translate script if non-English language is selected
+    if (initialLang && initialLang !== 'en') {
+      loadGoogleTranslateScript(initialLang);
+    }
+  }, []);
+
+  const loadGoogleTranslateScript = (targetLang) => {
     if (!window.googleTranslateElementInit) {
       window.googleTranslateElementInit = () => {
         if (window.google?.translate?.TranslateElement) {
@@ -208,7 +210,6 @@ export default function LanguageSwitcher() {
         }
       };
 
-      // Hidden div target
       if (!document.getElementById('google_translate_element')) {
         const div = document.createElement('div');
         div.id = 'google_translate_element';
@@ -216,22 +217,20 @@ export default function LanguageSwitcher() {
         document.body.appendChild(div);
       }
 
-      // Add Translate script
       const script = document.createElement('script');
       script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
       script.async = true;
       document.body.appendChild(script);
     } else {
-      // If already initialized, wait briefly for DOM to settle and sync the translate combo selection
       setTimeout(() => {
         const selectEl = document.querySelector('.goog-te-combo');
-        if (selectEl && selectEl.value !== initialLang) {
-          selectEl.value = initialLang;
+        if (selectEl && targetLang && selectEl.value !== targetLang) {
+          selectEl.value = targetLang;
           selectEl.dispatchEvent(new Event('change'));
         }
-      }, 500);
+      }, 300);
     }
-  }, []);
+  };
 
   // Handle outside Click to close the language modal
   useEffect(() => {
@@ -250,13 +249,16 @@ export default function LanguageSwitcher() {
     setTranslateCookie(langCode);
     setIsOpen(false);
 
+    if (langCode && langCode !== 'en') {
+      loadGoogleTranslateScript(langCode);
+    }
+
     // Try to trigger the change events on Google Translate combobox
     let selectEl = document.querySelector('.goog-te-combo');
     if (selectEl) {
       selectEl.value = langCode;
       selectEl.dispatchEvent(new Event('change'));
-    } else {
-      // If not yet present in DOM, poll for it gracefully without hard reloading the window
+    } else if (langCode !== 'en') {
       let attempts = 0;
       const interval = setInterval(() => {
         selectEl = document.querySelector('.goog-te-combo');
@@ -266,9 +268,8 @@ export default function LanguageSwitcher() {
           clearInterval(interval);
         } else {
           attempts++;
-          if (attempts > 30) {
+          if (attempts > 20) {
             clearInterval(interval);
-            // Do not force window.location.reload() to avoid unexpected page refreshing
           }
         }
       }, 100);
@@ -391,11 +392,20 @@ export default function LanguageSwitcher() {
 
       {/* Styled inline components to preserve premium presentation */}
       <style>{`
-        /* Hide google translate visual top bar slop completely */
-        .skiptranslate, iframe[id*="translate"] {
+        /* Hide google translate visual top bar slop and rotating spinners completely */
+        .skiptranslate,
+        iframe[id*="translate"],
+        .goog-te-spinner,
+        .goog-te-spinner-pos,
+        .goog-te-spinner-animation,
+        .goog-te-combo-spinner,
+        .goog-te-banner-frame {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
+          width: 0 !important;
+          height: 0 !important;
+          pointer-events: none !important;
         }
         body {
           top: 0 !important;
@@ -408,7 +418,7 @@ export default function LanguageSwitcher() {
         }
         .goog-text-highlight {
           background-color: transparent !important;
-          border: none !important; 
+          border: none !important;  
           box-shadow: none !important;
         }
 

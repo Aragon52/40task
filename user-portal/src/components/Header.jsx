@@ -90,12 +90,6 @@ export default function Header({ currentTheme, onThemeChange }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          animation: logoRotate 12s linear infinite;
-        }
-
-        @keyframes logoRotate {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
         }
 
         .header-right {

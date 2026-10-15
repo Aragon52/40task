@@ -32,15 +32,7 @@ const BANNERS = [
 export default function Home({ currentTheme, balance, username }) {
   const navigate = useNavigate();
   const [slide, setSlide] = useState(0);
-  const { showLoading, hideLoading } = useLoading();
 
-  useEffect(() => {
-    showLoading('home');
-    const timer = setTimeout(() => {
-      hideLoading();
-    }, 750);
-    return () => clearTimeout(timer);
-  }, []);
 
   // Auto-advance every 4 seconds
   useEffect(() => {
@@ -203,7 +195,7 @@ export default function Home({ currentTheme, balance, username }) {
               </div>
             </div>
 
-            {/* Simulated Live Feed Scroll */}
+            {/* Live Feed Scroll */}
             <div className="live-feed-card">
               <div className="feed-header">
                 <span className="pulse-indicator"></span>
@@ -642,7 +634,7 @@ export default function Home({ currentTheme, balance, username }) {
           letter-spacing: 0.3px;
         }
 
-        /* Simulated Live Feed */
+        /* Live Feed */
         .live-feed-card {
           background-color: var(--bg-card);
           border-radius: var(--border-radius-md);

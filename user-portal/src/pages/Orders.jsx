@@ -9,17 +9,9 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('All');
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
-  const { showLoading, hideLoading, performAsync } = useLoading();
+  const { performAsync } = useLoading();
 
   const tabs = ['All', 'Success', 'Frozen'];
-
-  useEffect(() => {
-    showLoading('orders');
-    const timer = setTimeout(() => {
-      hideLoading();
-    }, 750);
-    return () => clearTimeout(timer);
-  }, []);
 
   const filteredOrders = orders.filter(order => {
     if (activeTab === 'All') {
@@ -39,63 +31,54 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
     // Find the matched order from the orders list
     const matchedOrder = orders.find(o => String(o.id) === String(orderId));
 
-    await performAsync(async () => {
-      try {
-        // 1. Update order status to Success in Supabase
-        const { error: orderUpdateError } = await supabase
-          .from('cb_orders')
-          .update({ status: 'Success' })
-          .eq('id', orderId);
+    // 1. OPTIMISTIC UI: Update local state & UI INSTANTLY (0ms delay)
+    updateBalance(parseFloat(profit));
+    setOrders(prev => prev.map(o => String(o.id) === String(orderId) ? { ...o, status: 'Success' } : o));
+    setSelectedOrderDetails(null);
+    toast.success(`Order submitted! Earned $${parseFloat(profit).toFixed(2)} commission.`);
 
-        if (orderUpdateError) {
-          toast.error("Error submitting order: " + orderUpdateError.message);
-          return;
-        }
+    // 2. PARALLEL BACKGROUND DATABASE SYNCHRONIZATION
+    try {
+      const orderPromise = supabase
+        .from('cb_orders')
+        .update({ status: 'Success' })
+        .eq('id', orderId);
 
-        // 2. Add profit to user balance (principal is not deducted initially)
-        updateBalance(parseFloat(profit));
-
-        // 2.5 Affiliate Commission logic: If user B has an inviter (user A), reward user A with 10% of user B's profit
+      const affiliatePromise = (async () => {
         try {
           const currentUsername = localStorage.getItem('cb_username');
           if (currentUsername) {
-            const { data: userBData, error: userBError } = await supabase
+            const { data: userBData } = await supabase
               .from('cb_users')
               .select('id, invited_by_user_id')
               .eq('username', currentUsername);
 
-            if (!userBError && userBData && userBData.length > 0) {
-              const invitedByUserId = userBData[0].invited_by_user_id;
-              if (invitedByUserId) {
-                const { data: userAData, error: userAError } = await supabase
-                  .from('cb_users')
-                  .select('id, balance, commissions')
-                  .eq('id', invitedByUserId);
+            if (userBData && userBData[0] && userBData[0].invited_by_user_id) {
+              const { data: userAData } = await supabase
+                .from('cb_users')
+                .select('id, balance, commissions')
+                .eq('id', userBData[0].invited_by_user_id);
 
-                if (!userAError && userAData && userAData.length > 0) {
-                  const userA = userAData[0];
-                  const commissionAmount = parseFloat((parseFloat(profit) * 0.10).toFixed(4));
-                  if (commissionAmount > 0) {
-                    const newA_Balance = parseFloat((parseFloat(userA.balance || 0) + commissionAmount).toFixed(4));
-                    const newA_Commissions = parseFloat((parseFloat(userA.commissions || 0) + commissionAmount).toFixed(4));
-
-                    await supabase
-                      .from('cb_users')
-                      .update({
-                        balance: newA_Balance,
-                        commissions: newA_Commissions
-                      })
-                      .eq('id', userA.id);
-                  }
+              if (userAData && userAData[0]) {
+                const userA = userAData[0];
+                const commissionAmount = parseFloat((parseFloat(profit) * 0.10).toFixed(4));
+                if (commissionAmount > 0) {
+                  const newA_Balance = parseFloat((parseFloat(userA.balance || 0) + commissionAmount).toFixed(4));
+                  const newA_Commissions = parseFloat((parseFloat(userA.commissions || 0) + commissionAmount).toFixed(4));
+                  await supabase
+                    .from('cb_users')
+                    .update({ balance: newA_Balance, commissions: newA_Commissions })
+                    .eq('id', userA.id);
                 }
               }
             }
           }
         } catch (affErr) {
-          console.error("Error processing affiliate commission:", affErr);
+          console.error("Affiliate error:", affErr);
         }
+      })();
 
-        // 3. Update assigned task progression if order belongs to a task
+      const taskPromise = (async () => {
         if (matchedOrder && matchedOrder.assignedTaskId) {
           const { data: taskList } = await supabase
             .from('cb_assigned_tasks')
@@ -108,27 +91,18 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
             updatedOrders[matchedOrder.assignedOrderIndex].status = 'Success';
             const allDone = updatedOrders.every(o => o.status === 'Success');
             const nextStatus = allDone ? 'Completed' : 'In Progress';
-
             await supabase
               .from('cb_assigned_tasks')
-              .update({ 
-                orders: updatedOrders,
-                status: nextStatus 
-              })
+              .update({ orders: updatedOrders, status: nextStatus })
               .eq('id', task.id);
           }
         }
-        
-        // 4. Immediately flip local state so status badge updates without waiting for DB sync
-        setOrders(prev => prev.map(o => 
-          String(o.id) === String(orderId) ? { ...o, status: 'Success' } : o
-        ));
-        
-        toast.success(`Order submitted! Earned $${parseFloat(profit).toFixed(2)} commission.`);
-      } catch (err) {
-        toast.error("Error submitting task: " + err.message);
-      }
-    }, 'orders');
+      })();
+
+      await Promise.all([orderPromise, affiliatePromise, taskPromise]);
+    } catch (err) {
+      console.error("Background sync error:", err);
+    }
   };
 
   return (

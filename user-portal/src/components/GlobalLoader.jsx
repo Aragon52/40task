@@ -41,10 +41,7 @@ export function LoadingProvider({ children }) {
       const result = await fn();
       return result;
     } finally {
-      // Small intentional delay to let the user appreciate the stunning shimmer screen transition
-      setTimeout(() => {
-        hideLoading();
-      }, 400);
+      hideLoading();
     }
   };
 

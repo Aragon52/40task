@@ -594,9 +594,6 @@ export default function Profile({ balance, username, setUsername, setBalance, se
 
               <h4>5. Financial Safety Policies</h4>
               <p>To prevent multi-accounting, automated script exploits, or capital washing, active balances are audited prior to withdrawal approval. Withdrawal requests are processed within 1 to 24 hours.</p>
-
-              <h4>6. Development & Simulation Notice</h4>
-              <p>This website is an educational simulation platform designed solely for demonstration and software testing purposes. It is NOT affiliated with, operated by, endorsed by, or associated with Walmart Inc., Walmark, or any real-world brand. All activities, balances, orders, and matchings on this site are fully simulated, artificial, and for development validation purposes only. No real currency is involved, and no physical order fulfillment or payout services are provided.</p>
             </div>
             <div className="profile-modal-footer">
               <button className="profile-modal-btn" onClick={() => setShowPoliciesModal(false)}>I Understand</button>
@@ -628,9 +625,6 @@ export default function Profile({ balance, username, setUsername, setBalance, se
 
               <h4>5. Amendments to Terms</h4>
               <p>Walmart reserves the right to modify or update these terms at any time. Continued use of the matching portal following adjustments constitutes acceptance of the new terms.</p>
-
-              <h4>6. Development & Simulation Notice</h4>
-              <p>This website is an educational simulation platform designed solely for demonstration and software testing purposes. It is NOT affiliated with, operated by, endorsed by, or associated with Walmart Inc., Walmark, or any real-world brand. All activities, balances, orders, and matchings on this site are fully simulated, artificial, and for development validation purposes only. No real currency is involved, and no physical order fulfillment or payout services are provided.</p>
             </div>
             <div className="profile-modal-footer">
               <button className="profile-modal-btn" onClick={() => setShowTermsModal(false)}>Accept Terms</button>

@@ -173,32 +173,38 @@ function AppContent() {
     setBalance(prev => {
       const nextBalance = parseFloat((prev + amount).toFixed(2));
       
-      supabase
-        .from('cb_users')
-        .select('balance, earnings')
-        .eq('username', username)
-        .then(({ data, error }) => {
-          if (!error && data && data[0]) {
-            const currentEarnings = parseFloat(data[0].earnings || 0);
-            const nextEarnings = amount > 0 ? parseFloat((currentEarnings + amount).toFixed(4)) : currentEarnings;
-            
+      if (amount > 0) {
+        supabase
+          .from('cb_users')
+          .select('earnings')
+          .eq('username', username)
+          .single()
+          .then(({ data }) => {
+            const currentEarnings = parseFloat(data?.earnings || 0);
+            const nextEarnings = parseFloat((currentEarnings + amount).toFixed(4));
             supabase
               .from('cb_users')
-              .update({ 
-                balance: nextBalance,
-                ...(amount > 0 ? { earnings: nextEarnings } : {})
-              })
+              .update({ balance: nextBalance, earnings: nextEarnings })
               .eq('username', username)
-              .then(({ error: updateErr }) => {
-                if (updateErr) console.error("Supabase balance/earnings sync error:", updateErr.message);
+              .then(({ error }) => {
+                if (error) console.error("Balance sync error:", error?.message);
               });
-          } else {
+          })
+          .catch(() => {
             supabase
               .from('cb_users')
               .update({ balance: nextBalance })
               .eq('username', username);
-          }
-        });
+          });
+      } else {
+        supabase
+          .from('cb_users')
+          .update({ balance: nextBalance })
+          .eq('username', username)
+          .then(({ error }) => {
+            if (error) console.error("Balance sync error:", error?.message);
+          });
+      }
 
       return nextBalance;
     });
@@ -283,7 +289,7 @@ function AppContent() {
 
         if (!userError && users && users[0]) {
           const fetchedBalance = parseFloat(users[0].balance);
-          setBalance(fetchedBalance);
+          setBalance(prev => (Math.abs(prev - fetchedBalance) < 0.001 ? prev : fetchedBalance));
         }
 
         // 2. Fetch matched orders list
@@ -306,19 +312,47 @@ function AppContent() {
             assignedTaskId: o.assigned_task_id,
             assignedOrderIndex: o.assigned_order_index
           }));
-          setOrders(formatted);
+          
+          setOrders(prevOrders => {
+            if (prevOrders.length === formatted.length) {
+              const isIdentical = prevOrders.every((po, idx) => {
+                const fo = formatted[idx];
+                return fo && po.id === fo.id && po.status === fo.status && po.price === fo.price && po.profit === fo.profit;
+              });
+              if (isIdentical) return prevOrders;
+            }
+            return formatted;
+          });
         }
       } catch (err) {
         console.error("Database sync error:", err);
       }
     };
 
+    // Realtime channel listener for instant database updates without waiting
+    const channel = supabase
+      .channel(`rt:${username}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cb_users', filter: `username=eq.${username}` }, (payload) => {
+        if (payload.new && typeof payload.new.balance !== 'undefined') {
+          const newBal = parseFloat(payload.new.balance);
+          setBalance(prev => (Math.abs(prev - newBal) < 0.001 ? prev : newBal));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cb_orders', filter: `username=eq.${username}` }, () => {
+        syncWithDatabase();
+      })
+      .subscribe();
+
     syncWithDatabase();
     const interval = setInterval(() => {
       if (document.hidden) return;
       syncWithDatabase();
-    }, 15000); // Poll every 15 seconds instead of 3
-    return () => clearInterval(interval);
+    }, 15000);
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [username]);
 
   return (

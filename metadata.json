@@ -1,6 +1,6 @@
 {
   "name": "Order Picking Platform",
-  "description": "Simulated order picking, tracking, and management platform for testing and training purposes.",
+  "description": "Order picking, tracking, and management platform.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
