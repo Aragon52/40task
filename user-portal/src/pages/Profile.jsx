@@ -136,6 +136,8 @@ export default function Profile({ balance, username, setUsername, setBalance, se
     localStorage.removeItem('cb_user_session');
     localStorage.removeItem('cb_username');
     localStorage.removeItem('cb_balance');
+    localStorage.removeItem('cb_orders');
+    window.dispatchEvent(new Event('cb_session_updated'));
     setShowSignOutConfirm(false);
     navigate('/login');
   };

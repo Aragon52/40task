@@ -165,6 +165,7 @@ export default function Login() {
           username: user.username,
           referredBy: user.referred_by_staff_id || 'None'
         }));
+        window.dispatchEvent(new Event('cb_session_updated'));
         toast(`Welcome back, ${user.username}!`);
         navigate('/home');
         return;

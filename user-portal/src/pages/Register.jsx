@@ -364,11 +364,12 @@ export default function Register() {
         username: computedUsername,
         referredBy: matchingStaff.staff_id || matchingStaff.staffId
       }));
+      window.dispatchEvent(new Event('cb_session_updated'));
 
       setFormSuccess(`Account created successfully under staff ${matchingStaff.staff_id || matchingStaff.staffId}!`);
       setTimeout(() => {
         navigate('/home');
-      }, 2000);
+      }, 1500);
     } catch (err) {
       setFormError("Registration failed: " + err.message);
     }

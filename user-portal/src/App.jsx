@@ -133,6 +133,47 @@ function AppContent() {
     }
   });
 
+  // Helper to re-hydrate state from localStorage
+  const refreshSessionFromStorage = () => {
+    try {
+      const savedUser = localStorage.getItem('cb_username') || '';
+      const savedBal = localStorage.getItem('cb_balance');
+      const parsedBal = savedBal ? parseFloat(savedBal) : 0;
+      const savedOrders = localStorage.getItem('cb_orders');
+      let parsedOrders = [];
+      if (savedOrders) {
+        const p = JSON.parse(savedOrders);
+        if (Array.isArray(p)) parsedOrders = p;
+      }
+
+      setUsername(savedUser);
+      setBalance(isNaN(parsedBal) ? 0 : parsedBal);
+      setOrders(parsedOrders);
+    } catch (e) {
+      console.warn("Storage refresh error:", e);
+    }
+  };
+
+  // Listen for login/logout/register storage updates dynamically
+  useEffect(() => {
+    const handleSessionChange = () => {
+      refreshSessionFromStorage();
+    };
+
+    window.addEventListener('storage', handleSessionChange);
+    window.addEventListener('cb_session_updated', handleSessionChange);
+    window.addEventListener('hashchange', handleSessionChange);
+
+    // Initial check
+    refreshSessionFromStorage();
+
+    return () => {
+      window.removeEventListener('storage', handleSessionChange);
+      window.removeEventListener('cb_session_updated', handleSessionChange);
+      window.removeEventListener('hashchange', handleSessionChange);
+    };
+  }, []);
+
   // Apply theme class to body
   useEffect(() => {
     document.body.className = theme === 'red' ? 'theme-red' : '';
@@ -151,17 +192,23 @@ function AppContent() {
     };
   }, []);
 
-  // Sync state changes with localStorage
+  // Sync active non-empty state changes back to localStorage
   useEffect(() => {
-    localStorage.setItem('cb_balance', balance.toString());
+    if (balance !== 0 || localStorage.getItem('cb_balance') !== null) {
+      localStorage.setItem('cb_balance', balance.toString());
+    }
   }, [balance]);
 
   useEffect(() => {
-    localStorage.setItem('cb_username', username);
+    if (username) {
+      localStorage.setItem('cb_username', username);
+    }
   }, [username]);
 
   useEffect(() => {
-    localStorage.setItem('cb_orders', JSON.stringify(orders));
+    if (orders && orders.length > 0) {
+      localStorage.setItem('cb_orders', JSON.stringify(orders));
+    }
   }, [orders]);
 
   // Triggered when theme updates
