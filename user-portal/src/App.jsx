@@ -18,6 +18,8 @@ import { supabase } from './supabase';
 import { Toaster } from 'react-hot-toast';
 import { LoadingProvider } from './components/GlobalLoader';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import MaintenanceBreak from './components/MaintenanceBreak';
+import { getInitialMaintenanceState } from './config/maintenanceConfig';
 
 
 // Error Boundary Component
@@ -92,6 +94,57 @@ export default function App() {
 }
 
 function AppContent() {
+  // Maintenance window state
+  const [isMaintenance, setIsMaintenance] = useState(() => {
+    try {
+      const search = window.location.search || window.location.hash || '';
+      if (search.includes('bypass=true') || search.includes('bypass_maintenance=true')) {
+        return false;
+      }
+      if (localStorage.getItem('cb_maintenance_bypassed') === 'true') {
+        return false;
+      }
+      return getInitialMaintenanceState();
+    } catch {
+      return false;
+    }
+  });
+
+  const [isBypassed, setIsBypassed] = useState(() => {
+    try {
+      return localStorage.getItem('cb_maintenance_bypassed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const handleMaintenanceUpdate = (e) => {
+      if (e?.detail?.active !== undefined) {
+        setIsMaintenance(e.detail.active);
+      } else {
+        setIsMaintenance(getInitialMaintenanceState());
+      }
+    };
+
+    window.addEventListener('cb_maintenance_updated', handleMaintenanceUpdate);
+    window.addEventListener('storage', handleMaintenanceUpdate);
+
+    const channel = supabase.channel('system_maintenance')
+      .on('broadcast', { event: 'maintenance_toggle' }, (payload) => {
+        if (payload?.payload?.active !== undefined) {
+          setIsMaintenance(payload.payload.active);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('cb_maintenance_updated', handleMaintenanceUpdate);
+      window.removeEventListener('storage', handleMaintenanceUpdate);
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // Theme state: 'orange' or 'red'
   const [theme, setTheme] = useState(() => {
     try {
@@ -401,6 +454,19 @@ function AppContent() {
       supabase.removeChannel(channel);
     };
   }, [username]);
+
+  if (isMaintenance && !isBypassed) {
+    return (
+      <MaintenanceBreak 
+        onBypass={() => {
+          setIsBypassed(true);
+          try {
+            localStorage.setItem('cb_maintenance_bypassed', 'true');
+          } catch (e) {}
+        }} 
+      />
+    );
+  }
 
   return (
     <LoadingProvider>

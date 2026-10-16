@@ -10,6 +10,33 @@ export default function Navbar({ activeLabel }) {
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const [isMaintenance, setIsMaintenance] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cb_maintenance_mode');
+      return saved === 'true'; // Default false
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleMaintenance = () => {
+    const nextState = !isMaintenance;
+    setIsMaintenance(nextState);
+    try {
+      localStorage.setItem('cb_maintenance_mode', nextState ? 'true' : 'false');
+      window.dispatchEvent(new CustomEvent('cb_maintenance_updated', { detail: { active: nextState } }));
+      
+      const channel = supabase.channel('system_maintenance');
+      channel.send({
+        type: 'broadcast',
+        event: 'maintenance_toggle',
+        payload: { active: nextState }
+      });
+    } catch (e) {
+      console.warn("Broadcast error", e);
+    }
+  };
+
   const syncStats = async () => {
     try {
       const { count: depCount, error: depError } = await supabase
@@ -105,6 +132,35 @@ export default function Navbar({ activeLabel }) {
           >
             <RefreshCw size={14} className={isRefreshing ? "spin-anim" : ""} />
             Sync
+          </button>
+          
+          <button 
+            onClick={toggleMaintenance}
+            title={isMaintenance ? "Click to turn Maintenance Mode OFF (Go Live)" : "Click to put site on Maintenance Break"}
+            style={{ 
+              height: 32, 
+              padding: '0 12px', 
+              gap: 6, 
+              borderRadius: 6,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              border: isMaintenance ? '1px solid #2563eb' : '1px solid var(--border-color)',
+              backgroundColor: isMaintenance ? 'rgba(37, 99, 235, 0.12)' : 'var(--bg-card)',
+              color: isMaintenance ? '#2563eb' : 'var(--text-muted)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <span style={{ 
+              width: 8, 
+              height: 8, 
+              borderRadius: '50%', 
+              backgroundColor: isMaintenance ? '#2563eb' : '#94a3b8',
+              boxShadow: isMaintenance ? '0 0 8px #2563eb' : 'none'
+            }} />
+            {isMaintenance ? 'ON AIR: Maintenance Active' : 'Maintenance: OFF'}
           </button>
         </div>
 
