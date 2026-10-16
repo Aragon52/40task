@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   LayoutGrid, 
   ShieldCheck, 
@@ -20,6 +20,7 @@ import {
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  session: AdminSession;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   isMobileOpen?: boolean;
@@ -27,7 +28,7 @@ interface SidebarProps {
 }
 
 interface AdminSession {
-  role?: string;
+  role: string;
   name?: string;
   email?: string;
   accountId?: string;
@@ -50,13 +51,12 @@ interface MenuItem {
 export default function Sidebar({ 
   activeTab, 
   setActiveTab, 
+  session,
   isCollapsed: controlledCollapsed,
   onToggleCollapse,
   isMobileOpen, 
   onCloseMobile 
 }: SidebarProps) {
-  const [session, setSession] = useState<AdminSession | null>(null);
-  
   const [internalCollapsed, setInternalCollapsed] = useState<boolean>(() => {
     try {
       return localStorage.getItem('cb_admin_sidebar_collapsed') === 'true';
@@ -79,23 +79,6 @@ export default function Sidebar({
     }
   };
 
-  useEffect(() => {
-    const loadSession = () => {
-      const saved = localStorage.getItem('cb_admin_session');
-      if (saved) {
-        setSession(JSON.parse(saved));
-      } else {
-        setSession(null);
-      }
-    };
-    loadSession();
-    const interval = setInterval(() => {
-      if (document.hidden) return;
-      loadSession();
-    }, 15000);
-    return () => clearInterval(interval);
-  }, []);
-
   // Exact 11 items from screenshot in exact order
   const allMenuItems: MenuItem[] = [
     { id: 'dashboard', label: 'Overview', icon: LayoutGrid, roles: ['Owner', 'Admin', 'Staff'] },
@@ -111,12 +94,12 @@ export default function Sidebar({
     { id: 'settings', label: 'Settings', icon: Settings, roles: ['Owner', 'Admin'] }
   ];
 
-  const activeRole = session?.role || 'Owner';
+  const activeRole = session.role;
   const menuItems = allMenuItems.filter(item => {
     if (!item.roles.includes(activeRole)) return false;
     
     if (activeRole === 'Staff') {
-      const perms = session?.permissions || {
+      const perms = session.permissions || {
         userManagement: true,
         ordersInProgress: true,
         orderTasking: false,
@@ -209,7 +192,7 @@ export default function Sidebar({
         </div>
 
         {/* Navigation Items List */}
-        <nav className="flex-1 overflow-y-auto p-3.5 space-y-1.5 no-scrollbar">
+        <nav className="flex-1 min-w-0 overflow-y-auto px-3 py-4 space-y-1.5 no-scrollbar">
           {menuItems.map(item => {
             const IconComponent = item.icon;
             const isActive = activeTab === item.id;
@@ -219,11 +202,11 @@ export default function Sidebar({
               <button
                 key={item.id}
                 onClick={() => handleSelectTab(item.id)}
-                title={!showText ? item.label : undefined}
-                className={`w-full flex items-center rounded-xl transition-all cursor-pointer ${
+                title={item.label}
+                className={`min-w-0 flex flex-nowrap items-center rounded-xl transition-all cursor-pointer ${
                   !showText 
                     ? 'justify-center w-10 h-10 mx-auto p-0' 
-                    : 'gap-3 px-3.5 py-2.5 text-left text-[13.5px]'
+                    : 'w-full min-h-10 gap-3 px-3 py-2.5 text-left text-[13.5px]'
                 } ${
                   isActive 
                     ? 'bg-[#0071ce] text-white shadow-xs font-semibold' 
@@ -235,7 +218,11 @@ export default function Sidebar({
                   strokeWidth={isActive ? 2.2 : 1.8} 
                   className={`shrink-0 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} 
                 />
-                {showText && <span className="truncate">{item.label}</span>}
+                {showText && (
+                  <span className="block min-w-0 flex-1 truncate whitespace-nowrap">
+                    {item.label}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -246,16 +233,16 @@ export default function Sidebar({
           {(!isCollapsed || isMobileOpen) ? (
             <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-[#0071ce] flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-2xs">
-                {session?.role?.[0] || 'O'}
+                {session.role[0] || 'O'}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold text-slate-900 dark:text-white truncate leading-tight">
-                  {session?.role === 'Staff' ? (session?.name || 'Staff User') : 'System Owner'}
+                  {session.role === 'Staff' ? (session.name || 'Staff User') : 'System Owner'}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium capitalize">
-                    {session?.role || 'Owner'}
+                    {session.role}
                   </span>
                 </div>
               </div>
@@ -264,9 +251,9 @@ export default function Sidebar({
             <div className="flex justify-center py-1">
               <div 
                 className="w-8 h-8 rounded-lg bg-[#0071ce] flex items-center justify-center text-white text-xs font-bold shadow-xs cursor-default" 
-                title={`${session?.role === 'Staff' ? (session?.name || 'Staff') : 'System Owner'} (${session?.role || 'Owner'})`}
+                title={`${session.role === 'Staff' ? (session.name || 'Staff') : 'System Owner'} (${session.role})`}
               >
-                {session?.role?.[0] || 'O'}
+                {session.role[0] || 'O'}
               </div>
             </div>
           )}

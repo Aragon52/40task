@@ -421,6 +421,7 @@ export default function App() {
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
+        session={session}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={toggleSidebar}
         isMobileOpen={isMobileSidebarOpen}
