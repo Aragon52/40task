@@ -135,12 +135,19 @@ body {
 /* Page Container - Spacious with balanced breathing room and responsive breakpoints */
 .admin-page-container {
   flex: 1;
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 20px;
   overflow-y: auto;
   max-width: 1920px;
   width: 100%;
   min-width: 0;
   margin: 0 auto;
+}
+
+.admin-page-container > * {
+  margin-block: 0;
 }
 
 @media (min-width: 640px) {
