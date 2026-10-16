@@ -1741,34 +1741,29 @@ export default function OrdersTasking() {
                 </div>
               </div>
 
-              {/* Order Samples Preview */}
+              {/* Full order queue preview */}
               <div className="border border-slate-200/80 dark:border-slate-800/80 rounded-xl overflow-hidden bg-white dark:bg-slate-950 shadow-sm">
                 <div className="px-4 py-2 bg-slate-50 dark:bg-slate-900/80 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center text-slate-600 dark:text-slate-400 text-xs">
-                  <span className="font-bold text-[10px] uppercase tracking-wider">Queue Order Samples</span>
+                  <span className="font-bold text-[10px] uppercase tracking-wider">All Queue Orders</span>
                   <span className="text-[11px] font-mono">{pendingTaskData.orders.length} total rows</span>
                 </div>
-                <div className="max-h-36 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
-                  {pendingTaskData.orders.slice(0, 3).map((o, idx) => (
+                <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
+                  {pendingTaskData.orders.map((o, idx) => (
                     <div key={idx} className="px-4 py-2 flex items-center justify-between text-xs hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
-                      <div className="flex items-center gap-2 max-w-[280px]">
+                      <div className="flex min-w-0 flex-1 items-start gap-2 pr-3">
                         <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center text-[10px] font-bold font-mono">
                           {idx + 1}
                         </span>
-                        <span className="font-medium text-slate-800 dark:text-slate-200 truncate" title={o.title}>
+                        <span className="min-w-0 flex-1 whitespace-normal break-words font-medium text-slate-800 dark:text-slate-200" title={o.title}>
                           {o.title}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 font-mono text-right">
+                      <div className="flex shrink-0 items-center gap-3 font-mono text-right">
                         <span className="text-slate-500">${o.price.toFixed(2)}</span>
                         <span className="text-emerald-600 dark:text-emerald-400 font-bold">+${o.profit.toFixed(2)}</span>
                       </div>
                     </div>
                   ))}
-                  {pendingTaskData.orders.length > 3 && (
-                    <div className="px-4 py-1.5 text-center text-[11px] text-slate-400 bg-slate-50/30 dark:bg-slate-900/30 font-medium">
-                      + {pendingTaskData.orders.length - 3} more order rows queued
-                    </div>
-                  )}
                 </div>
               </div>
 

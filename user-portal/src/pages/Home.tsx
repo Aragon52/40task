@@ -425,7 +425,7 @@ export default function Home({ currentTheme, balance, username }) {
         }
 
         .balance-value {
-          font-size: 40px;
+          font-size: clamp(30px, 8vw, 40px);
           font-weight: 800;
           letter-spacing: -1px;
           line-height: 1;
@@ -462,6 +462,28 @@ export default function Home({ currentTheme, balance, username }) {
           position: relative;
           overflow: hidden;
           cursor: pointer;
+        }
+
+        @media (max-width: 380px) {
+          .home-container {
+            padding: 12px;
+          }
+
+          .balance-card {
+            padding: 18px;
+          }
+
+          .balance-value {
+            font-size: 30px;
+          }
+
+          .balance-currency {
+            font-size: 20px;
+          }
+
+          .icon-grid {
+            gap: 8px;
+          }
         }
 
         /* Hover slide highlight */

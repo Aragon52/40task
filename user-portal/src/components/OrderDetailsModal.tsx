@@ -47,7 +47,7 @@ export default function OrderDetailsModal({ order, balance = 0, onClose, onSubmi
               )}
             </div>
             <div className="flex flex-col justify-between flex-1 min-w-0">
-              <span className="text-xs font-semibold text-slate-900 dark:text-white line-clamp-2">{order.title}</span>
+              <span className="whitespace-normal break-words text-xs font-semibold text-slate-900 dark:text-white">{order.title}</span>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400 font-medium">x1</span>
                 <span className="font-bold text-indigo-600 dark:text-indigo-400 font-mono">$ {orderPrice.toFixed(2)}</span>

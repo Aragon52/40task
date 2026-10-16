@@ -405,7 +405,9 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders })
                 disabled={spinning}
                 id="btn-begin-matching"
               >
-                {spinning ? 'Picking order...' : 'Begin Picking'}
+                <span className="begin-match-btn-label">
+                  {spinning ? 'Picking order...' : 'Begin Picking'}
+                </span>
               </button>
             </div>
 
@@ -656,7 +658,15 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders })
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           position: relative;
           overflow: hidden;
+          isolation: isolate;
           cursor: pointer;
+        }
+
+        .begin-match-btn-label {
+          position: relative;
+          z-index: 1;
+          color: #fff;
+          -webkit-text-fill-color: #fff;
         }
 
         .begin-match-btn::before {

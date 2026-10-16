@@ -20,12 +20,10 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const { performAsync } = useLoading();
 
-  const tabs = ['All', 'Success', 'Frozen'];
+  const tabs = ['All', 'Pending', 'Success', 'Frozen'];
 
   const filteredOrders = orders.filter(order => {
-    if (activeTab === 'All') {
-      return order.status.toLowerCase() !== 'pending';
-    }
+    if (activeTab === 'All') return true;
     return order.status.toLowerCase() === activeTab.toLowerCase();
   });
 
@@ -419,16 +417,15 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
 
         .product-info {
           flex: 1;
+          min-width: 0;
         }
 
         .product-title {
           font-size: 13px;
           font-weight: 550;
           color: var(--text-main);
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
+          line-height: 1.4;
+          overflow-wrap: anywhere;
         }
 
         .order-price-box {
