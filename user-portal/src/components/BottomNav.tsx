@@ -78,7 +78,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md sm:max-w-2xl lg:max-w-4xl xl:max-w-5xl h-16 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex items-center justify-around px-2 z-50 shadow-lg transition-all">
+    <div className="bottom-navigation fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[1280px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex items-center justify-around px-2 z-50 shadow-lg transition-all">
       {navItems.map((item, index) => {
         if (item.isCenter) {
           return (

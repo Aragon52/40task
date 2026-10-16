@@ -155,7 +155,7 @@ export default function Sidebar({
 
       {/* Side Navigation Bar */}
       <aside 
-        className={`bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 flex flex-col transition-all duration-200 ease-in-out shrink-0 z-50 h-screen select-none ${
+        className={`bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 flex flex-col transition-all duration-200 ease-in-out shrink-0 z-50 h-dvh select-none ${
           'hidden md:flex'
         } ${
           isCollapsed ? 'md:w-16' : 'md:w-64'

@@ -184,9 +184,9 @@ export default function SupportChat() {
   };
 
   return (
-    <div className="admin-page-container scale-up" style={{ display: 'flex', flexDirection: 'row', gap: 24, height: 'calc(100vh - 120px)' }}>
+    <div className="admin-page-container scale-up support-chat-layout">
       {/* Session List */}
-      <div className="admin-card" style={{ width: 320, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div className="admin-card support-chat-sessions">
         <h3 className="section-title">Support Sessions</h3>
         <div style={{ flex: 1, overflowY: 'auto', marginTop: 12 }}>
           {getFilteredSessions().length === 0 ? (
@@ -235,18 +235,17 @@ export default function SupportChat() {
               );
             })
           )}
-        </div>
       </div>
 
       {/* Chat Area */}
-      <div className="admin-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
+      <div className="admin-card support-chat-conversation">
         {activeSession ? (
           <>
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-color)', fontWeight: 600 }}>
+            <div className="support-chat-header">
               Chatting with {activeSession.user_username}
             </div>
             
-            <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="support-chat-messages">
               {messages.map(m => {
                 const isAdmin = m.sender === 'admin';
                 return (
@@ -257,7 +256,8 @@ export default function SupportChat() {
                       borderRadius: 16,
                       backgroundColor: isAdmin ? 'var(--color-primary)' : 'var(--chat-bubble-user-bg, #f1f5f9)',
                       color: isAdmin ? '#ffffff' : 'var(--chat-bubble-user-text, #181d28)',
-                      fontSize: 14
+                      fontSize: 14,
+                      overflowWrap: 'anywhere'
                     }}>
                       {m.image_url ? (
                         <img src={m.image_url} alt="Attachment" style={{ maxWidth: '100%', borderRadius: 8, display: 'block' }} />
@@ -273,7 +273,7 @@ export default function SupportChat() {
               <div ref={chatBottomRef} />
             </div>
 
-            <form onSubmit={handleSend} style={{ padding: 16, borderTop: '1px solid var(--border-color)', display: 'flex', gap: 12, alignItems: 'center' }}>
+            <form onSubmit={handleSend} className="support-chat-form">
               <button 
                 type="button" 
                 onClick={() => !uploading && fileInputRef.current?.click()}
@@ -322,6 +322,7 @@ export default function SupportChat() {
             Select a session from the left to start chatting
           </div>
         )}
+      </div>
       </div>
     </div>
   );

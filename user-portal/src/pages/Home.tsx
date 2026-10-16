@@ -214,21 +214,15 @@ export default function Home({ currentTheme, balance, username }) {
           display: flex;
           flex-direction: column;
           padding: 16px;
+          width: 100%;
+          max-width: 1280px;
+          margin: 0 auto;
         }
 
         .home-grid-layout {
           display: flex;
           flex-direction: column;
           gap: 16px;
-        }
-
-        @media (min-width: 768px) {
-          .home-grid-layout {
-            display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
-            gap: 24px;
-            align-items: start;
-          }
         }
 
         /* ─── E-Commerce Banner Carousel ─── */
@@ -674,6 +668,41 @@ export default function Home({ currentTheme, balance, username }) {
           0% { transform: scale(0.9); opacity: 0.6; }
           50% { transform: scale(1.2); opacity: 1; }
           100% { transform: scale(0.9); opacity: 0.6; }
+        }
+
+        @media (min-width: 768px) {
+          .home-container {
+            padding: 24px 32px;
+          }
+
+          .home-grid-layout {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 24px;
+            align-items: start;
+          }
+
+          .ec-banner-carousel {
+            height: 220px;
+          }
+
+          .balance-card {
+            padding: 28px;
+          }
+
+          .balance-value {
+            font-size: clamp(40px, 4vw, 52px);
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .home-grid-layout {
+            gap: 32px;
+          }
+
+          .ec-banner-carousel {
+            height: 250px;
+          }
         }
       `}</style>
     </>

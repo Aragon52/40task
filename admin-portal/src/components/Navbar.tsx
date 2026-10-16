@@ -124,15 +124,15 @@ export default function Navbar({
         </button>
 
         {/* Brand logo visible on mobile when sidebar is hidden */}
-        <div className="md:hidden flex items-center shrink-0">
+        <div className="admin-navbar-brand md:hidden flex items-center shrink-0">
           <img 
             src="/WALMARK.png" 
             alt="Walmark" 
-            className="h-7 w-auto max-w-[120px] object-contain rounded"
+            className="h-7 w-auto max-w-[88px] sm:max-w-[120px] object-contain rounded"
           />
         </div>
 
-        <h1 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white tracking-tight truncate max-w-[140px] sm:max-w-xs md:max-w-md">
+        <h1 className="admin-navbar-title font-bold text-sm sm:text-base text-slate-900 dark:text-white tracking-tight truncate max-w-[140px] sm:max-w-xs md:max-w-md">
           {activeLabel}
         </h1>
       </div>
