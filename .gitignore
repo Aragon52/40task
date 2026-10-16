@@ -13,3 +13,6 @@ admin-portal/.env
 .vscode
 *.log
 .DS_Store
+
+# Local Netlify folder
+.netlify
