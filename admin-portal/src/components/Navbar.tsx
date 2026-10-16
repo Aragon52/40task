@@ -179,6 +179,16 @@ export default function Navbar({
           <span className="hidden md:inline whitespace-nowrap">{isMaintenance ? 'ON AIR: Maintenance' : 'Maintenance OFF'}</span>
         </button>
 
+        {/* Quick link to User Portal */}
+        <a 
+          href="/?portal=user"
+          title="Open User Portal"
+          className="p-2 sm:px-3 sm:py-1.5 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 dark:hover:bg-sky-900/50 border border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+        >
+          <ExternalLink size={14} />
+          <span className="hidden lg:inline whitespace-nowrap">User Portal</span>
+        </a>
+
         <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 hidden sm:block shrink-0"></div>
 
         {/* User Profile */}

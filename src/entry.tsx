@@ -3,20 +3,30 @@ const pathname = (window.location.pathname || '').toLowerCase();
 const search = (window.location.search || '').toLowerCase();
 const hash = (window.location.hash || '').toLowerCase();
 
-// Explicit user request: Open Admin Portal in preview window
-const forceUser = pathname.startsWith('/user') || search.includes('portal=user') || hash.includes('portal=user') || localStorage.getItem('portal_mode') === 'user';
+// Explicit admin triggers:
+// - Hostname starting with admin. or admin-
+// - Pathname starting with /admin or including admin.html
+// - Search query parameter portal=admin or admin=true
+// - Hash including portal=admin or #admin
+const isAdminHost = hostname.startsWith('admin.') || hostname.startsWith('admin-');
+const isAdminRoute = pathname.startsWith('/admin') || pathname.includes('admin.html');
+const hasAdminQuery = search.includes('portal=admin') || search.includes('admin=true');
+const hasAdminHash = hash.includes('portal=admin') || hash.includes('#admin');
 
-// Default to true (Admin Portal) per user request
-const isAdmin = forceUser ? false : true;
+// User portal is the PRIMARY site by default
+const isAdmin = Boolean(isAdminHost || isAdminRoute || hasAdminQuery || hasAdminHash);
 
 try {
   localStorage.setItem('portal_mode', isAdmin ? 'admin' : 'user');
-} catch (e) {}
+} catch (e) {
+  // Ignore potential localStorage errors in sandbox
+}
 
 if (isAdmin) {
   // Dynamically load and mount the Admin Portal
   import('../admin-portal/src/main.tsx');
 } else {
-  // Dynamically load and mount the User Portal
+  // Dynamically load and mount the User Portal (Primary Site)
   import('../user-portal/src/main.tsx');
 }
+
