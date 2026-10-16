@@ -5,6 +5,15 @@ import { useNavigate } from 'react-router-dom';
 import { useLoading } from '../components/GlobalLoader';
 
 import toast from 'react-hot-toast';
+
+const toMoneyAmount = (value) => {
+  const parsed = Number.parseFloat(String(value ?? '').replace(/[$,\s]/g, ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const toCurrency = (value) => Number(toMoneyAmount(value).toFixed(2));
+const toCommission = (value) => Number((toMoneyAmount(value) * 0.1).toFixed(4));
+
 export default function Orders({ balance, orders, setOrders, updateBalance }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('All');
@@ -21,9 +30,12 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
   });
 
   const handleSubmitTask = async (orderId, price, profit) => {
+    const normalizedPrice = toCurrency(price);
+    const normalizedProfit = toCurrency(profit);
+
     // Balance Check:
-    if (parseFloat(balance || 0) < parseFloat(price)) {
-      toast.error(`Insufficient balance to proceed with this order. Required: $${parseFloat(price).toFixed(2)}, Available: $${parseFloat(balance || 0).toFixed(2)}.`);
+    if (toMoneyAmount(balance || 0) < normalizedPrice) {
+      toast.error(`Insufficient balance to proceed with this order. Required: $${normalizedPrice.toFixed(2)}, Available: $${toCurrency(balance || 0).toFixed(2)}.`);
       navigate('/deposit');
       return;
     }
@@ -32,10 +44,10 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
     const matchedOrder = orders.find(o => String(o.id) === String(orderId));
 
     // 1. OPTIMISTIC UI: Update local state & UI INSTANTLY (0ms delay)
-    updateBalance(parseFloat(profit));
+    updateBalance(normalizedProfit);
     setOrders(prev => prev.map(o => String(o.id) === String(orderId) ? { ...o, status: 'Success' } : o));
     setSelectedOrderDetails(null);
-    toast.success(`Order submitted! Earned $${parseFloat(profit).toFixed(2)} commission.`);
+    toast.success(`Order submitted! Earned $${normalizedProfit.toFixed(2)} commission.`);
 
     // 2. PARALLEL BACKGROUND DATABASE SYNCHRONIZATION
     try {
@@ -61,10 +73,10 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
 
               if (userAData && userAData[0]) {
                 const userA = userAData[0];
-                const commissionAmount = parseFloat((parseFloat(profit) * 0.10).toFixed(4));
+                const commissionAmount = toCommission(normalizedProfit);
                 if (commissionAmount > 0) {
-                  const newA_Balance = parseFloat((parseFloat(userA.balance || 0) + commissionAmount).toFixed(4));
-                  const newA_Commissions = parseFloat((parseFloat(userA.commissions || 0) + commissionAmount).toFixed(4));
+                  const newA_Balance = Number((toMoneyAmount(userA.balance || 0) + commissionAmount).toFixed(4));
+                  const newA_Commissions = Number((toMoneyAmount(userA.commissions || 0) + commissionAmount).toFixed(4));
                   await supabase
                     .from('cb_users')
                     .update({ balance: newA_Balance, commissions: newA_Commissions })

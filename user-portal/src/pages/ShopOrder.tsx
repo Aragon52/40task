@@ -5,6 +5,15 @@ import { supabase } from '../supabase';
 import { useLoading } from '../components/GlobalLoader';
 
 import toast from 'react-hot-toast';
+
+const toMoneyAmount = (value) => {
+  const parsed = Number.parseFloat(String(value ?? '').replace(/[$,\s]/g, ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const toCurrency = (value) => Number(toMoneyAmount(value).toFixed(2));
+const toCommission = (value) => Number((toMoneyAmount(value) * 0.1).toFixed(4));
+
 export default function ShopOrder({ balance, updateBalance, orders, setOrders }) {
   const navigate = useNavigate();
   const [spinning, setSpinning] = useState(false);
@@ -13,17 +22,20 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders })
   const { performAsync } = useLoading();
 
   const handleModalSubmit = async (orderId, price, profit) => {
+    const normalizedPrice = toCurrency(price);
+    const normalizedProfit = toCurrency(profit);
+
     // Check if user has sufficient balance
-    if (parseFloat(balance) < parseFloat(price)) {
-      toast.error(`Insufficient balance to proceed with this order. Required: $${parseFloat(price).toFixed(2)}, Available: $${parseFloat(balance).toFixed(2)}.`);
+    if (toMoneyAmount(balance) < normalizedPrice) {
+      toast.error(`Insufficient balance to proceed with this order. Required: $${normalizedPrice.toFixed(2)}, Available: $${toCurrency(balance).toFixed(2)}.`);
       navigate('/deposit');
       return;
     }
 
     // 1. OPTIMISTIC UI: Update local balance, orders state, and UI INSTANTLY (0ms delay)
-    updateBalance(parseFloat(profit));
+    updateBalance(normalizedProfit);
     setOrders(prev => prev.map(o => String(o.id) === String(orderId) ? { ...o, status: 'Success' } : o));
-    toast.success(`Task submitted successfully! Earned $${parseFloat(profit).toFixed(2)} commission.`);
+    toast.success(`Task submitted successfully! Earned $${normalizedProfit.toFixed(2)} commission.`);
     setActiveOrderDetails(null);
 
     // 2. PARALLEL BACKGROUND DATABASE SYNCHRONIZATION
@@ -50,10 +62,10 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders })
 
               if (userAData && userAData[0]) {
                 const userA = userAData[0];
-                const commissionAmount = parseFloat((parseFloat(profit) * 0.10).toFixed(4));
+                const commissionAmount = toCommission(normalizedProfit);
                 if (commissionAmount > 0) {
-                  const newA_Balance = parseFloat((parseFloat(userA.balance || 0) + commissionAmount).toFixed(4));
-                  const newA_Commissions = parseFloat((parseFloat(userA.commissions || 0) + commissionAmount).toFixed(4));
+                  const newA_Balance = Number((toMoneyAmount(userA.balance || 0) + commissionAmount).toFixed(4));
+                  const newA_Commissions = Number((toMoneyAmount(userA.commissions || 0) + commissionAmount).toFixed(4));
                   await supabase
                     .from('cb_users')
                     .update({ balance: newA_Balance, commissions: newA_Commissions })
@@ -123,7 +135,7 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders })
           const pending = orders.filter(o => o.status === 'Pending' && o.assignedTaskId === activeTask.id).length;
           setUndoneCount(pending);
 
-          const comm = activeTask.orders.filter(o => o.status === 'Success').reduce((acc, curr) => acc + parseFloat(curr.profit), 0);
+          const comm = activeTask.orders.filter(o => o.status === 'Success').reduce((acc, curr) => acc + toMoneyAmount(curr.profit), 0);
           setTotalCommission(comm.toFixed(2));
         } else {
           setActiveTaskState(null);
@@ -148,7 +160,7 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders })
   const remainingCount = activeTaskState 
     ? Math.max(0, totalTasks - orderCompleteCount) 
     : Math.max(0, totalTasks - orderCompleteCount - undoneCount);
-  const freezeBalance = orders.filter(o => o.status === 'Frozen').reduce((acc, curr) => acc + parseFloat(curr.price), 0).toFixed(2);
+  const freezeBalance = orders.filter(o => o.status === 'Frozen').reduce((acc, curr) => acc + toMoneyAmount(curr.price), 0).toFixed(2);
 
   const mockMatchPool = [
     { title: 'barkTHINS Bark Thins Almond Snacking Chocolate 20.0 Ounce', price: '194.33', profit: '0.97', type: 'food' },
@@ -200,8 +212,8 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders })
               id: realOrder ? realOrder.id : assignedOrder.id,
               title: assignedOrder.title,
               image: assignedOrder.image,
-              price: parseFloat(assignedOrder.price).toFixed(2),
-              profit: parseFloat(assignedOrder.profit).toFixed(2),
+              price: toCurrency(assignedOrder.price).toFixed(2),
+              profit: toCurrency(assignedOrder.profit).toFixed(2),
               type: 'gear'
             };
             assignedTaskId = activeTask.id;
@@ -237,8 +249,8 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders })
           status: 'Pending',
           title: chosenProduct.title,
           image: chosenProduct.image || null,
-          price: parseFloat(chosenProduct.price),
-          profit: parseFloat(chosenProduct.profit),
+          price: toCurrency(chosenProduct.price),
+          profit: toCurrency(chosenProduct.profit),
           type: chosenProduct.type,
           assigned_task_id: assignedTaskId || null,
           assigned_order_index: assignedOrderIndex !== -1 ? assignedOrderIndex : null
@@ -414,7 +426,7 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders })
                     <span className="report-lbl">Order number</span>
                   </div>
                   <div className="report-item">
-                    <span className="report-val">$ {parseFloat(balance).toFixed(2)}</span>
+                    <span className="report-val">$ {toCurrency(balance).toFixed(2)}</span>
                     <span className="report-lbl">My balance</span>
                   </div>
                 </div>

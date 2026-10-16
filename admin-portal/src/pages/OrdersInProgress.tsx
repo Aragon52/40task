@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PRODUCT_CATALOG } from '../data/products';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
@@ -27,6 +27,53 @@ import {
   Filter
 } from 'lucide-react';
 
+const toCents = (value) => {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? Math.round(amount * 100) : null;
+};
+
+const rebalanceFollowingPrices = (orders, editedIndex, updatedPriceCents) => {
+  const adjustedOrders = orders.map(order => ({ ...order }));
+  const previousPriceCents = toCents(adjustedOrders[editedIndex]?.price);
+  if (previousPriceCents === null || updatedPriceCents < 1) return null;
+
+  const deltaCents = updatedPriceCents - previousPriceCents;
+  adjustedOrders[editedIndex].price = updatedPriceCents / 100;
+  if (deltaCents === 0) return adjustedOrders;
+
+  const followingPendingIndexes = adjustedOrders
+    .map((order, index) => ({ order, index }))
+    .filter(({ order, index }) => index > editedIndex && order.status === 'Pending')
+    .map(({ index }) => index);
+  if (followingPendingIndexes.length === 0) return null;
+
+  const oldFollowingTotal = followingPendingIndexes.reduce(
+    (sum, index) => sum + (toCents(adjustedOrders[index].price) || 0),
+    0
+  );
+  const newFollowingTotal = oldFollowingTotal - deltaCents;
+  if (newFollowingTotal < followingPendingIndexes.length) return null;
+
+  const weights = followingPendingIndexes.map(index => Math.max(1, toCents(adjustedOrders[index].price) || 1));
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  const distributableCents = newFollowingTotal - followingPendingIndexes.length;
+  const shares = weights.map(weight => (distributableCents * weight) / totalWeight);
+  const allocatedCents = shares.map(share => Math.floor(share));
+  const remainingCents = distributableCents - allocatedCents.reduce((sum, amount) => sum + amount, 0);
+
+  const remainderOrder = shares
+    .map((share, index) => ({ index, remainder: share - allocatedCents[index] }))
+    .sort((a, b) => b.remainder - a.remainder);
+  for (let index = 0; index < remainingCents; index++) {
+    allocatedCents[remainderOrder[index].index] += 1;
+  }
+
+  followingPendingIndexes.forEach((orderIndex, index) => {
+    adjustedOrders[orderIndex].price = (allocatedCents[index] + 1) / 100;
+  });
+  return adjustedOrders;
+};
+
 export default function OrdersInProgress() {
   const [assignedTasks, setAssignedTasks] = useState([]);
   const [products, setProducts] = useState(PRODUCT_CATALOG);
@@ -37,6 +84,7 @@ export default function OrdersInProgress() {
   const [showEditOrdersModal, setShowEditOrdersModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [editingOrders, setEditingOrders] = useState([]);
+  const lastValidPrices = useRef<number[]>([]);
 
   const fetchTasks = async () => {
     try {
@@ -162,7 +210,38 @@ export default function OrdersInProgress() {
   const handleOpenEditOrdersModal = (task) => {
     setEditingTask(task);
     setEditingOrders(task.orders.map(o => ({ ...o })));
+    lastValidPrices.current = task.orders.map(order => toCents(order.price) || 0);
     setShowEditOrdersModal(true);
+  };
+
+  const handlePriceChange = (idx, value, orderUpdates = {}) => {
+    if (editingOrders[idx]?.status !== 'Pending') return;
+    const updatedPriceCents = toCents(value);
+    if (updatedPriceCents === null || updatedPriceCents < 1) {
+      setEditingOrders(current => current.map((order, index) => index === idx ? { ...order, ...orderUpdates, price: value } : order));
+      return;
+    }
+
+    const previousPriceCents = lastValidPrices.current[idx];
+    const ordersWithCurrentValidPrice = editingOrders.map((order, index) => (
+      index === idx ? { ...order, ...orderUpdates, price: previousPriceCents / 100 } : order
+    ));
+    const adjustedOrders = rebalanceFollowingPrices(ordersWithCurrentValidPrice, idx, updatedPriceCents);
+    if (!adjustedOrders) {
+      toast.error('This price change cannot be balanced across the remaining pending orders.');
+      return;
+    }
+
+    if (updatedPriceCents !== previousPriceCents) {
+      const profitYield = Number(editingTask?.profitPercent || 0) / 100;
+      adjustedOrders.forEach((order, index) => {
+        if (index > idx && order.status === 'Pending') {
+          order.profit = Number((order.price * profitYield).toFixed(2));
+        }
+      });
+    }
+    lastValidPrices.current = adjustedOrders.map(order => toCents(order.price) || 0);
+    setEditingOrders(adjustedOrders);
   };
 
   const handleSaveEditedOrders = async (e) => {
@@ -180,13 +259,49 @@ export default function OrdersInProgress() {
     }
 
     try {
+      const { data: currentTask, error: currentTaskError } = await supabase
+        .from('cb_assigned_tasks')
+        .select('status, orders')
+        .eq('id', editingTask.id)
+        .single();
+
+      if (currentTaskError || !currentTask) {
+        toast.error(`Unable to verify the current worksheet before saving: ${currentTaskError?.message || 'Task not found'}`);
+        return;
+      }
+
+      const currentTaskOrders = typeof currentTask.orders === 'string'
+        ? JSON.parse(currentTask.orders)
+        : currentTask.orders;
+      const currentCompletedCount = currentTaskOrders.filter(order => order.status === 'Success').length;
+      if (currentTask.status !== 'In Progress' || currentCompletedCount + 1 >= 36) {
+        toast.error('Price changes are only allowed before the current in-progress order reaches #36.');
+        return;
+      }
+      const worksheetChanged = currentTaskOrders.length !== editingTask.orders.length
+        || currentTaskOrders.some((order, index) => (
+          toCents(order.price) !== toCents(editingTask.orders[index]?.price)
+          || order.status !== editingTask.orders[index]?.status
+        ));
+      if (worksheetChanged) {
+        toast.error('This worksheet changed while it was open. Close it and reopen the latest version before saving.');
+        return;
+      }
+
       const cleanedOrders = editingOrders.map(o => ({
         ...o,
         price: parseFloat(parseFloat(o.price || 0).toFixed(2)),
         profit: parseFloat(parseFloat(o.profit || 0).toFixed(2))
       }));
 
-      const newTotalAmount = parseFloat(cleanedOrders.reduce((sum, o) => sum + parseFloat(o.price || 0), 0).toFixed(2));
+      const originalTotalCents = editingTask.orders.reduce((sum, order) => sum + (toCents(order.price) || 0), 0);
+      const newTotalCents = cleanedOrders.reduce((sum, order) => sum + (toCents(order.price) || 0), 0);
+      if (newTotalCents !== originalTotalCents) {
+        toast.error('Order prices must keep the worksheet total unchanged. Adjust a pending order price and its later orders will be balanced automatically.');
+        return;
+      }
+
+      const newTotalAmount = originalTotalCents / 100;
       const newTotalProfit = parseFloat(cleanedOrders.reduce((sum, o) => sum + parseFloat(o.profit || 0), 0).toFixed(2));
       const newProfitPercent = newTotalAmount > 0 ? parseFloat(((newTotalProfit / newTotalAmount) * 100).toFixed(2)) : 0;
 
@@ -208,7 +323,7 @@ export default function OrdersInProgress() {
       // 2. Update individual order records in cb_orders table
       for (let idx = 0; idx < cleanedOrders.length; idx++) {
         const o = cleanedOrders[idx];
-        await supabase
+        const { error: orderErr } = await supabase
           .from('cb_orders')
           .update({
             title: o.title,
@@ -218,6 +333,10 @@ export default function OrdersInProgress() {
           })
           .eq('assigned_task_id', editingTask.id)
           .eq('assigned_order_index', idx);
+        if (orderErr) {
+          toast.error(`Worksheet saved, but order #${idx + 1} could not be synchronized: ${orderErr.message}`);
+          return;
+        }
       }
 
       toast.success("Successfully updated worksheet orders!");
@@ -245,6 +364,8 @@ export default function OrdersInProgress() {
   const completedTaskCount = filteredTasks.filter(t => t.status === 'Completed').length;
   const pendingTaskCount = filteredTasks.filter(t => t.status === 'Pending').length;
   const totalVolume = filteredTasks.reduce((sum, t) => sum + (t.totalAmount || 0), 0);
+  const completedOrdersForEdit = editingTask?.orders.filter(order => order.status === 'Success').length || 0;
+  const canAdjustPrices = editingTask?.status === 'In Progress' && completedOrdersForEdit + 1 < 36;
 
   return (
     <div className="admin-page-container space-y-6 scale-up">
@@ -527,6 +648,11 @@ export default function OrdersInProgress() {
                     <span className="font-bold">Sequence Editing Guideline:</span> You can customize each individual order in the worksheet sequence. Editing prices and profits here will directly update both the task worksheet and the user's pending order screen. To prevent discrepancy, edit <b>Pending</b> orders only.
                   </span>
                 </div>
+                <div className="bg-indigo-500/10 border border-indigo-500/20 text-indigo-800 dark:text-indigo-300 p-4 rounded-2xl text-sm leading-relaxed">
+                  {canAdjustPrices
+                    ? `Price edits are enabled before order ${completedOrdersForEdit + 1} reaches #36. Later pending order prices will be adjusted proportionally so the worksheet total stays at $${(editingTask.orders.reduce((sum, order) => sum + (toCents(order.price) || 0), 0) / 100).toFixed(2)}.`
+                    : 'Price balancing is available only while the worksheet is in progress and the current order number is below 36.'}
+                </div>
 
                 {/* Rows block */}
                 <div className="space-y-5">
@@ -571,21 +697,20 @@ export default function OrdersInProgress() {
 
                         <div className="space-y-5">
                           {/* Quick fill dropdown from Catalog */}
-                          {!isCompleted && products.length > 0 && (
+                          {order.status === 'Pending' && canAdjustPrices && products.length > 0 && (
                             <div className="space-y-2">
                               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Quick Fill from Product Catalog</label>
                               <select
                                 onChange={(e) => {
                                   if (e.target.value) {
                                     const prod = products[parseInt(e.target.value)];
-                                    const newOrders = [...editingOrders];
-                                    newOrders[idx].title = prod.title;
-                                    newOrders[idx].image = prod.image;
-                                    newOrders[idx].price = prod.price;
                                     // Re-calculate profit based on task's profit yield percent
                                     const pYield = parseFloat(editingTask.profitPercent || '5');
-                                    newOrders[idx].profit = parseFloat((prod.price * (pYield / 100)).toFixed(2));
-                                    setEditingOrders(newOrders);
+                                    handlePriceChange(idx, prod.price, {
+                                      title: prod.title,
+                                      image: prod.image,
+                                      profit: parseFloat((prod.price * (pYield / 100)).toFixed(2))
+                                    });
                                   }
                                 }}
                                 className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 text-sm outline-none transition-colors"
@@ -634,17 +759,11 @@ export default function OrdersInProgress() {
                                     type="number"
                                     step="0.01"
                                     value={order.price}
-                                    onChange={(e) => {
-                                      const newOrders = [...editingOrders];
-                                      newOrders[idx].price = e.target.value;
-                                      // Automatically recalculate profit using the task's profit commission yield percentage
-                                      const pYield = parseFloat(editingTask.profitPercent || '5');
-                                      const val = parseFloat(e.target.value || '0');
-                                      newOrders[idx].profit = parseFloat((val * (pYield / 100)).toFixed(2));
-                                      setEditingOrders(newOrders);
-                                    }}
+                                    onChange={(e) => handlePriceChange(idx, e.target.value, {
+                                      profit: parseFloat((Number(e.target.value || 0) * (parseFloat(editingTask.profitPercent || '5') / 100)).toFixed(2))
+                                    })}
                                     required
-                                    disabled={isCompleted}
+                                    disabled={isCompleted || order.status !== 'Pending' || !canAdjustPrices}
                                     className="w-full h-12 pl-8 pr-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 text-sm font-mono focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none disabled:bg-slate-100 disabled:dark:bg-slate-950 transition-colors"
                                   />
                                 </div>

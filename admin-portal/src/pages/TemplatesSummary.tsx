@@ -47,13 +47,13 @@ export default function TemplatesSummary() {
 
   const stats = templateNames.map(name => {
     const items = templatesMap[name];
-    const totalValue = items.reduce((sum, item) => sum + item.price, 0);
-    const totalProfit = items.reduce((sum, item) => sum + item.profit, 0);
-    const avgPrice = totalValue / items.length;
-    const avgProfit = totalProfit / items.length;
-    const minPrice = Math.min(...items.map(i => i.price));
-    const maxPrice = Math.max(...items.map(i => i.price));
-    const margin = (totalProfit / totalValue) * 100;
+    const totalValue = items.reduce((sum, item) => sum + Number(item.price || 0), 0);
+    const totalProfit = items.reduce((sum, item) => sum + Number(item.profit || 0), 0);
+    const avgPrice = items.length ? totalValue / items.length : 0;
+    const avgProfit = items.length ? totalProfit / items.length : 0;
+    const minPrice = items.length ? Math.min(...items.map(i => Number(i.price || 0))) : 0;
+    const maxPrice = items.length ? Math.max(...items.map(i => Number(i.price || 0))) : 0;
+    const margin = totalValue > 0 ? (totalProfit / totalValue) * 100 : 0;
     
     return {
       id: name,

@@ -41,7 +41,7 @@ export default function Home({ currentTheme, balance, username }) {
   }, []);
 
   // Format balance
-  const formattedBalance = parseFloat(balance).toFixed(2);
+  const formattedBalance = Number.parseFloat(String(balance ?? 0)) ? Number.parseFloat(String(balance ?? 0)).toFixed(2) : '0.00';
 
   return (
     <>

@@ -21,10 +21,11 @@ interface OrderDetailsModalProps {
 export default function OrderDetailsModal({ order, balance = 0, onClose, onSubmit, onCancel }: OrderDetailsModalProps) {
   if (!order) return null;
 
-  const isPending = order.status.toLowerCase() === 'pending';
-  const userBalance = parseFloat(balance?.toString() || '0');
-  const orderPrice = parseFloat(order.price?.toString() || '0');
+  const isPending = String(order.status || '').toLowerCase() === 'pending';
+  const userBalance = Number.parseFloat(String(balance ?? '0')) || 0;
+  const orderPrice = Number.parseFloat(String(order.price ?? '0')) || 0;
   const isBalanceSufficient = userBalance >= orderPrice;
+  const orderProfit = Number.parseFloat(String(order.profit ?? '0')) || 0;
   const differenceAmount = orderPrice - userBalance;
   const showDifference = isPending && !isBalanceSufficient;
 
@@ -49,7 +50,7 @@ export default function OrderDetailsModal({ order, balance = 0, onClose, onSubmi
               <span className="text-xs font-semibold text-slate-900 dark:text-white line-clamp-2">{order.title}</span>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400 font-medium">x1</span>
-                <span className="font-bold text-indigo-600 dark:text-indigo-400 font-mono">$ {parseFloat(order.price.toString()).toFixed(2)}</span>
+                <span className="font-bold text-indigo-600 dark:text-indigo-400 font-mono">$ {orderPrice.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -69,12 +70,12 @@ export default function OrderDetailsModal({ order, balance = 0, onClose, onSubmi
 
             <div className="flex justify-between text-slate-500 dark:text-slate-400">
               <span>Order amount</span>
-              <span className="font-bold font-mono text-slate-900 dark:text-white">$ {parseFloat(order.price.toString()).toFixed(2)}</span>
+              <span className="font-bold font-mono text-slate-900 dark:text-white">$ {orderPrice.toFixed(2)}</span>
             </div>
 
             <div className="flex justify-between text-slate-500 dark:text-slate-400">
               <span>Commission</span>
-              <span className="font-bold font-mono text-emerald-600 dark:text-emerald-400">$ {parseFloat(order.profit.toString()).toFixed(2)}</span>
+              <span className="font-bold font-mono text-emerald-600 dark:text-emerald-400">$ {orderProfit.toFixed(2)}</span>
             </div>
 
             {showDifference && (
