@@ -416,7 +416,7 @@ export default function App() {
   }
 
   return (
-    <div className="admin-shell flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-950 font-sans antialiased text-slate-900 dark:text-slate-100">
+    <div className="admin-shell flex overflow-hidden bg-slate-50 dark:bg-slate-950 font-sans antialiased text-slate-900 dark:text-slate-100">
       <Toaster position="top-center" reverseOrder={false} />
       <Sidebar 
         activeTab={activeTab} 
@@ -427,7 +427,7 @@ export default function App() {
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
       
-      <div className="admin-main flex-1 flex flex-col h-screen overflow-hidden min-w-0">
+      <div className="admin-main flex-1 flex flex-col overflow-hidden min-w-0">
         <Navbar 
           activeLabel={getActiveTabLabel()} 
           onToggleSidebar={toggleSidebar}

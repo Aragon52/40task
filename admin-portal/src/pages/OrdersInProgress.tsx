@@ -250,7 +250,7 @@ export default function OrdersInProgress() {
     <div className="admin-page-container space-y-6 scale-up">
       {/* Header and Subtabs matching FinancialCenter layout */}
       <div className="admin-card">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div>
             <h3 className="font-bold text-slate-900 dark:text-slate-50 text-xl sm:text-2xl tracking-tight flex items-center gap-2.5">
               <LineChart className="w-6 h-6 text-indigo-500" />
@@ -261,9 +261,9 @@ export default function OrdersInProgress() {
             </p>
           </div>
           
-          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 self-start lg:self-auto">
+          <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 self-start xl:self-auto">
             <button 
-              className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              className={`px-3.5 py-2.5 text-sm font-bold rounded-lg transition-all cursor-pointer ${
                 statusFilter === 'All' 
                   ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700' 
                   : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
@@ -273,7 +273,7 @@ export default function OrdersInProgress() {
               All Worksheets ({filteredTasks.length})
             </button>
             <button 
-              className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              className={`px-3.5 py-2.5 text-sm font-bold rounded-lg transition-all cursor-pointer ${
                 statusFilter === 'In Progress' 
                   ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700' 
                   : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
@@ -283,7 +283,7 @@ export default function OrdersInProgress() {
               In Progress ({filteredTasks.filter(t => t.status === 'In Progress').length})
             </button>
             <button 
-              className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              className={`px-3.5 py-2.5 text-sm font-bold rounded-lg transition-all cursor-pointer ${
                 statusFilter === 'Completed' 
                   ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700' 
                   : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
@@ -297,7 +297,7 @@ export default function OrdersInProgress() {
       </div>
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <div className="admin-card !p-5 !mb-0 flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/40 flex items-center justify-center shrink-0">
             <ClipboardList className="w-6 h-6" />
@@ -371,18 +371,18 @@ export default function OrdersInProgress() {
         </div>
         
         <div className="table-responsive-wrapper border-none rounded-none">
-          <table className="admin-table">
+          <table className="admin-table orders-progress-table min-w-[1440px]">
             <thead>
               <tr>
-                <th className="px-7 py-4">Task ID</th>
-                <th className="px-7 py-4">Client User</th>
-                <th className="px-7 py-4">Total Amount</th>
-                <th className="px-7 py-4">Completion Progress</th>
-                <th className="px-7 py-4">Yield %</th>
-                <th className="px-7 py-4">Assigned By</th>
-                <th className="px-7 py-4">Status</th>
-                <th className="px-7 py-4">Assigned Date</th>
-                <th className="px-7 py-4 text-right">Actions</th>
+                <th className="px-5 py-5">Task ID</th>
+                <th className="px-5 py-5">Client User</th>
+                <th className="px-5 py-5">Total Amount</th>
+                <th className="px-5 py-5">Completion Progress</th>
+                <th className="px-5 py-5">Yield %</th>
+                <th className="px-5 py-5">Assigned By</th>
+                <th className="px-5 py-5">Status</th>
+                <th className="px-5 py-5">Assigned Date</th>
+                <th className="px-5 py-5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -402,28 +402,28 @@ export default function OrdersInProgress() {
                   
                   return (
                     <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                      <td className="px-7 py-4.5">
-                        <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800/40">
+                      <td className="px-5 py-5">
+                        <span className="font-mono text-sm font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-2 rounded-lg border border-indigo-200 dark:border-indigo-800/40">
                           {t.id}
                         </span>
                       </td>
-                      <td className="px-7 py-4.5">
+                      <td className="px-5 py-5">
                         <div className="flex items-center gap-3.5">
                           <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-xs shrink-0">
                             {t.username.substring(0,2).toUpperCase()}
                           </div>
                           <div>
                             <span className="font-bold text-sm text-slate-900 dark:text-white block">{t.username}</span>
-                            <span className="text-[11px] text-slate-400 font-mono font-medium block">Staff: {t.referred_by_staff_id}</span>
+                            <span className="text-xs text-slate-400 font-mono font-medium block mt-1">Staff: {t.referred_by_staff_id}</span>
                           </div>
                         </div>
                       </td>
-                      <td className="px-7 py-4.5">
-                        <span className="font-mono text-sm font-bold text-slate-900 dark:text-white tabular-nums">
+                      <td className="px-5 py-5">
+                        <span className="font-mono text-base font-bold text-slate-900 dark:text-white tabular-nums">
                           ${t.totalAmount.toFixed(2)}
                         </span>
                       </td>
-                      <td className="px-7 py-4.5 min-w-[190px]">
+                      <td className="px-5 py-5 min-w-[240px]">
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between text-xs font-semibold">
                             <span className="text-slate-700 dark:text-slate-300 font-mono">{completedCount} / {totalOrders} orders</span>
@@ -439,13 +439,13 @@ export default function OrdersInProgress() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-7 py-4.5">
-                        <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-md border border-emerald-200 dark:border-emerald-800/40">
+                      <td className="px-5 py-5">
+                        <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-2 rounded-md border border-emerald-200 dark:border-emerald-800/40">
                           +{t.profitPercent}%
                         </span>
                       </td>
-                      <td className="px-7 py-4.5 text-xs font-semibold text-slate-700 dark:text-slate-300">{t.assignedBy}</td>
-                      <td className="px-7 py-4.5">
+                      <td className="px-5 py-5 text-sm font-semibold text-slate-700 dark:text-slate-300">{t.assignedBy}</td>
+                      <td className="px-5 py-5">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${
                           isCompleted ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40' : 
                           isInProgress ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40' : 
@@ -455,8 +455,8 @@ export default function OrdersInProgress() {
                           {t.status}
                         </span>
                       </td>
-                      <td className="px-7 py-4.5 text-xs text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap">{t.createdAt}</td>
-                      <td className="px-7 py-4.5 text-right whitespace-nowrap">
+                      <td className="px-5 py-5 text-sm text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap">{t.createdAt}</td>
+                      <td className="px-5 py-5 text-right whitespace-nowrap">
                         {t.status !== 'Completed' ? (
                           <div className="flex items-center justify-end gap-2">
                             <button 
@@ -492,7 +492,7 @@ export default function OrdersInProgress() {
       {/* Edit Worksheet Orders Modal */}
       {showEditOrdersModal && editingTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4 sm:p-6 transition-all">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl w-full max-w-6xl overflow-hidden flex flex-col max-h-[90dvh]">
             {/* Modal Header */}
             <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -518,7 +518,7 @@ export default function OrdersInProgress() {
             </div>
 
             <form onSubmit={handleSaveEditedOrders} className="flex flex-col flex-1 overflow-hidden">
-              <div className="flex-1 overflow-y-auto p-8 space-y-6">
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
                 
                 {/* Information advice banner */}
                 <div className="bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-400 p-4 rounded-2xl flex items-start gap-3 text-sm leading-relaxed shadow-sm">
@@ -602,7 +602,7 @@ export default function OrdersInProgress() {
                           )}
 
                           {/* Text input and Numerical fields */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                             <div className="space-y-2">
                               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Product Title</label>
                               <div className="flex gap-3">
@@ -625,7 +625,7 @@ export default function OrdersInProgress() {
                                 />
                               </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                               <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Price ($)</label>
                                 <div className="relative">

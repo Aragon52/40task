@@ -122,20 +122,20 @@ export default function TemplatesSummary() {
     <div className="admin-page-container space-y-6">
       {/* Header and Subtabs matching FinancialCenter layout */}
       <div className="admin-card">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div>
             <h3 className="font-bold text-slate-900 dark:text-slate-50 text-xl tracking-tight flex items-center gap-2.5">
               <Layers className="w-6 h-6 text-indigo-500" />
               <span>Presets Matrix & Verification</span>
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
               Verify order template yields, price bounds, and item index overlap matrices.
             </p>
           </div>
           
-          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
             <button 
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              className={`px-3 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
                 filterType === 'all' 
                   ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700 font-bold' 
                   : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
@@ -145,7 +145,7 @@ export default function TemplatesSummary() {
               All Presets (10)
             </button>
             <button 
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              className={`px-3 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
                 filterType === 'M' 
                   ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700 font-bold' 
                   : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
@@ -155,7 +155,7 @@ export default function TemplatesSummary() {
               Merchant M-Series (5)
             </button>
             <button 
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              className={`px-3 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
                 filterType === 'C' 
                   ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700 font-bold' 
                   : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
@@ -169,10 +169,10 @@ export default function TemplatesSummary() {
       </div>
 
       {/* Metric Cards Banner */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4">
         <div className="admin-card !p-5 !mb-0 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Total Presets</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Total Presets</span>
             <span className="text-lg font-bold font-mono tabular-nums mt-1 text-slate-900 dark:text-white block">10 Packs</span>
           </div>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 border border-indigo-100 dark:border-indigo-900/30">
@@ -182,7 +182,7 @@ export default function TemplatesSummary() {
 
         <div className="admin-card !p-5 !mb-0 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Uniqueness Standard</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Uniqueness Standard</span>
             <span className="text-lg font-bold font-mono tabular-nums mt-1 text-emerald-600 block">90.0% Unique</span>
           </div>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30">
@@ -192,7 +192,7 @@ export default function TemplatesSummary() {
 
         <div className="admin-card !p-5 !mb-0 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Overlap Checks</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Overlap Checks</span>
             <span className="text-lg font-bold font-mono tabular-nums mt-1 text-amber-500 block">45 Grid Pairs</span>
           </div>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-50 dark:bg-amber-950/40 text-amber-600 border border-amber-100 dark:border-amber-900/30">
@@ -202,7 +202,7 @@ export default function TemplatesSummary() {
 
         <div className="admin-card !p-5 !mb-0 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Items Per Pack</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Items Per Pack</span>
             <span className="text-lg font-bold font-mono tabular-nums mt-1 text-slate-900 dark:text-white block">40 Items</span>
           </div>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700">
@@ -212,16 +212,16 @@ export default function TemplatesSummary() {
       </div>
 
       {/* Main Split Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 2xl:grid-cols-12 gap-6 items-start">
         {/* Left Column: Presets Table & Matrix */}
-        <div className="lg:col-span-8 space-y-6">
+        <div className="2xl:col-span-7 space-y-6 min-w-0">
           <div className="admin-card !p-0 overflow-hidden">
             <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Preset Directory & Yields</h3>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Preset Directory & Yields</h3>
             </div>
 
             <div className="table-responsive-wrapper border-none rounded-none">
-              <table className="admin-table">
+              <table className="admin-table min-w-[720px]">
                 <thead>
                   <tr>
                     <th>Template ID</th>
@@ -254,10 +254,10 @@ export default function TemplatesSummary() {
                             <span className="font-bold text-xs text-slate-900 dark:text-white">{item.id}</span>
                           </div>
                         </td>
-                        <td className="text-xs text-slate-500">{item.type}</td>
-                        <td className="text-right font-mono text-xs font-bold text-slate-900 dark:text-white">${item.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                        <td className="text-right font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">+${item.totalProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                        <td className="text-center font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">{item.margin.toFixed(2)}%</td>
+                        <td className="text-sm text-slate-500">{item.type}</td>
+                        <td className="text-right font-mono text-sm font-bold text-slate-900 dark:text-white">${item.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                        <td className="text-right font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400">+${item.totalProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                        <td className="text-center font-mono text-sm font-semibold text-indigo-600 dark:text-indigo-400">{item.margin.toFixed(2)}%</td>
                       </tr>
                     );
                   })}
@@ -268,13 +268,13 @@ export default function TemplatesSummary() {
         </div>
 
         {/* Right Column: Preset Item Explorer */}
-        <div className="lg:col-span-4 admin-card space-y-4">
+        <div className="2xl:col-span-5 admin-card space-y-4 min-w-0">
           <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Eye className="w-4 h-4 text-indigo-500" />
               <span>Preset Explorer</span>
             </h3>
-            <span className="text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-800/40">
+            <span className="text-xs font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded border border-indigo-100 dark:border-indigo-800/40">
               {selectedTemplate} (40 items)
             </span>
           </div>
@@ -286,28 +286,28 @@ export default function TemplatesSummary() {
               placeholder="Search items by title or price..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-xs focus:bg-white dark:focus:bg-slate-900 outline-none transition-all"
+              className="w-full pl-9 pr-4 h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-sm focus:bg-white dark:focus:bg-slate-900 outline-none transition-all"
             />
           </div>
 
-          <div className="max-h-[480px] overflow-y-auto space-y-2 pr-1 border border-slate-200 dark:border-slate-800 rounded-xl p-2 bg-slate-50/50 dark:bg-slate-950/50">
+          <div className="min-h-[320px] max-h-[min(70dvh,720px)] overflow-y-auto space-y-2 pr-1 border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-950/50">
             {filteredItems.length === 0 ? (
-              <div className="p-6 text-center text-slate-400 text-xs">
+              <div className="p-6 text-center text-slate-400 text-sm">
                 No items match your search filter.
               </div>
             ) : (
               filteredItems.map((item, idx) => (
-                <div key={`${selectedTemplate}-item-${idx}`} className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs">
+                <div key={`${selectedTemplate}-item-${idx}`} className="p-3 sm:p-3.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-sm">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="font-mono text-slate-400 text-[10px] font-semibold w-4 shrink-0">{item.sr}</span>
+                    <span className="font-mono text-slate-400 text-xs font-semibold w-5 shrink-0">{item.sr}</span>
                     <img 
                       src={item.image} 
                       alt="" 
-                      className="w-8 h-8 rounded border border-slate-200 dark:border-slate-800 object-cover bg-slate-50 shrink-0"
+                      className="w-10 h-10 rounded border border-slate-200 dark:border-slate-800 object-cover bg-slate-50 shrink-0"
                       onError={(e) => { (e.target as HTMLImageElement).src = 'https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-1.png'; }}
                     />
-                    <div className="min-w-0">
-                      <span className="font-semibold text-slate-900 dark:text-slate-100 block truncate" title={item.title}>
+                    <div className="min-w-0 flex-1">
+                      <span className="font-semibold text-slate-900 dark:text-slate-100 block whitespace-normal break-words leading-snug" title={item.title}>
                         {item.title}
                       </span>
                     </div>
@@ -315,7 +315,7 @@ export default function TemplatesSummary() {
                   
                   <div className="text-right shrink-0">
                     <span className="font-mono font-bold text-slate-900 dark:text-slate-100 block">${item.price.toFixed(2)}</span>
-                    <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 block font-semibold">+${item.profit.toFixed(2)}</span>
+                    <span className="font-mono text-xs text-emerald-600 dark:text-emerald-400 block font-semibold">+${item.profit.toFixed(2)}</span>
                   </div>
                 </div>
               ))

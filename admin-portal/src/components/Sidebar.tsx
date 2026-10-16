@@ -158,7 +158,7 @@ export default function Sidebar({
         className={`bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 flex flex-col transition-all duration-200 ease-in-out shrink-0 z-50 h-dvh select-none ${
           'hidden md:flex'
         } ${
-          isCollapsed ? 'md:w-16' : 'md:w-64'
+          isCollapsed ? 'md:w-16 md:flex-[0_0_4rem]' : 'md:w-64 md:flex-[0_0_16rem]'
         } ${
           isMobileOpen ? '!flex fixed inset-y-0 left-0 w-64 shadow-2xl animate-in slide-in-from-left duration-200' : ''
         }`}

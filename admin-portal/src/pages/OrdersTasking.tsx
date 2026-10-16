@@ -911,20 +911,20 @@ export default function OrdersTasking() {
     <div className="admin-page-container space-y-6">
       {/* Header and Subtabs matching FinancialCenter layout */}
       <div className="admin-card">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div>
             <h3 className="font-bold text-slate-900 dark:text-slate-50 text-xl tracking-tight flex items-center gap-2.5">
               <Briefcase className="w-6 h-6 text-indigo-500" />
               <span>Orders Tasking & Allocations</span>
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
               Assign task sequences, configure order profit margins, and manage client worksheets.
             </p>
           </div>
           
-          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
             <button 
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              className={`px-3 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
                 activeTaskingTab === 'users' 
                   ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700 font-bold' 
                   : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
@@ -934,7 +934,7 @@ export default function OrdersTasking() {
               User Allocations ({filteredUsers.length})
             </button>
             <button 
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              className={`px-3 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
                 activeTaskingTab === 'worksheets' 
                   ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700 font-bold' 
                   : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
@@ -960,7 +960,7 @@ export default function OrdersTasking() {
             placeholder="Search user ID or username..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-xs focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-600 outline-none transition-all"
+            className="w-full pl-10 pr-4 h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-600 outline-none transition-all"
           />
         </div>
       </div>
@@ -968,31 +968,31 @@ export default function OrdersTasking() {
       <div className="admin-card !p-0 overflow-hidden flex flex-col mt-6 shadow-xs border border-slate-200 dark:border-slate-800 rounded-2xl">
         <div className="overflow-x-auto">
           {activeTaskingTab === 'users' ? (
-            <table className="w-full whitespace-nowrap text-left">
+            <table className="w-full min-w-[980px] whitespace-nowrap text-left">
               <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-                <tr className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
-                  <th className="px-7 py-4 align-middle">User ID</th>
-                  <th className="px-7 py-4 align-middle">Username</th>
-                  <th className="px-7 py-4 align-middle">Staff Node</th>
-                  <th className="px-7 py-4 align-middle">Active Balance</th>
-                  <th className="px-7 py-4 align-middle">Active Task Progress</th>
-                  <th className="px-7 py-4 text-right align-middle">Actions</th>
+                <tr className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
+                  <th className="px-5 py-5 align-middle">User ID</th>
+                  <th className="px-5 py-5 align-middle">Username</th>
+                  <th className="px-5 py-5 align-middle">Staff Node</th>
+                  <th className="px-5 py-5 align-middle">Active Balance</th>
+                  <th className="px-5 py-5 align-middle">Active Task Progress</th>
+                  <th className="px-5 py-5 text-right align-middle">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-7 py-14 text-center text-slate-500 dark:text-slate-400 font-medium text-sm">
+                    <td colSpan={6} className="px-7 py-16 text-center text-slate-500 dark:text-slate-400 font-medium text-base">
                       No client accounts found matching filter node.
                     </td>
                   </tr>
                 ) : (
                   filteredUsers.map(u => (
-                    <tr key={u.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors group">
-                      <td className="px-7 py-4.5 align-middle">
-                        <span className="font-mono text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">{u.id.substring(0,8)}...</span>
+                    <tr key={u.id} className="min-h-16 hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors group">
+                      <td className="px-5 py-5 align-middle">
+                        <span className="font-mono text-sm font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700">{u.id.substring(0,8)}...</span>
                       </td>
-                      <td className="px-7 py-4.5 font-bold text-slate-900 dark:text-slate-50 text-sm align-middle">
+                      <td className="px-5 py-5 font-bold text-slate-900 dark:text-slate-50 text-base align-middle">
                         <div className="flex items-center gap-3.5">
                           <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-xs shrink-0">
                             {u.username.substring(0,2).toUpperCase()}
@@ -1000,16 +1000,16 @@ export default function OrdersTasking() {
                           <span className="text-slate-900 dark:text-white font-bold">{u.username}</span>
                         </div>
                       </td>
-                      <td className="px-7 py-4.5 align-middle">
-                        <span className="bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold">{u.referred_by_staff_id}</span>
+                      <td className="px-5 py-5 align-middle">
+                        <span className="bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-3 py-2 rounded-lg text-sm font-semibold">{u.referred_by_staff_id}</span>
                       </td>
-                      <td className="px-7 py-4.5 align-middle">
-                        <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800/40 inline-block">
+                      <td className="px-5 py-5 align-middle">
+                        <span className="font-mono text-base font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-2 rounded-lg border border-emerald-200 dark:border-emerald-800/40 inline-block">
                           ${parseFloat(u.balance).toFixed(2)}
                         </span>
                       </td>
-                      <td className="px-7 py-4.5 align-middle">{getActiveTaskDisplay(u.username)}</td>
-                      <td className="px-7 py-4.5 text-right align-middle">
+                      <td className="px-5 py-5 align-middle">{getActiveTaskDisplay(u.username)}</td>
+                      <td className="px-5 py-5 text-right align-middle">
                         <button 
                           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs hover:shadow-indigo-500/25 border border-indigo-500/30 flex items-center justify-center gap-2 ml-auto transition-all cursor-pointer whitespace-nowrap"
                           onClick={() => handleOpenAssignModal(u)}
@@ -1024,53 +1024,53 @@ export default function OrdersTasking() {
               </tbody>
             </table>
           ) : (
-            <table className="w-full whitespace-nowrap text-left">
+            <table className="w-full min-w-[1080px] whitespace-nowrap text-left">
               <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-                <tr className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
-                  <th className="px-7 py-4 align-middle">Task ID</th>
-                  <th className="px-7 py-4 align-middle">Client User</th>
-                  <th className="px-7 py-4 align-middle">Total Amount</th>
-                  <th className="px-7 py-4 align-middle">Orders</th>
-                  <th className="px-7 py-4 align-middle">Yield %</th>
-                  <th className="px-7 py-4 align-middle">Status</th>
-                  <th className="px-7 py-4 align-middle">Assigned By</th>
-                  <th className="px-7 py-4 align-middle">Created Date</th>
+                <tr className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
+                  <th className="px-5 py-5 align-middle">Task ID</th>
+                  <th className="px-5 py-5 align-middle">Client User</th>
+                  <th className="px-5 py-5 align-middle">Total Amount</th>
+                  <th className="px-5 py-5 align-middle">Orders</th>
+                  <th className="px-5 py-5 align-middle">Yield %</th>
+                  <th className="px-5 py-5 align-middle">Status</th>
+                  <th className="px-5 py-5 align-middle">Assigned By</th>
+                  <th className="px-5 py-5 align-middle">Created Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                 {filteredTasks.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-7 py-14 text-center text-slate-500 dark:text-slate-400 font-medium text-sm">
+                    <td colSpan={8} className="px-7 py-16 text-center text-slate-500 dark:text-slate-400 font-medium text-base">
                       No active worksheets found.
                     </td>
                   </tr>
                 ) : (
                   filteredTasks.map(t => (
                     <tr key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
-                      <td className="px-7 py-4.5 align-middle">
-                        <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800/40">{t.id}</span>
+                      <td className="px-5 py-5 align-middle">
+                        <span className="font-mono text-sm font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-2 rounded-lg border border-indigo-200 dark:border-indigo-800/40">{t.id}</span>
                       </td>
-                      <td className="px-7 py-4.5 font-bold text-slate-900 dark:text-slate-50 text-sm align-middle">
+                      <td className="px-5 py-5 font-bold text-slate-900 dark:text-slate-50 text-base align-middle">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-xs shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-sm font-bold shadow-xs shrink-0">
                             {t.username.substring(0,2).toUpperCase()}
                           </div>
                           <span>{t.username}</span>
                         </div>
                       </td>
-                      <td className="px-7 py-4.5 align-middle font-mono font-bold text-slate-900 dark:text-slate-50 text-sm tabular-nums">
+                      <td className="px-5 py-5 align-middle font-mono font-bold text-slate-900 dark:text-slate-50 text-base tabular-nums">
                         ${t.totalAmount.toFixed(2)}
                       </td>
-                      <td className="px-7 py-4.5 align-middle text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      <td className="px-5 py-5 align-middle text-sm font-semibold text-slate-600 dark:text-slate-300">
                         {t.orderCount} orders
                       </td>
-                      <td className="px-7 py-4.5 align-middle">
-                        <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-md border border-emerald-200 dark:border-emerald-800/40">
+                      <td className="px-5 py-5 align-middle">
+                        <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-2 rounded-md border border-emerald-200 dark:border-emerald-800/40">
                           +{t.profitPercent}%
                         </span>
                       </td>
-                      <td className="px-7 py-4.5 align-middle">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${
+                      <td className="px-5 py-5 align-middle">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold uppercase tracking-wider ${
                           t.status === 'Completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40' :
                           t.status === 'In Progress' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40' :
                           'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40'
@@ -1078,10 +1078,10 @@ export default function OrdersTasking() {
                           {t.status}
                         </span>
                       </td>
-                      <td className="px-7 py-4.5 align-middle text-xs text-slate-600 dark:text-slate-400 font-medium">
+                      <td className="px-5 py-5 align-middle text-sm text-slate-600 dark:text-slate-400 font-medium">
                         {t.assignedBy}
                       </td>
-                      <td className="px-7 py-4.5 align-middle text-xs text-slate-500 dark:text-slate-400 font-mono">
+                      <td className="px-5 py-5 align-middle text-sm text-slate-500 dark:text-slate-400 font-mono">
                         {t.createdAt}
                       </td>
                     </tr>
@@ -1190,9 +1190,9 @@ export default function OrdersTasking() {
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-6 transition-all">
-            <div className="bg-white dark:bg-slate-950 w-full max-w-5xl overflow-hidden flex flex-col h-[85vh] max-h-[850px] min-h-[650px] shadow-2xl rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div className="bg-white dark:bg-slate-950 w-full max-w-6xl overflow-hidden flex flex-col h-[90dvh] max-h-[900px] min-h-0 shadow-2xl rounded-2xl border border-slate-200 dark:border-slate-800">
               {/* Modal Header */}
-              <div className="border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between flex-shrink-0" style={{ padding: '24px 32px' }}>
+              <div className="border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between flex-shrink-0 px-4 py-4 sm:px-6 lg:px-8">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm border border-indigo-100 dark:border-indigo-800/30">
                     <ClipboardList className="w-6 h-6" />
@@ -1212,7 +1212,7 @@ export default function OrdersTasking() {
               </div>
 
               <form onSubmit={handleInitiateAssignment} className="flex flex-col flex-1 overflow-hidden min-h-0">
-                <div className="flex-1 overflow-y-auto flex flex-col gap-8 min-h-0" style={{ padding: '32px' }}>
+                <div className="flex-1 overflow-y-auto flex flex-col gap-6 sm:gap-8 min-h-0 p-4 sm:p-6 lg:p-8">
                   
                   {/* Worksheet Template Selector Card */}
                   <div className="p-5 sm:p-6 bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl flex flex-col gap-3.5 shadow-xs">
@@ -1483,7 +1483,7 @@ export default function OrdersTasking() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-end">
+                          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-end">
                             {/* Auto-Fill Catalog */}
                             <div className="md:col-span-4 flex flex-col gap-2">
                               <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Auto-Fill Catalog</label>
