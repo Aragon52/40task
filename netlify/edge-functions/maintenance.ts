@@ -2,7 +2,7 @@ import type { Config, Context } from '@netlify/edge-functions'
 
 // Set to `false` (or set the MAINTENANCE_MODE environment variable to "off"
 // and redeploy) to take the public site out of maintenance.
-const MAINTENANCE_ENABLED = true
+const MAINTENANCE_ENABLED = false
 
 // Service worker served while in maintenance: clears the PWA caches and
 // unregisters itself so returning visitors don't get the cached app shell.
