@@ -150,6 +150,28 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
 
       const affiliatePromise = (async () => {
         try {
+          // Check if active task disables referral commission
+          if (activeOrderDetails && activeOrderDetails.assignedTaskId) {
+            const { data: taskList } = await supabase
+              .from('cb_assigned_tasks')
+              .select('*')
+              .eq('id', activeOrderDetails.assignedTaskId);
+
+            const task = taskList && taskList[0];
+            const taskOrders = Array.isArray(task?.orders) ? task.orders : (typeof task?.orders === 'string' ? JSON.parse(task.orders || '[]') : []);
+            const isAiEdgeTask = task && (
+              task.disable_referral_commission || 
+              task.task_type === 'ai_edge' || 
+              taskOrders?.[0]?.task_type === 'ai_edge' || 
+              taskOrders?.[0]?.disable_referral_commission
+            );
+
+            if (isAiEdgeTask) {
+              console.log("Auto referral commission disabled for this AI Edge task assignment.");
+              return;
+            }
+          }
+
           const currentUsername = localStorage.getItem('cb_username');
           if (currentUsername) {
             const { data: userBData } = await supabase
@@ -741,20 +763,26 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
           display: flex;
           flex-direction: column;
           gap: 24px;
+          width: 100%;
+          max-width: 680px;
+          margin: 0 auto;
         }
 
         .shop-left-col, .shop-right-col {
           display: flex;
           flex-direction: column;
           gap: 24px;
+          width: 100%;
         }
 
         @media (min-width: 768px) {
           .shop-grid-layout {
-            display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
+            display: flex;
+            flex-direction: column;
             gap: 24px;
-            align-items: start;
+            width: 100%;
+            max-width: 680px;
+            margin: 0 auto;
           }
         }
 

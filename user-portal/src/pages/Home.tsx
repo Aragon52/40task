@@ -7,6 +7,14 @@ import { TrendingUp, Sparkles, Calendar, Wallet } from 'lucide-react';
 const BANNERS = [
   {
     id: 0,
+    img: '/super_agent_bg.svg',
+    tag: 'SUPER INTELLIGENT AGENT',
+    title: 'AI Edge Order Assignment',
+    sub: 'Orders have been assigned by the newly integrated Super Intelligent system agent to maximize the user\'s profitability',
+    accent: '#8b5cf6',
+  },
+  {
+    id: 1,
     img: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&q=80',
     tag: 'EXCLUSIVE DEALS',
     title: 'Top Brands,\nMega Savings',
@@ -14,7 +22,7 @@ const BANNERS = [
     accent: '#0071ce',
   },
   {
-    id: 1,
+    id: 2,
     img: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=80',
     tag: 'NEW ARRIVALS',
     title: 'Premium Fashion\nCollection',
@@ -22,7 +30,7 @@ const BANNERS = [
     accent: '#e11d48',
   },
   {
-    id: 2,
+    id: 3,
     img: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=800&q=80',
     tag: 'TECH & GADGETS',
     title: 'Electronics\nSuper Sale',
@@ -364,14 +372,50 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
           </div>
         </div>
 
-        {/* ── 6. Recent Commission Allocations ── */}
-        <div className="live-feed-card">
-          <div className="feed-header">
-            <span className="pulse-indicator"></span>
-            <span className="feed-title">Recent Commission Allocations</span>
+        {/* ── 6. Recent Commission Allocations & Super Intelligent System Agent Banner ── */}
+        <div className="flex flex-col gap-3.5">
+          {/* AI Agent Commission Banner */}
+          <div className="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-slate-950 text-white border border-purple-500/40 shadow-lg shadow-purple-950/20 group">
+            {/* Visual Graphic Image Background */}
+            <img 
+              src="/super_agent_bg.svg" 
+              alt="Super Intelligent System Agent Visual Graphic" 
+              referrerPolicy="no-referrer"
+              className="absolute inset-0 w-full h-full object-cover object-center opacity-70 group-hover:scale-105 transition-transform duration-700 pointer-events-none" 
+            />
+            {/* Readability Vignette & Gradient Overlays */}
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-purple-950/75 to-indigo-950/60 pointer-events-none" />
+            <div className="absolute -right-12 -bottom-12 w-44 h-44 bg-purple-500/25 rounded-full blur-2xl pointer-events-none" />
+            
+            <div className="relative z-10 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-purple-500/30 mt-0.5">
+                <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-purple-500/30 text-purple-200 border border-purple-400/30 uppercase tracking-wider">
+                    Super Intelligent System Agent
+                  </span>
+                  <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                    Active Optimization
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm font-semibold text-purple-100 leading-snug">
+                  Orders have been assigned by the newly integrated Super Intelligent system agent to maximize the user's profitability
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="feed-content">
-            <div className="feed-item">User yoo*** just completed matching task for <b>$194.33</b> (+$0.97 profit)</div>
+
+          <div className="live-feed-card">
+            <div className="feed-header">
+              <span className="pulse-indicator"></span>
+              <span className="feed-title">Recent Commission Allocations</span>
+            </div>
+            <div className="feed-content">
+              <div className="feed-item">User yoo*** just completed matching task for <b>$194.33</b> (+$0.97 profit)</div>
+            </div>
           </div>
         </div>
       </div>

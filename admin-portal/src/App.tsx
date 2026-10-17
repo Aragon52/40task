@@ -16,6 +16,7 @@ import Login from './pages/Login.tsx';
 import { supabase } from './supabase.ts';
 import { Toaster } from 'react-hot-toast';
 import { motion } from 'motion/react';
+import DevPortalSwitcher from './components/DevPortalSwitcher.tsx';
 
 interface AdminSession {
   role: string;
@@ -412,11 +413,17 @@ export default function App() {
   };
 
   if (!session) {
-    return <Login onLoginSuccess={(s) => setSession(s)} />;
+    return (
+      <>
+        <DevPortalSwitcher currentPortal="admin" />
+        <Login onLoginSuccess={(s) => setSession(s)} />
+      </>
+    );
   }
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex overflow-hidden font-sans antialiased text-slate-900 dark:text-slate-100">
+      <DevPortalSwitcher currentPortal="admin" />
       <Toaster position="top-center" reverseOrder={false} />
       <Sidebar 
         activeTab={activeTab} 
@@ -436,8 +443,8 @@ export default function App() {
           session={session}
           onLogout={handleLogout}
         />
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-8 lg:p-10 max-w-7xl mx-auto space-y-8">
+        <main className="flex-1 overflow-hidden">
+          <div className={activeTab === 'support-chat' ? "h-full w-full" : "p-8 lg:p-10 max-w-7xl mx-auto space-y-8"}>
             {renderContent()}
           </div>
         </main>

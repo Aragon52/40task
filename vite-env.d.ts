@@ -2,6 +2,7 @@
 
 declare const __APP_BUILD_ID__: string;
 declare const __APP_BUILD_TIME__: string;
+declare const __IS_NETLIFY__: boolean;
 
 declare module 'virtual:pwa-register' {
   export interface RegisterSWOptions {

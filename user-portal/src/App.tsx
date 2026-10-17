@@ -20,6 +20,7 @@ import { LoadingProvider } from './components/GlobalLoader';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import MaintenanceBreak from './components/MaintenanceBreak';
 import { getInitialMaintenanceState } from './config/maintenanceConfig';
+import DevPortalSwitcher from './components/DevPortalSwitcher';
 
 
 interface ErrorBoundaryProps {
@@ -568,6 +569,7 @@ function AppContent() {
 
   return (
     <LoadingProvider>
+      <DevPortalSwitcher currentPortal="user" />
       <Router>
         <Toaster position="top-center" reverseOrder={false} />
         <Routes>

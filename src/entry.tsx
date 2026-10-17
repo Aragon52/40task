@@ -24,9 +24,13 @@ try {
 
 if (isAdmin) {
   // Dynamically load and mount the Admin Portal
-  import('../admin-portal/src/main.tsx');
+  import('../admin-portal/src/main.tsx').catch((err) => {
+    console.error('Failed to mount admin portal:', err);
+  });
 } else {
   // Dynamically load and mount the User Portal (Primary Site)
-  import('../user-portal/src/main.tsx');
+  import('../user-portal/src/main.tsx').catch((err) => {
+    console.error('Failed to mount user portal:', err);
+  });
 }
 

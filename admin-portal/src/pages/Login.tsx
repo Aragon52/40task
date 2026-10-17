@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabase.ts';
 import toast from 'react-hot-toast';
-import { Shield, Mail, Lock, LogIn, Key, AlertCircle } from 'lucide-react';
-import { Button, Input } from '@/src/shared/UI';
 
 interface LoginProps {
   onLoginSuccess: (session: {
@@ -21,7 +19,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("Please enter both email address and password.");
+      toast("Please enter both email address and password.");
       return;
     }
 
@@ -142,101 +140,58 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0c10] p-6 relative overflow-hidden">
-      {/* Dynamic Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]" />
-
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-8">
-          <div className="text-center space-y-4">
-            <div className="flex justify-center">
-              <div className="bg-white p-2 rounded-xl shadow-lg inline-block">
-                <img 
-                  src="/WALMARK.png" 
-                  alt="Walmark" 
-                  className="h-8 w-auto object-contain"
-                />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <h2 className="text-xl font-black text-white uppercase tracking-tight">Admin Console</h2>
-              <div className="flex items-center justify-center gap-2">
-                <span className="h-[1px] w-4 bg-slate-700" />
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Operator Authorization</span>
-                <span className="h-[1px] w-4 bg-slate-700" />
-              </div>
-            </div>
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 p-6 relative overflow-hidden font-sans">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl space-y-6 z-10">
+        <div className="text-center space-y-2">
+          <div className="flex items-center justify-center">
+            <img 
+              src="/WALMARK.png" 
+              alt="Walmark" 
+              className="h-10 w-auto max-w-[200px] object-contain rounded"
+            />
           </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4">
-              <Input
-                label="OPERATOR EMAIL"
-                type="email"
-                placeholder="operator@walmart.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loading}
-                icon={<Mail className="w-4 h-4" />}
-              />
-
-              <Input
-                label="ACCESS SECURITY PASSWORD"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-                icon={<Lock className="w-4 h-4" />}
-              />
-            </div>
-
-            <Button 
-              type="submit" 
-              loading={loading}
-              className="w-full h-12 text-[11px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20"
-              icon={<LogIn className="w-4 h-4" />}
-            >
-              Authenticate & Enter
-            </Button>
-
-            <button 
-              type="button" 
-              onClick={() => {
-                setEmail('owner@wallmark.com');
-                setPassword('admin123');
-              }}
-              className="w-full h-11 bg-slate-800/50 hover:bg-slate-800 text-slate-300 font-bold text-[10px] uppercase tracking-wider rounded-xl border border-slate-700/50 transition-all flex items-center justify-center gap-2"
-            >
-              <Key className="w-4 h-4 text-amber-400" />
-              Auto-fill System Owner
-            </button>
-          </form>
-
-          <div className="pt-4 border-t border-slate-800/50">
-            <div className="flex items-start gap-3 p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
-              <Shield className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-              <p className="text-[10px] text-slate-400 leading-relaxed font-medium">
-                Enforced Row-Level Security (RLS) active. Unauthorized access attempts are monitored and reported to security protocols.
-              </p>
-            </div>
-          </div>
+          <span className="inline-block text-[10px] font-bold text-amber-400 uppercase tracking-widest bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">SECURE PLATFORM OPERATIONS</span>
         </div>
 
-        <div className="mt-8 flex items-center justify-center gap-6">
-          <div className="flex items-center gap-2 grayscale opacity-50">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">System Online</span>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">OPERATOR EMAIL</label>
+            <input 
+              type="email" 
+              placeholder="operator@walmart.com" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading}
+              className="w-full h-11 px-4 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors"
+            />
           </div>
-          <div className="h-3 w-[1px] bg-slate-800" />
-          <div className="flex items-center gap-2 grayscale opacity-50">
-            <AlertCircle className="w-3 h-3 text-slate-500" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Encryption Active</span>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ACCESS SECURITY PASSWORD</label>
+            <input 
+              type="password" 
+              placeholder="••••••••" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+              className="w-full h-11 px-4 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors"
+            />
           </div>
-        </div>
+
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50"
+          >
+            {loading ? 'Authenticating Operator...' : 'Authenticate & Enter'}
+          </button>
+        </form>
+
+        <p className="text-[11px] text-slate-500 text-center leading-relaxed">
+          Enforced Row-Level Security (RLS) active. Unauthorized access is monitored and logged in audit trails.
+        </p>
       </div>
     </div>
   );

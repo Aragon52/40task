@@ -11,6 +11,7 @@ export default defineConfig(() => {
     define: {
       __APP_BUILD_ID__: JSON.stringify(BUILD_ID),
       __APP_BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+      __IS_NETLIFY__: JSON.stringify(process.env.NETLIFY === 'true' || Boolean(process.env.NETLIFY)),
     },
     plugins: [
       react(), 

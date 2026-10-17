@@ -795,21 +795,20 @@ export default function Profile({ balance, username, setUsername, setBalance, se
         .profile-grid-layout {
           display: flex;
           flex-direction: column;
+          gap: 20px;
+          width: 100%;
+          max-width: 680px;
+          margin: 0 auto;
         }
 
         @media (min-width: 768px) {
           .profile-grid-layout {
-            display: grid;
-            grid-template-columns: 1fr 1.1fr;
+            display: flex;
+            flex-direction: column;
             gap: 20px;
-            padding: 16px;
-            align-items: start;
-          }
-          .profile-menu-container {
-            padding: 0 !important;
-          }
-          .profile-history-section {
-            padding: 0 !important;
+            width: 100%;
+            max-width: 680px;
+            margin: 0 auto;
           }
         }
 

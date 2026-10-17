@@ -373,9 +373,9 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
 
         @media (min-width: 640px) {
           .orders-list {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            max-width: 680px;
             margin: 0 auto;
             width: 100%;
           }
