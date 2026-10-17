@@ -1292,7 +1292,7 @@ export default function OrdersTasking() {
                       </td>
                       <td className="px-5 py-5 text-right align-middle">
                          <button 
-                          className="px-3.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer ml-auto"
+                          className="px-3.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer ml-auto"
                           onClick={() => {
                             setEditingTask(t);
                             setEditingOrders(t.orders.map(o => ({
@@ -1846,7 +1846,7 @@ export default function OrdersTasking() {
                           <button
                             type="button"
                             onClick={() => setIsCustomizingPreset(true)}
-                            className="px-3.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                            className="px-3.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                             Customize Preset Rows
@@ -2436,105 +2436,6 @@ export default function OrdersTasking() {
           </div>
         </div>
       )}
-
-      <style>{`
-        .badge-node {
-          background-color: var(--bg-surface-hover);
-          color: var(--text-admin-muted);
-          font-weight: 600;
-        }
-
-        .filter-controls-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 16px;
-        }
-
-        .badge-deposit-pending {
-          background-color: #fef3c7;
-          color: #d97706;
-          border: 1px solid #fde68a;
-        }
-
-        .action-buttons-cell {
-          display: flex;
-          gap: 6px;
-        }
-
-        .action-btn {
-          height: 28px;
-          padding: 0 10px;
-          border-radius: 4px;
-          font-size: 11px;
-          font-weight: 600;
-          cursor: pointer;
-          border: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .btn-view {
-          background-color: #eff6ff;
-          color: #2563eb;
-        }
-
-        .btn-approve {
-          background-color: #ecfdf5;
-          color: #10b981;
-        }
-
-        .btn-reject {
-          background-color: #fef2f2;
-          color: #ef4444;
-        }
-
-        .form-group-sla {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-
-        .form-group-sla label {
-          font-size: 11px;
-          font-weight: 700;
-          color: var(--text-admin-light);
-          text-transform: uppercase;
-        }
-
-        .input-sla-field {
-          height: 38px;
-          border-radius: 6px;
-          border: 1px solid var(--border-color);
-          padding: 0 12px;
-          font-size: 13px;
-          color: var(--text-admin-main);
-          background-color: var(--bg-surface);
-          outline: none;
-        }
-
-        .input-sla-field:focus {
-          background-color: var(--bg-admin-card);
-          border-color: var(--color-primary);
-        }
-
-        .sla-submit-btn {
-          height: 40px;
-          border-radius: 6px;
-          background-color: var(--color-primary);
-          color: white;
-          font-weight: 600;
-          font-size: 13px;
-          border: none;
-          cursor: pointer;
-          padding: 0 16px;
-        }
-
-        .sla-submit-btn:hover {
-          background-color: var(--color-primary-hover);
-        }
-      `}</style>
     </div>
   );
 }

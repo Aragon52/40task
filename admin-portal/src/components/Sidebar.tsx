@@ -131,7 +131,7 @@ export default function Sidebar({
       {isMobileOpen && (
         <div 
           onClick={onCloseMobile}
-          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-2xs md:hidden transition-opacity cursor-pointer"
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs md:hidden transition-opacity cursor-pointer"
           aria-hidden="true"
         />
       )}

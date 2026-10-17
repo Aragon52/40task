@@ -1,4 +1,3 @@
-import '../user-portal/src/index.css';
 
 const hostname = (window.location.hostname || '').toLowerCase();
 const pathname = (window.location.pathname || '').toLowerCase();
