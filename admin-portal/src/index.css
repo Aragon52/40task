@@ -66,29 +66,31 @@ html {
   }
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-body {
-  font-family: var(--font-primary);
-  background-color: var(--bg-app);
-  color: var(--text-main);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  line-height: 1.6;
-  font-size: 16px;
-  min-height: 100dvh;
-  overflow-x: hidden;
-}
+  body {
+    font-family: var(--font-primary);
+    background-color: var(--bg-app);
+    color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.6;
+    font-size: 16px;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
 
-button,
-input,
-select,
-textarea {
-  max-width: 100%;
+  button,
+  input,
+  select,
+  textarea {
+    max-width: 100%;
+  }
 }
 
 .admin-page-container,
