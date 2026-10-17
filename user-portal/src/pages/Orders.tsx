@@ -3,7 +3,15 @@ import OrderDetailsModal from '../components/OrderDetailsModal';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
 import { useLoading } from '../components/GlobalLoader';
-import { Package, ShoppingBag } from 'lucide-react';
+import { 
+  Package, 
+  ShoppingBag, 
+  ChevronLeft, 
+  ChevronRight, 
+  MessageSquare, 
+  Clock, 
+  AlertCircle 
+} from 'lucide-react';
 
 import toast from 'react-hot-toast';
 
@@ -21,11 +29,24 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const { performAsync } = useLoading();
 
-  const tabs = ['All', 'Pending', 'Success', 'Frozen'];
+  const tabs = ['All', 'Success', 'Frozen'];
 
-  const filteredOrders = orders.filter(order => {
+  // Filter out Pending orders from the page so only Success and Frozen orders are displayed
+  const nonPendingOrders = (orders || []).filter(order => {
+    const statusLower = String(order?.status || '').toLowerCase();
+    return statusLower === 'success' || statusLower === 'frozen' || statusLower === 'completed' || statusLower === 'approved';
+  });
+
+  const filteredOrders = nonPendingOrders.filter(order => {
     if (activeTab === 'All') return true;
-    return order.status.toLowerCase() === activeTab.toLowerCase();
+    const statusLower = String(order?.status || '').toLowerCase();
+    if (activeTab === 'Success') {
+      return statusLower === 'success' || statusLower === 'completed' || statusLower === 'approved';
+    }
+    if (activeTab === 'Frozen') {
+      return statusLower === 'frozen';
+    }
+    return statusLower === activeTab.toLowerCase();
   });
 
   const handleSubmitTask = async (orderId, price, profit) => {
@@ -121,20 +142,23 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
       <div className="orders-page scale-up">
         {/* Header replicated from Screenshot 4 */}
         <div className="orders-header">
-          <div className="header-back-btn">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-          </div>
-          <span className="orders-title">Order ID</span>
-          <div className="orders-chat-btn">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              <circle cx="9" cy="10" r="1" />
-              <circle cx="12" cy="10" r="1" />
-              <circle cx="15" cy="10" r="1" />
-            </svg>
-          </div>
+          <button 
+            type="button"
+            className="header-back-btn cursor-pointer" 
+            onClick={() => navigate('/home')}
+            aria-label="Back to home"
+          >
+            <ChevronLeft className="w-5 h-5 text-slate-700 dark:text-slate-200" />
+          </button>
+          <span className="orders-title">Worksheet Orders</span>
+          <button 
+            type="button"
+            className="orders-chat-btn cursor-pointer" 
+            onClick={() => navigate('/support')}
+            aria-label="Support chat"
+          >
+            <MessageSquare className="w-5 h-5 text-slate-700 dark:text-slate-200" />
+          </button>
         </div>
 
         {/* Tab bar */}
@@ -156,12 +180,7 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
         <div className="orders-list">
           {filteredOrders.length === 0 ? (
             <div className="empty-orders">
-              <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#94a3b8" strokeWidth="1.5">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M9 17h6" />
-                <path d="M9 13h6" />
-                <path d="M9 9h6" />
-              </svg>
+              <ShoppingBag className="w-12 h-12 text-slate-300 mb-2" />
               <span>No orders found in this category</span>
             </div>
           ) : (
@@ -174,20 +193,21 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
                 style={{ cursor: 'pointer' }}
               >
                 <div className="order-item-header">
-                  <span className="order-timestamp">{order.timestamp}</span>
+                  <span className="order-timestamp">
+                    <Clock className="w-3 h-3" />
+                    {order.timestamp}
+                  </span>
                   <span className={`badge badge-${order.status.toLowerCase()}`}>
                     {order.status}
                   </span>
                 </div>
 
                 <div className="order-item-body">
-                  <div className="product-image-container" style={{ border: 'var(--border-luxury)', borderRadius: 10, backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  <div className="product-image-container">
                     {order.image ? (
-                      <img src={order.image} alt={order.title} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                      <img src={order.image} alt={order.title} className="w-full h-full object-contain" />
                     ) : (
-                      <div className="prod-img-placeholder" style={{ color: 'var(--primary-color)', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Package className="w-6 h-6 text-sky-600 dark:text-sky-400" />
-                      </div>
+                      <Package className="w-6 h-6 text-sky-600 dark:text-sky-400" />
                     )}
                   </div>
                   <div className="product-info">
@@ -197,31 +217,35 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
 
                 <div className="order-price-box">
                   <div className="price-col">
-                    <span className="price-value">$ {order.price}</span>
                     <span className="price-label">Price</span>
+                    <span className="price-value">$ {order.price}</span>
                   </div>
                   <div className="profit-col">
-                    <span className="profit-value">$ {order.profit}</span>
-                    <span className="profit-label">Estimated Profit</span>
+                    <span className="profit-label">Profit</span>
+                    <span className="profit-value">+$ {order.profit}</span>
                   </div>
                 </div>
 
                 {order.status === 'Pending' && parseFloat(balance || 0) < parseFloat(order.price) && (
-                  <div className="diff-amount-badge-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.15)', padding: '10px 12px', borderRadius: '10px', fontSize: '12px' }}>
+                  <div className="diff-amount-badge-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(239, 68, 68, 0.06)', border: '1px solid rgba(239, 68, 68, 0.1)', padding: '10px 12px', borderRadius: '12px', fontSize: '11px' }}>
                     <span style={{ color: '#ef4444', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ display: 'inline-block' }}>
-                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-                        <line x1="12" y1="9" x2="12" y2="13"/>
-                        <line x1="12" y1="17" x2="12.01" y2="17"/>
-                      </svg>
-                      Difference Amount:
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      Difference:
                     </span>
-                    <span style={{ color: '#ef4444', fontWeight: '750' }}>$ {(parseFloat(order.price) - parseFloat(balance || 0)).toFixed(2)}</span>
+                    <span style={{ color: '#ef4444', fontWeight: '800', fontFamily: 'monospace' }}>$ {(parseFloat(order.price) - parseFloat(balance || 0)).toFixed(2)}</span>
                   </div>
                 )}
 
+                <div className="flex items-center justify-between mt-1 pt-2 border-t border-slate-50 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-medium">Order ID: VP{order.id}</span>
+                  <div className="flex items-center gap-1 text-sky-600 dark:text-sky-400 font-bold text-[11px]">
+                    View Details
+                    <ChevronRight className="w-3 h-3" />
+                  </div>
+                </div>
+
                 {order.status === 'Pending' && (
-                  <div className="order-item-actions">
+                  <div className="order-item-actions pt-1">
                     <button
                       className="submit-task-btn"
                       onClick={(e) => {
@@ -256,155 +280,183 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
         .orders-page {
           display: flex;
           flex-direction: column;
+          background-color: var(--bg-app);
+          min-height: 100vh;
+          padding-bottom: 80px;
         }
 
         .orders-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          height: 54px;
+          height: 60px;
           padding: 0 16px;
           background-color: var(--bg-nav);
-          border-bottom: var(--border-glass);
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+          position: sticky;
+          top: 0;
+          z-index: 40;
+          backdrop-filter: blur(12px);
         }
 
         .header-back-btn, .orders-chat-btn {
-          width: 40px;
-          height: 40px;
+          width: 38px;
+          height: 38px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 50%;
-          color: var(--text-muted);
+          border-radius: 12px;
+          color: var(--text-main);
+          background: var(--bg-input);
+          transition: all 0.2s;
+        }
+
+        .header-back-btn:active, .orders-chat-btn:active {
+          transform: scale(0.92);
+          background: rgba(0, 0, 0, 0.08);
         }
 
         .orders-title {
-          font-size: 17px;
-          font-weight: 600;
+          font-size: 16px;
+          font-weight: 700;
           color: var(--text-main);
-          letter-spacing: 0.5px;
+          letter-spacing: -0.2px;
         }
 
         /* Tabs styles */
         .tabs-container {
           display: flex;
           background-color: var(--bg-nav);
-          border-bottom: var(--border-glass);
-          height: 44px;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+          height: 48px;
+          padding: 0 8px;
+          gap: 4px;
         }
 
         .tab-btn {
           flex: 1;
           display: flex;
-          flex-direction: column;
           align-items: center;
           justify-content: center;
           font-size: 13px;
-          font-weight: 550;
+          font-weight: 600;
           color: var(--text-muted);
           position: relative;
+          transition: all 0.2s;
+          border-radius: 10px;
+          margin: 6px 0;
         }
 
         .tab-btn.active {
           color: var(--primary-color);
+          background: var(--primary-light);
         }
 
         .tab-indicator {
           position: absolute;
-          bottom: 0;
-          width: 28px;
+          bottom: -6px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 20px;
           height: 3px;
           background-color: var(--primary-color);
           border-radius: 2px;
-          box-shadow: 0 -1px 8px var(--primary-color);
         }
 
         /* Order card list styles */
         .orders-list {
-          padding: 16px;
+          padding: 24px 20px;
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 20px;
         }
 
         @media (min-width: 640px) {
           .orders-list {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
           }
-        }
-
-        @media (min-width: 1024px) {
-          .orders-list {
-            grid-template-columns: repeat(3, 1fr);
-          }
-        }
-
-        .empty-orders {
-          padding: 60px 20px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 12px;
-          color: var(--text-muted);
-          font-size: 13px;
         }
 
         .order-item-card {
           background-color: var(--bg-card);
-          border-radius: var(--border-radius-md);
-          box-shadow: var(--shadow-card);
-          padding: 16px;
+          border-radius: 20px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+          padding: 24px; /* min p-6 */
           display: flex;
           flex-direction: column;
-          gap: 12px;
-          border: var(--border-glass);
-          backdrop-filter: blur(10px);
+          gap: 16px; /* space-y feel */
+          border: 1px solid rgba(0, 0, 0, 0.04);
+          transition: all 0.2s;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .order-item-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+          border-color: rgba(0, 113, 206, 0.1);
         }
 
         .order-item-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          border-bottom: var(--border-glass);
-          padding-bottom: 8px;
         }
 
         .order-timestamp {
-          font-size: 11px;
+          font-size: 12px;
+          font-weight: 500;
           color: var(--text-light);
-          font-family: var(--font-secondary);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .badge {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 5px 12px;
+          border-radius: 8px;
+          text-transform: uppercase;
+          letter-spacing: 0.4px;
+        }
+
+        .badge-pending {
+          background-color: #fef3c7;
+          color: #92400e;
+        }
+
+        .badge-success {
+          background-color: #d1fae5;
+          color: #065f46;
+        }
+
+        .badge-frozen {
+          background-color: #fee2e2;
+          color: #991b1b;
         }
 
         .order-item-body {
           display: flex;
-          gap: 12px;
+          gap: 16px;
           align-items: center;
         }
 
         .product-image-container {
-          width: 50px;
-          height: 50px;
-          border-radius: 6px;
-          overflow: hidden;
-          flex-shrink: 0;
-        }
-
-        .prod-img-placeholder {
-          width: 100%;
-          height: 100%;
+          width: 72px;
+          height: 72px;
+          border-radius: 12px;
+          background: var(--bg-input);
+          border: 1px solid rgba(0, 0, 0, 0.04);
           display: flex;
           align-items: center;
           justify-content: center;
-          color: white;
-        }
-
-        .prod-img-placeholder.red-grad {
-          background: linear-gradient(135deg, #f87171, #ef4444);
-        }
-
-        .prod-img-placeholder.blue-grad {
-          background: linear-gradient(135deg, #60a5fa, #3b82f6);
+          flex-shrink: 0;
+          overflow: hidden;
         }
 
         .product-info {
@@ -413,20 +465,28 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
         }
 
         .product-title {
-          font-size: 13px;
-          font-weight: 550;
+          font-size: 14px;
+          font-weight: 600;
           color: var(--text-main);
           line-height: 1.4;
-          overflow-wrap: anywhere;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
         .order-price-box {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          background: var(--bg-input);
-          border-radius: var(--border-radius-sm);
-          padding: 12px;
+          background: #f8fafc;
+          border-radius: 14px;
+          padding: 16px; /* p-4 minimum */
           gap: 12px;
+          border: 1px solid rgba(0, 0, 0, 0.02);
+        }
+
+        .dark .order-price-box {
+          background: #0f172a;
         }
 
         .price-col, .profit-col {
@@ -434,41 +494,53 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
           flex-direction: column;
         }
 
-        .profit-col {
-          align-items: flex-end;
-        }
-
         .price-value {
-          font-size: 14px;
-          font-weight: 700;
+          font-size: 16px;
+          font-weight: 800;
           color: var(--text-main);
+          font-family: var(--font-secondary);
         }
 
         .profit-value {
-          font-size: 14px;
-          font-weight: 700;
-          color: var(--primary-color);
+          font-size: 16px;
+          font-weight: 800;
+          color: #10b981;
+          font-family: var(--font-secondary);
         }
 
         .price-label, .profit-label {
-          font-size: 10px;
-          color: var(--text-muted);
-          margin-top: 2px;
+          font-size: 11px;
+          font-weight: 700;
+          color: var(--text-light);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
 
         .submit-task-btn {
           width: 100%;
-          height: 40px;
-          background: linear-gradient(135deg, #ff6b6b, #ee5253);
+          height: 48px; /* h-12 touch target */
+          background: var(--primary-gradient);
           color: white;
-          border-radius: 20px;
-          font-size: 13px;
-          font-weight: 600;
-          box-shadow: 0 4px 10px rgba(238, 82, 83, 0.2);
+          border-radius: 12px;
+          font-size: 14px;
+          font-weight: 700;
+          box-shadow: 0 4px 12px rgba(0, 113, 206, 0.2);
+          transition: all 0.2s;
         }
 
         .submit-task-btn:active {
-          transform: scale(0.97);
+          transform: scale(0.98);
+          opacity: 0.9;
+        }
+
+        .empty-orders {
+          padding: 80px 20px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          color: var(--text-light);
         }
       `}</style>
     </>

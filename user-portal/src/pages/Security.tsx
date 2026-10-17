@@ -1,8 +1,20 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
-
 import toast from 'react-hot-toast';
+import { 
+  Shield, 
+  Lock, 
+  Camera, 
+  ChevronLeft, 
+  Save, 
+  Key, 
+  User as UserIcon,
+  AlertCircle,
+  CheckCircle2
+} from 'lucide-react';
+import { Button, Input, Card } from '@/src/shared/UI';
+
 export default function Security() {
   const navigate = useNavigate();
   const username = localStorage.getItem('cb_username') || '';
@@ -16,16 +28,15 @@ export default function Security() {
   const [photoUrl, setPhotoUrl] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handlePasswordChange = async (e) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast("New passwords do not match.");
+      toast.error("New passwords do not match.");
       return;
     }
     
     setLoading(true);
     try {
-      // 1. Verify current password
       const { data: users, error: fetchError } = await supabase
         .from('cb_users')
         .select('*')
@@ -39,12 +50,11 @@ export default function Security() {
 
       const user = users[0];
       if (user.password && user.password !== passwordForm.currentPassword) {
-        toast("Incorrect current password.");
+        toast.error("Incorrect current password.");
         setLoading(false);
         return;
       }
 
-      // 2. Update password
       const { error: updateError } = await supabase
         .from('cb_users')
         .update({ password: passwordForm.newPassword })
@@ -62,7 +72,7 @@ export default function Security() {
     setLoading(false);
   };
 
-  const handlePhotoUpdate = async (e) => {
+  const handlePhotoUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!photoUrl) return;
 
@@ -75,9 +85,8 @@ export default function Security() {
 
       if (error) {
         toast.error("Failed to update profile photo: " + error.message);
-        // Fallback for when column doesn't exist yet
         if (error.code === '42703') {
-           toast.error("Database Schema Error: The profile_photo column does not exist. Please contact support or run the schema update.");
+           toast.error("Database Schema Error: The profile_photo column does not exist.");
         }
       } else {
         toast.success("Profile photo updated successfully!");
@@ -90,178 +99,127 @@ export default function Security() {
   };
 
   return (
-    <div className="security-page scale-up">
-      <div className="security-header">
-        <button className="back-btn" onClick={() => navigate(-1)}>
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="m15 18-6-6 6-6"/>
-          </svg>
-        </button>
-        <h2>Security Settings</h2>
-        <div style={{ width: 24 }}></div>
-      </div>
-
-      <div className="security-content">
-        <div className="security-card card">
-          <h3 className="card-title">Update Profile Photo</h3>
-          <p className="card-desc">Enter an image URL to update your avatar.</p>
-          <form onSubmit={handlePhotoUpdate}>
-            <div className="form-group">
-              <label>Image URL</label>
-              <input 
-                type="url" 
-                placeholder="https://example.com/avatar.jpg" 
-                value={photoUrl}
-                onChange={(e) => setPhotoUrl(e.target.value)}
-                required
-              />
-            </div>
-            <button type="submit" className="action-btn" disabled={loading}>
-              {loading ? 'Updating...' : 'Save Photo'}
-            </button>
-          </form>
-        </div>
-
-        <div className="security-card card">
-          <h3 className="card-title">Change Password</h3>
-          <p className="card-desc">Ensure your account uses a strong, secure password.</p>
-          <form onSubmit={handlePasswordChange}>
-            <div className="form-group">
-              <label>Current Password</label>
-              <input 
-                type="password" 
-                placeholder="••••••••" 
-                value={passwordForm.currentPassword}
-                onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>New Password</label>
-              <input 
-                type="password" 
-                placeholder="••••••••" 
-                value={passwordForm.newPassword}
-                onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Confirm New Password</label>
-              <input 
-                type="password" 
-                placeholder="••••••••" 
-                value={passwordForm.confirmPassword}
-                onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                required
-              />
-            </div>
-            <button type="submit" className="action-btn" disabled={loading}>
-              {loading ? 'Updating...' : 'Update Password'}
-            </button>
-          </form>
+    <div className="min-h-screen bg-brand-ivory dark:bg-slate-950 pb-20 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800">
+        <div className="max-w-xl mx-auto px-4 h-16 flex items-center justify-between">
+          <button 
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-95 transition-all"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Security Settings</h1>
+          <div className="w-9" />
         </div>
       </div>
 
-      <style>{`
-        .security-page {
-          display: flex;
-          flex-direction: column;
-          min-height: 100vh;
-          background-color: var(--bg-app);
-          padding-bottom: 80px;
-        }
-        .security-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 16px;
-          background: var(--primary-gradient);
-          color: white;
-        }
-        .security-header h2 {
-          font-size: 18px;
-          font-weight: 600;
-          margin: 0;
-        }
-        .back-btn {
-          background: none;
-          border: none;
-          color: white;
-          padding: 0;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-        }
-        .security-content {
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-        .security-card {
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-        .card-title {
-          font-size: 16px;
-          font-weight: 600;
-          color: var(--text-main);
-          margin: 0;
-        }
-        .card-desc {
-          font-size: 12px;
-          color: var(--text-muted);
-          margin: 0;
-        }
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          margin-bottom: 12px;
-        }
-        .form-group label {
-          font-size: 12px;
-          font-weight: 600;
-          color: var(--text-muted);
-        }
-        .form-group input {
-          height: 42px;
-          border-radius: var(--border-radius-sm);
-          border: var(--border-glass);
-          background-color: var(--bg-input);
-          padding: 0 12px;
-          font-size: 14px;
-          color: var(--text-main);
-        }
-        .form-group input:focus {
-          border-color: var(--primary-color);
-          outline: none;
-          background-color: white;
-        }
-        .action-btn {
-          width: 100%;
-          height: 44px;
-          border-radius: 22px;
-          background: var(--primary-gradient);
-          color: white;
-          font-weight: 600;
-          font-size: 14px;
-          border: none;
-          cursor: pointer;
-          margin-top: 8px;
-          transition: transform 0.2s;
-        }
-        .action-btn:active {
-          transform: scale(0.98);
-        }
-        .action-btn:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-        }
-      `}</style>
+      <div className="max-w-xl mx-auto p-4 space-y-6">
+        {/* Profile Identity Status */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-premium overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+            <Shield size={120} />
+          </div>
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <UserIcon size={32} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-900 dark:text-white leading-tight uppercase tracking-tight">{username}</h2>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full">
+                  <CheckCircle2 size={10} />
+                  Verified Node
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Photo Section */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-premium">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+              <Camera size={18} />
+            </div>
+            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Update Avatar</h3>
+          </div>
+          
+          <form onSubmit={handlePhotoUpdate} className="space-y-4">
+            <Input 
+              label="Image URL"
+              type="url" 
+              placeholder="https://example.com/avatar.jpg" 
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+              required
+              helperText="Provide a valid direct image link to update your profile visual."
+            />
+            <Button 
+              type="submit" 
+              className="w-full h-12 rounded-xl"
+              disabled={loading || !photoUrl}
+              icon={<Save size={18} />}
+            >
+              {loading ? 'Updating...' : 'Save Profile Visual'}
+            </Button>
+          </form>
+        </div>
+
+        {/* Password Section */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-premium">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center text-rose-600 dark:text-rose-400">
+              <Lock size={18} />
+            </div>
+            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Change Credential</h3>
+          </div>
+          
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            <Input 
+              label="Current Password"
+              type="password" 
+              placeholder="••••••••" 
+              value={passwordForm.currentPassword}
+              onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+              required
+            />
+            <Input 
+              label="New Access Key"
+              type="password" 
+              placeholder="••••••••" 
+              value={passwordForm.newPassword}
+              onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+              required
+            />
+            <Input 
+              label="Confirm Key"
+              type="password" 
+              placeholder="••••••••" 
+              value={passwordForm.confirmPassword}
+              onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+              required
+            />
+            
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-950 rounded-xl flex items-start gap-3">
+              <AlertCircle size={16} className="text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                Ensure your new access key is unique and not used elsewhere. Password changes require immediate re-authentication.
+              </p>
+            </div>
+
+            <Button 
+              type="submit" 
+              variant="outline"
+              className="w-full h-12 rounded-xl border-slate-200 dark:border-slate-700"
+              disabled={loading}
+              icon={<Key size={18} />}
+            >
+              {loading ? 'Rotating Keys...' : 'Rotate Security Key'}
+            </Button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

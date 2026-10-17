@@ -1,17 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
-
 import toast from 'react-hot-toast';
+import { 
+  ChevronLeft, 
+  Send, 
+  Image as ImageIcon, 
+  Smile, 
+  User, 
+  CheckCircle2, 
+  Clock, 
+  Search, 
+  MoreVertical,
+  X,
+  Plus,
+  Loader2,
+  MessageSquare
+} from 'lucide-react';
+import { Button, Card, Input, Badge } from '@/src/shared/UI';
+
 export default function SupportChat() {
-  const [sessions, setSessions] = useState([]);
-  const [activeSession, setActiveSession] = useState(null);
-  const [messages, setMessages] = useState([]);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [activeSession, setActiveSession] = useState<any>(null);
+  const [messages, setMessages] = useState<any[]>([]);
   const [inputMsg, setInputMsg] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [session, setSession] = useState(null);
-  const [users, setUsers] = useState([]);
-  const chatBottomRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const [session, setSession] = useState<any>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('cb_admin_session');
@@ -24,16 +40,16 @@ export default function SupportChat() {
 
     const sub = supabase
       .channel('public:cb_support_sessions')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'cb_support_sessions' }, payload => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cb_support_sessions' }, () => {
         fetchSessions();
       })
       .subscribe();
 
     const interval = setInterval(() => {
-      if (document.hidden) return; // Save bandwidth when tab is in background!
+      if (document.hidden) return; 
       fetchSessions();
       fetchUsers();
-    }, 12000); // 12 seconds fallback instead of 4
+    }, 15000);
 
     return () => { 
       supabase.removeChannel(sub); 
@@ -78,7 +94,7 @@ export default function SupportChat() {
     });
   };
 
-  const getUserStatus = (username) => {
+  const getUserStatus = (username: string) => {
     const user = users.find(u => u.username?.toLowerCase() === username?.toLowerCase());
     return user?.online || 'Offline';
   };
@@ -101,7 +117,7 @@ export default function SupportChat() {
     return () => { supabase.removeChannel(sub); };
   }, [activeSession]);
 
-  const fetchMessages = async (sessionId) => {
+  const fetchMessages = async (sessionId: string) => {
     const { data, error } = await supabase
       .from('cb_support_messages')
       .select('*')
@@ -115,7 +131,7 @@ export default function SupportChat() {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async (e) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMsg.trim() || !activeSession) return;
 
@@ -134,13 +150,12 @@ export default function SupportChat() {
       return;
     }
 
-    // Update session
     await supabase.from('cb_support_sessions').update({
       last_message_at: new Date().toISOString()
     }).eq('id', activeSession.id);
   };
 
-  const handleImageUpload = async (event) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!event.target.files || event.target.files.length === 0 || !activeSession) {
         return;
@@ -176,95 +191,143 @@ export default function SupportChat() {
         last_message_at: new Date().toISOString()
       }).eq('id', activeSession.id);
 
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Error uploading image: ' + error.message);
     } finally {
       setUploading(false);
     }
   };
 
-  return (
-    <div className="admin-page-container scale-up support-chat-layout">
-      {/* Session List */}
-      <div className="admin-card support-chat-sessions">
-        <h3 className="section-title">Support Sessions</h3>
-        <div style={{ flex: 1, overflowY: 'auto', marginTop: 12 }}>
-          {getFilteredSessions().length === 0 ? (
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>No active sessions.</p>
-          ) : (
-            getFilteredSessions().map(s => {
-              const userStatus = getUserStatus(s.user_username);
-              const isOnline = userStatus === 'Online';
-              return (
-                <div 
-                  key={s.id} 
-                  onClick={() => setActiveSession(s)}
-                  style={{
-                    padding: '12px 16px',
-                    marginBottom: 8,
-                    borderRadius: 12,
-                    backgroundColor: activeSession?.id === s.id ? 'var(--bg-app)' : 'transparent',
-                    border: `1px solid ${activeSession?.id === s.id ? 'var(--border-color-focus)' : 'var(--border-color)'}`,
-                    cursor: 'pointer',
-                    position: 'relative'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-main)' }}>{s.user_username}</div>
-                    <span style={{ 
-                      fontSize: 10, 
-                      fontWeight: 700, 
-                      padding: '2px 8px', 
-                      borderRadius: '12px',
-                      backgroundColor: isOnline ? '#d1fae5' : '#fee2e2',
-                      color: isOnline ? '#065f46' : '#991b1b',
-                      textTransform: 'uppercase'
-                    }}>
-                      {userStatus}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-light)' }}>
-                    {new Date(s.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                  {s.unread_admin_count > 0 && (
-                    <div style={{ position: 'absolute', right: 12, bottom: 12, background: 'var(--color-danger)', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 'bold' }}>
-                      {s.unread_admin_count}
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-      </div>
+  const filteredSessions = getFilteredSessions();
 
-      {/* Chat Area */}
-      <div className="admin-card support-chat-conversation">
+  return (
+    <div className="h-[calc(100vh-140px)] flex gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Session List Sidebar */}
+      <Card className="w-80 flex flex-col p-0 overflow-hidden shrink-0 shadow-xl border-slate-200 dark:border-slate-800">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">Messages</h3>
+            <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest">{filteredSessions.length}</Badge>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <input 
+              type="text" 
+              placeholder="Search conversations..." 
+              className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-[11px] font-bold outline-none focus:ring-2 focus:ring-indigo-600 transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          {filteredSessions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+                <MessageSquare className="w-6 h-6 text-slate-300 dark:text-slate-700" />
+              </div>
+              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">No active support tickets in your node.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+              {filteredSessions.map(s => {
+                const userStatus = getUserStatus(s.user_username);
+                const isOnline = userStatus === 'Online';
+                const isActive = activeSession?.id === s.id;
+                return (
+                  <button 
+                    key={s.id} 
+                    onClick={() => setActiveSession(s)}
+                    className={`w-full p-5 text-left transition-all relative group flex items-start gap-3 ${isActive ? 'bg-indigo-50/50 dark:bg-indigo-500/5' : 'hover:bg-slate-50 dark:hover:bg-slate-900/50'}`}
+                  >
+                    <div className="relative shrink-0">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs border shadow-sm ${isActive ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
+                        {s.user_username.substring(0, 2).toUpperCase()}
+                      </div>
+                      {isOnline && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950 animate-pulse" />}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`text-[11px] font-black uppercase tracking-tight truncate ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-900 dark:text-white'}`}>
+                          {s.user_username}
+                        </span>
+                        <span className="text-[9px] font-bold text-slate-400 font-mono">
+                          {new Date(s.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 font-medium line-clamp-1">Support Session Active</p>
+                    </div>
+
+                    {s.unread_admin_count > 0 && (
+                      <div className="absolute top-1/2 -translate-y-1/2 right-4 w-5 h-5 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-[10px] font-black shadow-lg shadow-indigo-600/20">
+                        {s.unread_admin_count}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Main Chat Area */}
+      <Card className="flex-1 flex flex-col p-0 overflow-hidden shadow-2xl border-slate-200 dark:border-slate-800">
         {activeSession ? (
           <>
-            <div className="support-chat-header">
-              Chatting with {activeSession.user_username}
+            {/* Chat Header */}
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900/50 backdrop-blur-md">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 font-black text-xs border border-slate-200 dark:border-slate-700">
+                  {activeSession.user_username.substring(0,2).toUpperCase()}
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">{activeSession.user_username}</h4>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className={`w-1.5 h-1.5 rounded-full ${getUserStatus(activeSession.user_username) === 'Online' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{getUserStatus(activeSession.user_username)}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-slate-400">
+                  <Search className="w-5 h-5" />
+                </button>
+                <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-slate-400">
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            
-            <div className="support-chat-messages">
-              {messages.map(m => {
+
+            {/* Message Area */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30 dark:bg-slate-950/20 custom-scrollbar">
+              <div className="flex flex-col items-center justify-center py-8">
+                <div className="px-4 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-widest border border-slate-200 dark:border-slate-700 shadow-sm">
+                  Conversation Established
+                </div>
+              </div>
+
+              {messages.map((m, idx) => {
                 const isAdmin = m.sender === 'admin';
                 return (
-                  <div key={m.id} style={{ display: 'flex', justifyContent: isAdmin ? 'flex-end' : 'flex-start' }}>
-                    <div style={{
-                      maxWidth: '70%',
-                      padding: m.image_url ? '8px' : '10px 16px',
-                      borderRadius: 16,
-                      backgroundColor: isAdmin ? 'var(--color-primary)' : 'var(--chat-bubble-user-bg, #f1f5f9)',
-                      color: isAdmin ? '#ffffff' : 'var(--chat-bubble-user-text, #181d28)',
-                      fontSize: 14,
-                      overflowWrap: 'anywhere'
-                    }}>
-                      {m.image_url ? (
-                        <img src={m.image_url} alt="Attachment" style={{ maxWidth: '100%', borderRadius: 8, display: 'block' }} />
-                      ) : null}
-                      {m.content && <div style={{ marginTop: m.image_url ? 8 : 0 }}>{m.content}</div>}
-                      <div style={{ fontSize: 10, marginTop: 4, opacity: 0.7, textAlign: isAdmin ? 'right' : 'left' }}>
-                        {new Date(m.created_at).toLocaleTimeString()}
+                  <div key={m.id || idx} className={`flex ${isAdmin ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+                    <div className={`group relative max-w-[75%] space-y-1 ${isAdmin ? 'items-end' : 'items-start'}`}>
+                      <div className={`p-4 rounded-3xl text-sm font-medium shadow-sm transition-all ${
+                        isAdmin 
+                          ? 'bg-indigo-600 text-white rounded-br-none' 
+                          : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-bl-none border border-slate-100 dark:border-slate-700'
+                      }`}>
+                        {m.image_url && (
+                          <div className="mb-3 rounded-2xl overflow-hidden border border-black/5 dark:border-white/5 shadow-2xl">
+                            <img src={m.image_url} alt="Attachment" className="max-w-full h-auto object-cover" />
+                          </div>
+                        )}
+                        {m.content && <p className="leading-relaxed break-words">{m.content}</p>}
+                        <div className={`mt-2 flex items-center gap-2 opacity-60 text-[9px] font-black uppercase tracking-tighter ${isAdmin ? 'justify-end text-white' : 'justify-start text-slate-400'}`}>
+                          <Clock className="w-2.5 h-2.5" />
+                          {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {isAdmin && <CheckCircle2 className="w-2.5 h-2.5 text-indigo-200" />}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -273,57 +336,52 @@ export default function SupportChat() {
               <div ref={chatBottomRef} />
             </div>
 
-            <form onSubmit={handleSend} className="support-chat-form">
-              <button 
-                type="button" 
-                onClick={() => !uploading && fileInputRef.current?.click()}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-admin-muted)', padding: 4 }}
-                title="Attach Image"
-              >
-                {uploading ? (
-                  <span style={{ fontSize: 12 }}>...</span>
-                ) : (
-                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                  </svg>
-                )}
-              </button>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                style={{ display: 'none' }} 
-                accept="image/*" 
-                onChange={handleImageUpload} 
-              />
-              <input 
-                type="text" 
-                value={inputMsg}
-                onChange={(e) => setInputMsg(e.target.value)}
-                placeholder="Type your message..."
-                style={{ 
-                  flex: 1, 
-                  padding: '10px 16px', 
-                  borderRadius: 20, 
-                  border: '1px solid var(--border-color)', 
-                  backgroundColor: 'var(--bg-surface)', 
-                  color: 'var(--text-main)', 
-                  outline: 'none' 
-                }}
-              />
-              <button type="submit" className="btn-admin-primary" style={{ borderRadius: 20, padding: '0 24px' }}>
-                Send
-              </button>
-            </form>
+            {/* Input Bar */}
+            <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+              <form onSubmit={handleSend} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950 p-2 rounded-[28px] border border-slate-200 dark:border-slate-800 shadow-inner">
+                <button 
+                  type="button" 
+                  onClick={() => !uploading && fileInputRef.current?.click()}
+                  className={`p-3 rounded-full transition-all shrink-0 ${uploading ? 'bg-indigo-50 text-indigo-400' : 'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'}`}
+                >
+                  {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImageIcon className="w-5 h-5" />}
+                </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={handleImageUpload} 
+                />
+                <input 
+                  type="text" 
+                  value={inputMsg}
+                  onChange={(e) => setInputMsg(e.target.value)}
+                  placeholder="Draft your reply..."
+                  className="flex-1 bg-transparent border-none text-sm font-bold text-slate-900 dark:text-white outline-none placeholder:text-slate-400 px-2"
+                />
+                <button 
+                  type="submit" 
+                  disabled={!inputMsg.trim() || uploading}
+                  className="p-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:grayscale rounded-full text-white transition-all shadow-lg shadow-indigo-600/20 active:scale-90"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </form>
+            </div>
           </>
         ) : (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-            Select a session from the left to start chatting
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-6">
+            <div className="w-24 h-24 rounded-[32px] bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center shadow-xl border border-indigo-100 dark:border-indigo-900/30 animate-bounce-slow">
+              <MessageSquare className="w-10 h-10 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div className="space-y-2 max-w-xs mx-auto">
+              <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Support Terminal</h4>
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">Select an active client session from the directory to begin the administrative support protocol.</p>
+            </div>
           </div>
         )}
-      </div>
-      </div>
+      </Card>
     </div>
   );
 }

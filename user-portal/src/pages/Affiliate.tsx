@@ -158,143 +158,155 @@ export default function Affiliate() {
   const inviteLink = profile ? `${window.location.origin}/#/register?invite=${profile.invite_code}` : '';
 
   return (
-    <div className="affiliate-page" style={{ paddingBottom: '90px', display: 'flex', flexDirection: 'column', height: '100vh', overflowY: 'auto' }}>
+    <div className="affiliate-page pb-24 flex flex-col min-h-dvh overflow-y-auto bg-slate-50 dark:bg-slate-950">
       {/* Header Bar */}
-      <div className="orders-header">
-        <button className="header-back-btn" onClick={() => navigate('/profile')}>
+      <div className="orders-header px-6 py-4 flex items-center justify-between bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-50">
+        <button className="header-back-btn w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-500" onClick={() => navigate('/profile')}>
           <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none">
             <polyline points="15 18 9 12 15 6"></polyline>
           </svg>
         </button>
-        <span className="orders-title">Affiliate Center</span>
-        <div style={{ width: 40 }}></div>
+        <span className="orders-title font-black text-lg text-slate-900 dark:text-white">Affiliate Center</span>
+        <div className="w-10"></div>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '60px' }}>
-          <p>Loading your Affiliate dashboard...</p>
+        <div className="text-center text-slate-400 mt-20 flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-[#0071ce]/20 border-t-[#0071ce] rounded-full animate-spin"></div>
+          <p className="text-sm font-bold uppercase tracking-widest">Loading dashboard...</p>
         </div>
       ) : (
-        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="p-6 flex flex-col gap-6">
           
           {/* Main Referral Info Card */}
-          <div className="affiliate-card scale-up">
-            <div className="aff-card-header">
-              <span className="aff-card-badge">Affiliate Link</span>
+          <div className="affiliate-card scale-up bg-white dark:bg-slate-900 rounded-[32px] p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+            <div className="aff-card-header mb-4">
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-[#0071ce] text-[10px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-800">
+                Affiliate Link
+              </span>
             </div>
             
-            <div className="aff-info-row" style={{ marginTop: '12px' }}>
-              <div className="aff-info-lbl">My Invitation Code</div>
-              <div className="aff-info-val-wrap" onClick={() => handleCopy(profile?.invite_code, 'Invitation Code')}>
-                <span className="aff-info-val-text">{profile?.invite_code || '------'}</span>
-                <button className="aff-copy-btn">Copy</button>
+            <div className="space-y-4">
+              <div className="aff-info-row flex flex-col gap-2">
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">My Invitation Code</div>
+                <div className="aff-info-val-wrap flex items-center justify-between bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 cursor-pointer hover:border-[#0071ce] transition-all" onClick={() => handleCopy(profile?.invite_code, 'Invitation Code')}>
+                  <span className="text-lg font-black text-slate-900 dark:text-white font-mono">{profile?.invite_code || '------'}</span>
+                  <button className="text-[#0071ce] font-black text-[10px] uppercase tracking-widest">Copy</button>
+                </div>
               </div>
-            </div>
 
-            <div className="aff-info-row">
-              <div className="aff-info-lbl">Registration Link</div>
-              <div className="aff-info-val-wrap" onClick={() => handleCopy(inviteLink, 'Referral Link')} style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 12px' }}>
-                <span className="aff-info-val-text" style={{ fontSize: '11px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '80%' }}>
-                  {inviteLink}
-                </span>
-                <button className="aff-copy-btn">Copy</button>
+              <div className="aff-info-row flex flex-col gap-2">
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Registration Link</div>
+                <div className="aff-info-val-wrap flex items-center justify-between bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 cursor-pointer hover:border-[#0071ce] transition-all" onClick={() => handleCopy(inviteLink, 'Referral Link')}>
+                  <span className="text-[11px] font-bold text-slate-500 truncate max-w-[70%] font-mono">
+                    {inviteLink}
+                  </span>
+                  <button className="text-[#0071ce] font-black text-[10px] uppercase tracking-widest">Copy</button>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Referral Binding Section */}
-          <div className="affiliate-card scale-up" style={{ background: 'linear-gradient(135deg, rgba(0, 113, 206, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)' }}>
-            <div className="aff-card-header">
-              <span className="aff-card-title">Referrer Binding</span>
-            </div>
+          <div className="affiliate-card scale-up bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[32px] p-7 text-white shadow-xl shadow-blue-500/20 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+            <div className="relative z-10">
+              <div className="aff-card-header mb-4">
+                <span className="text-sm font-black uppercase tracking-widest">Referrer Binding</span>
+              </div>
 
-            {inviter ? (
-              <div style={{ marginTop: '12px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '12px', padding: '12px 14px', border: '1px solid rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Linked Account</div>
-                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#10b981', marginTop: '2px' }}>
-                    👤 {maskUsername(inviter.username)}
+              {inviter ? (
+                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20 flex items-center justify-between">
+                  <div>
+                    <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Linked Account</div>
+                    <div className="text-base font-black text-white mt-1">
+                      👤 {maskUsername(inviter.username)}
+                    </div>
+                  </div>
+                  <div className="text-[10px] font-black bg-emerald-500 text-white px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-500/30">
+                    Bound
                   </div>
                 </div>
-                <div style={{ fontSize: '11px', color: '#10b981', fontWeight: '600', textTransform: 'uppercase' }}>
-                  ✓ Securely Bound
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleBindReferral} style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-                  If you registered without an invitation code, please enter a friend's referral code below to link accounts. This binding is lifetime and cannot be changed.
-                </p>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input 
-                    type="text"
-                    value={referralInput}
-                    onChange={(e) => setReferralInput(e.target.value)}
-                    placeholder="Enter Invitation Code"
-                    className="aff-bind-input"
-                    maxLength={10}
-                    disabled={binding}
-                  />
-                  <button 
-                    type="submit" 
-                    className="aff-bind-submit"
-                    disabled={binding}
-                  >
-                    {binding ? 'Binding...' : 'Bind Link'}
-                  </button>
-                </div>
-              </form>
-            )}
+              ) : (
+                <form onSubmit={handleBindReferral} className="space-y-4">
+                  <p className="text-[11px] font-medium text-white/80 leading-relaxed">
+                    Registered without a code? Enter a friend's code below to link accounts permanently.
+                  </p>
+                  <div className="flex gap-3">
+                    <input 
+                      type="text"
+                      value={referralInput}
+                      onChange={(e) => setReferralInput(e.target.value)}
+                      placeholder="ENTER CODE"
+                      className="flex-1 bg-white/10 border border-white/20 rounded-2xl px-5 h-14 text-white placeholder:text-white/40 font-black tracking-widest outline-none focus:ring-2 focus:ring-white/30 transition-all"
+                      maxLength={10}
+                      disabled={binding}
+                    />
+                    <button 
+                      type="submit" 
+                      className="bg-white text-blue-600 rounded-2xl px-6 h-14 font-black uppercase text-xs tracking-widest shadow-lg shadow-black/10 active:scale-95 transition-all disabled:opacity-50"
+                      disabled={binding}
+                    >
+                      {binding ? '...' : 'BIND'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
 
           {/* Stats Summary Bento Grid */}
-          <div className="aff-stats-grid">
-            <div className="aff-stat-card scale-up">
-              <div className="aff-stat-label">👥 Team Size</div>
-              <div className="aff-stat-number">{referredUsers.length}</div>
-              <div className="aff-stat-description">Directly invited active users</div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white dark:bg-slate-900 rounded-[24px] p-5 shadow-sm border border-slate-100 dark:border-slate-800 scale-up">
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Team Size</div>
+              <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">{referredUsers.length}</div>
+              <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mt-1">Active users</div>
             </div>
 
-            <div className="aff-stat-card scale-up">
-              <div className="aff-stat-label">💰 Commission Share</div>
-              <div className="aff-stat-number">{profile?.commissions ? `$ ${parseFloat(profile.commissions).toFixed(2)}` : '$ 0.00'}</div>
-              <div className="aff-stat-description">Accumulated profit share</div>
+            <div className="bg-white dark:bg-slate-900 rounded-[24px] p-5 shadow-sm border border-slate-100 dark:border-slate-800 scale-up">
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Commissions</div>
+              <div className="text-2xl font-black text-[#0071ce] font-mono leading-none">
+                {profile?.commissions ? `$ ${parseFloat(profile.commissions).toFixed(2)}` : '$ 0.00'}
+              </div>
+              <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mt-1">Total Earned</div>
             </div>
           </div>
 
           {/* List of Invited Users */}
-          <div className="affiliate-card scale-up" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div className="aff-card-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-              <span className="aff-card-title">Downline Members ({referredUsers.length})</span>
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] p-6 shadow-sm border border-slate-100 dark:border-slate-800 scale-up flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-4">
+              <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest">Downline Members ({referredUsers.length})</span>
             </div>
 
             {referredUsers.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--text-muted)' }}>
-                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.3, marginBottom: '8px' }}>
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-                <div style={{ fontSize: '13px' }}>No referred users found yet</div>
-                <div style={{ fontSize: '11px', marginTop: '4px' }}>Share your registration link to start earning commissions!</div>
+              <div className="text-center py-12 flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-slate-200">
+                  <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-[13px] font-black text-slate-900 dark:text-white uppercase tracking-tight">No referrals yet</div>
+                  <div className="text-[11px] font-bold text-slate-400">Share link to start earning!</div>
+                </div>
               </div>
             ) : (
-              <div className="aff-users-list">
+              <div className="space-y-3">
                 {referredUsers.map((user) => (
-                  <div key={user.id} className="aff-user-item">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div className="aff-user-avatar">
+                  <div key={user.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-4">
+                      <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-[#0071ce] to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md shadow-blue-500/20">
                         {user.username.substring(0, 1).toUpperCase()}
                       </div>
-                      <div>
-                        <div className="aff-user-name">{maskUsername(user.username)}</div>
-                        <div className="aff-user-date">Joined: {new Date(user.reg_time).toLocaleDateString()}</div>
+                      <div className="flex flex-col">
+                        <div className="text-[13px] font-black text-slate-900 dark:text-white leading-none mb-1">{maskUsername(user.username)}</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Joined: {new Date(user.reg_time).toLocaleDateString()}</div>
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span className="aff-user-vip">{user.level || 'FREE VIP'}</span>
-                      <div className="aff-user-bal">Bal: ${parseFloat(user.balance).toFixed(2)}</div>
+                    <div className="text-right flex flex-col items-end gap-1">
+                      <span className="text-[9px] font-black bg-blue-50 dark:bg-blue-900/30 text-[#0071ce] px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-800">{user.level || 'FREE VIP'}</span>
+                      <div className="text-[11px] font-black text-emerald-500 font-mono">Bal: ${parseFloat(user.balance).toFixed(2)}</div>
                     </div>
                   </div>
                 ))}

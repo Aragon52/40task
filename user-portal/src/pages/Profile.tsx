@@ -309,9 +309,9 @@ export default function Profile({ balance, username, setUsername, setBalance, se
 
   return (
     <>
-      <div className="profile-page scale-up">
+      <div className="min-h-screen bg-slate-50 px-4 pt-6 pb-32 max-w-md mx-auto space-y-5 scale-up">
         {/* Profile Header */}
-        <div className="profile-header-card">
+        <div className="profile-header-card rounded-2xl">
           <div className="user-info-section">
             <div 
               className="user-avatar-large" 
@@ -391,24 +391,25 @@ export default function Profile({ balance, username, setUsername, setBalance, se
         <div className="profile-grid-layout">
           <div className="profile-left-col">
             {/* Menu list section */}
-            <div className="profile-menu-container">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
               {menuItems.map((item, idx) => (
-                <div
+                <button
                   key={idx}
-                  className={`menu-item ${item.isDanger ? 'danger-item' : ''}`}
+                  type="button"
+                  className={`w-full px-5 py-4 flex items-center justify-between text-sm font-medium ${item.isDanger ? 'text-rose-600' : 'text-slate-700'} hover:bg-slate-50 active:bg-slate-100 cursor-pointer transition-colors text-left`}
                   onClick={item.action ? item.action : () => navigate(item.path)}
                   id={`btn-menu-${item.label.replace(/\s+/g, '-').toLowerCase()}`}
                 >
-                  <div className="menu-item-left">
-                    <span className="menu-icon">{item.icon}</span>
-                    <span className="menu-label">{item.label}</span>
+                  <div className="flex items-center gap-3">
+                    <span className={item.isDanger ? 'text-rose-500' : 'text-blue-600'}>{item.icon}</span>
+                    <span>{item.label}</span>
                   </div>
-                  <div className="menu-item-right">
+                  <div className="text-slate-400">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="m9 18 6-6-6-6" />
                     </svg>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>

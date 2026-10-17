@@ -138,7 +138,7 @@ export default function Sidebar({
 
       {/* Side Navigation Bar */}
       <aside 
-        className={`bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 flex flex-col transition-all duration-200 ease-in-out shrink-0 z-50 h-dvh select-none ${
+        className={`bg-white dark:bg-slate-900 border-r border-slate-200 flex flex-col transition-all duration-200 ease-in-out shrink-0 z-50 h-dvh select-none ${
           'hidden md:flex'
         } ${
           isCollapsed ? 'md:w-16 md:flex-[0_0_4rem]' : 'md:w-64 md:flex-[0_0_16rem]'
@@ -192,7 +192,7 @@ export default function Sidebar({
         </div>
 
         {/* Navigation Items List */}
-        <nav className="flex-1 min-w-0 overflow-y-auto px-3 py-4 space-y-1.5 no-scrollbar">
+        <nav className="flex-1 min-w-0 overflow-y-auto p-6 space-y-6 no-scrollbar">
           {menuItems.map(item => {
             const IconComponent = item.icon;
             const isActive = activeTab === item.id;

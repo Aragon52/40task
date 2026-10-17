@@ -416,7 +416,7 @@ export default function App() {
   }
 
   return (
-    <div className="admin-shell flex overflow-hidden bg-slate-50 dark:bg-slate-950 font-sans antialiased text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex overflow-hidden font-sans antialiased text-slate-900 dark:text-slate-100">
       <Toaster position="top-center" reverseOrder={false} />
       <Sidebar 
         activeTab={activeTab} 
@@ -437,7 +437,9 @@ export default function App() {
           onLogout={handleLogout}
         />
         <main className="flex-1 overflow-y-auto">
-          {renderContent()}
+          <div className="p-8 lg:p-10 max-w-7xl mx-auto space-y-8">
+            {renderContent()}
+          </div>
         </main>
       </div>
     </div>

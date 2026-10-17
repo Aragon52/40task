@@ -15,19 +15,25 @@ import {
   Eye,
   Settings as SettingsIcon,
   Bitcoin,
-  TrendingUp
+  TrendingUp,
+  Mail,
+  ShieldCheck,
+  RefreshCcw,
+  Zap,
+  Globe,
+  Info
 } from 'lucide-react';
+import { Button, Card, Input, Badge } from '@/src/shared/UI';
 
 export default function Settings() {
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState<any>(null);
   const [photoUrl, setPhotoUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     newPassword: '',
     confirmPassword: ''
   });
-  const [usdtAddress, setUsdtAddress] = useState('');
-  const [cryptoAddresses, setCryptoAddresses] = useState({
+  const [cryptoAddresses, setCryptoAddresses] = useState<any>({
     usdt_address: '',
     usdt_erc20_address: '',
     btc_address: '',
@@ -54,7 +60,6 @@ export default function Settings() {
         .eq('id', 1)
         .single();
       if (!error && data) {
-        setUsdtAddress(data.usdt_address || '');
         setCryptoAddresses({
           usdt_address:       data.usdt_address       || '',
           usdt_erc20_address: data.usdt_erc20_address || '',
@@ -71,43 +76,35 @@ export default function Settings() {
     }
   };
 
-  const handlePhotoUpdate = async (e) => {
+  const handlePhotoUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session || !photoUrl) return;
 
     setLoading(true);
     try {
       const table = session.role === 'Staff' ? 'cb_staff' : 'cb_admins';
-      const matchCol = 'email';
-
       const { error } = await supabase
         .from(table)
         .update({ profile_photo: photoUrl })
-        .eq(matchCol, session.email);
+        .eq('email', session.email);
 
       if (error) {
-        if (error.code === '42703') {
-          toast.error("Database Schema Error: The profile_photo column does not exist. Please contact support or run the schema update.");
-        } else {
-          toast.error("Failed to update profile photo: " + error.message);
-        }
+        toast.error("Failed to update profile photo: " + error.message);
       } else {
         toast.success("Profile photo updated successfully!");
-        
-        // Update local session to show the change live
         const updatedSession = { ...session, avatarUrl: photoUrl };
         setSession(updatedSession);
         localStorage.setItem('cb_admin_session', JSON.stringify(updatedSession));
-        
         setPhotoUrl('');
       }
     } catch (err) {
       toast.error("Error updating profile photo.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handlePasswordChange = async (e) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast.error("New passwords do not match.");
@@ -116,7 +113,7 @@ export default function Settings() {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.updateUser({
+      const { error } = await supabase.auth.updateUser({
         password: passwordForm.newPassword
       });
 
@@ -128,11 +125,12 @@ export default function Settings() {
       }
     } catch (err) {
       toast.error("Error updating password.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleUsdtUpdate = async (e) => {
+  const handleUsdtUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
@@ -148,249 +146,229 @@ export default function Settings() {
       }
     } catch (err) {
       toast.error('Error updating deposit settings.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (!session) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-indigo-200 border-4 border-indigo-500 border-t-transparent animate-spin"></div>
-          <span className="text-sm font-medium text-slate-500">Retrieving secure access configurations...</span>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Verifying Node Integrity...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="admin-page-container scale-up">
-      <div className="w-full space-y-6">
-        {/* Upper Status / Header Section */}
-        <div className="admin-card flex items-center justify-between" style={{ padding: '24px 32px' }}>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Header Card */}
+      <Card className="relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="flex items-center gap-5">
-            <div className="relative w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center shadow-sm">
-              {session.avatarUrl || session.profile_photo ? (
-                <img 
-                  src={session.avatarUrl || session.profile_photo} 
-                  alt="Operator profile" 
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User className="w-8 h-8 text-slate-400" />
-              )}
+            <div className="relative group shrink-0">
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center shadow-lg group-hover:border-indigo-500 transition-all duration-300">
+                {session.avatarUrl || session.profile_photo ? (
+                  <img src={session.avatarUrl || session.profile_photo} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-8 h-8 text-slate-400 group-hover:text-indigo-400" />
+                )}
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-lg border-2 border-white dark:border-slate-900 flex items-center justify-center shadow-lg">
+                <ShieldCheck className="w-3 h-3 text-white" />
+              </div>
             </div>
 
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">{session.name || session.email}</h2>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-200/50 uppercase tracking-wider">
-                  {session.role}
-                </span>
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">{session.name || session.email}</h2>
+                <Badge variant="success" className="text-[9px] font-black uppercase tracking-widest py-0.5 px-2">{session.role}</Badge>
               </div>
-              <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-emerald-500" />
-                Authorized Security Key Node • {session.email}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-[11px] font-bold text-slate-500">{session.email}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Active Node</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div className="text-right">
+              <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">System Connection</div>
+              <div className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">Fully Operational</div>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+              <RefreshCcw className="w-5 h-5 animate-spin-slow" />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Profile Card */}
+        <Card className="space-y-6">
+          <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center">
+              <Camera className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Identity Visuals</h3>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Update your platform avatar</p>
+            </div>
+          </div>
+
+          <form onSubmit={handlePhotoUpdate} className="space-y-5">
+            <Input
+              label="AVATAR IMAGE URL (HTTPS)"
+              placeholder="https://images.unsplash.com/photo..."
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+              icon={<Link className="w-4 h-4" />}
+            />
+
+            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-4">
+               <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 flex items-center justify-center overflow-hidden shrink-0">
+                  {photoUrl ? <img src={photoUrl} className="w-full h-full object-cover rounded-lg" /> : <User className="w-6 h-6 text-slate-300" />}
+               </div>
+               <div className="space-y-1">
+                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Live Preview</span>
+                 <p className="text-[10px] font-bold text-slate-500 leading-tight">Image will update across all administrative panels upon saving.</p>
+               </div>
+            </div>
+
+            <Button 
+              type="submit" 
+              loading={loading}
+              className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 text-[11px] font-black uppercase tracking-widest"
+              icon={<Save className="w-4 h-4" />}
+            >
+              Commit Visual Update
+            </Button>
+          </form>
+        </Card>
+
+        {/* Security Card */}
+        <Card className="space-y-6">
+          <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Security Protocols</h3>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Rotate access credentials</p>
+            </div>
+          </div>
+
+          <form onSubmit={handlePasswordChange} className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="NEW PASSWORD"
+                type="password"
+                placeholder="••••••••"
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                icon={<Key className="w-4 h-4" />}
+              />
+              <Input
+                label="CONFIRM ROTATION"
+                type="password"
+                placeholder="••••••••"
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                icon={<ShieldCheck className="w-4 h-4" />}
+              />
+            </div>
+
+            <div className="bg-amber-500/5 border border-amber-500/10 p-4 rounded-2xl flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 leading-relaxed uppercase tracking-tight">
+                Passwords must be at least 8 characters. Changing your password will invalidate active sessions on other devices.
               </p>
             </div>
-          </div>
 
-          <div className="text-right">
-            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Active Node Status</div>
-            <div className="text-lg font-bold text-slate-900 dark:text-slate-50 mt-1">Operational</div>
-            <div className="text-xs text-emerald-500 font-medium mt-1 flex items-center gap-1.5 justify-end">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-              All services connected
-            </div>
-          </div>
-        </div>
+            <Button 
+              type="submit" 
+              loading={loading}
+              className="w-full h-11 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 shadow-lg text-[11px] font-black uppercase tracking-widest"
+              icon={<Zap className="w-4 h-4" />}
+            >
+              Rotate Security Key
+            </Button>
+          </form>
+        </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Profile Photo Settings Card */}
-          <div className="admin-card flex flex-col justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
-                  <Camera className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="section-title">Profile Avatar</h3>
-                  <p className="text-xs text-slate-500">Update your avatar image</p>
-                </div>
-              </div>
-
-              <form onSubmit={handlePhotoUpdate} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Image URL</label>
-                  <input 
-                    type="url" 
-                    placeholder="https://example.com/avatar.jpg" 
-                    value={photoUrl}
-                    onChange={(e) => setPhotoUrl(e.target.value)}
-                    required
-                    className="search-input w-full h-9 pl-3 text-sm"
-                  />
-                </div>
-
-                {/* Live Preview Container */}
-                <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg flex items-center gap-3 border border-slate-100 dark:border-slate-800">
-                  <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden flex-shrink-0 border-2 border-white shadow-sm">
-                    {photoUrl ? (
-                      <img 
-                        src={photoUrl} 
-                        alt="Preview" 
-                        onError={(e) => { (e.target as HTMLImageElement).src = ''; }}
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400 text-[10px]">No img</div>
-                    )}
-                  </div>
-                  <div className="space-y-0.5">
-                    <div className="text-sm font-medium text-slate-800 dark:text-slate-300">Preview</div>
-                    <p className="text-[11px] text-slate-500">Live preview of your avatar.</p>
-                  </div>
-                </div>
-
-                <button 
-                  type="submit" 
-                  disabled={loading}
-                  className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  {loading ? 'Processing...' : 'Save Avatar'}
-                </button>
-              </form>
-            </div>
-          </div>
-
-          {/* Access Security Credentials Form */}
-          <div className="admin-card flex flex-col justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
-                  <Lock className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="section-title">Security</h3>
-                  <p className="text-xs text-slate-500">Update your password</p>
-                </div>
-              </div>
-
-              <form onSubmit={handlePasswordChange} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">New Password</label>
-                    <input 
-                      type="password" 
-                      placeholder="••••••••" 
-                      value={passwordForm.newPassword}
-                      onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                      required
-                      className="search-input w-full h-9 pl-3 text-sm"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Confirm Password</label>
-                    <input 
-                      type="password" 
-                      placeholder="••••••••" 
-                      value={passwordForm.confirmPassword}
-                      onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                      required
-                      className="search-input w-full h-9 pl-3 text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border border-slate-100 dark:border-slate-800 space-y-1.5">
-                  <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5 text-slate-400" />
-                    Guidelines
-                  </div>
-                  <ul className="text-[11px] text-slate-500 space-y-1 list-disc list-inside">
-                    <li>Use a strong, unique password.</li>
-                    <li>Updates apply immediately across all sessions.</li>
-                  </ul>
-                </div>
-
-                <button 
-                  type="submit" 
-                  disabled={loading}
-                  className="w-full py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 rounded-lg font-semibold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <Key className="w-4 h-4" />
-                  {loading ? 'Processing...' : 'Update Password'}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        {/* Crypto Address Settings (Owner Only) */}
+        {/* Global Wallet Settings (Owner Only) */}
         {session.role === 'Owner' && (
-          <div className="admin-card space-y-6">
+          <Card className="lg:col-span-2 space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
-                  <Coins className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                  <Bitcoin className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="section-title">Wallet Addresses</h3>
-                  <p className="text-xs text-slate-500">Configure global deposit destinations</p>
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Global Payment Nodes</h3>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Configure primary receiving destinations</p>
                 </div>
               </div>
             </div>
 
-            <form onSubmit={handleUsdtUpdate} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <form onSubmit={handleUsdtUpdate} className="space-y-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                  { key: 'usdt_address',       label: 'USDT (TRC20)',    badge: 'TRX' },
-                  { key: 'usdt_erc20_address', label: 'USDT (ERC20)',    badge: 'ETH' },
-                  { key: 'btc_address',        label: 'BTC',             badge: 'BTC' },
-                  { key: 'eth_address',        label: 'ETH',             badge: 'ETH' },
-                  { key: 'bnb_address',        label: 'BNB',             badge: 'BSC' },
-                  { key: 'xrp_address',        label: 'XRP',             badge: 'XRP' },
-                  { key: 'sol_address',        label: 'SOL',             badge: 'SOL' },
-                  { key: 'doge_address',       label: 'DOGE',            badge: 'DOGE' },
-                ].map(({ key, label, badge }) => (
+                  { key: 'usdt_address',       label: 'USDT (TRC20)',    color: 'text-emerald-500' },
+                  { key: 'usdt_erc20_address', label: 'USDT (ERC20)',    color: 'text-indigo-500' },
+                  { key: 'btc_address',        label: 'Bitcoin (BTC)',   color: 'text-amber-500' },
+                  { key: 'eth_address',        label: 'Ethereum (ETH)',  color: 'text-blue-500' },
+                  { key: 'bnb_address',        label: 'BNB (Smart Chain)', color: 'text-yellow-500' },
+                  { key: 'xrp_address',        label: 'Ripple (XRP)',    color: 'text-slate-400' },
+                  { key: 'sol_address',        label: 'Solana (SOL)',    color: 'text-purple-500' },
+                  { key: 'doge_address',       label: 'Dogecoin (DOGE)', color: 'text-orange-500' },
+                ].map(({ key, label, color }) => (
                   <div key={key} className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{label}</label>
-                    </div>
+                    <label className={`text-[9px] font-black uppercase tracking-widest ml-1 ${color}`}>{label}</label>
                     <input
                       type="text"
-                      placeholder="Not set"
+                      placeholder="Node Not Bound"
                       value={cryptoAddresses[key]}
-                      onChange={e => setCryptoAddresses(prev => ({ ...prev, [key]: e.target.value }))}
-                      id={`input-addr-${key}`}
-                      className="search-input w-full h-9 pl-3 text-sm font-mono"
+                      onChange={e => setCryptoAddresses((prev: any) => ({ ...prev, [key]: e.target.value }))}
+                      className="w-full h-10 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-[11px] font-mono font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-600 transition-all placeholder:text-slate-400 placeholder:italic"
                     />
                   </div>
                 ))}
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                  <span>Leave blank to disable a receiving channel.</span>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-3 p-3 bg-indigo-500/5 rounded-xl border border-indigo-500/10">
+                  <Info className="w-4 h-4 text-indigo-500 shrink-0" />
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-relaxed">
+                    Leave any node blank to temporarily disable that payment channel in the user dashboard.
+                  </span>
                 </div>
-                <button 
+                <Button 
                   type="submit" 
-                  disabled={loading}
-                  className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  loading={loading}
+                  className="px-12 h-12 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20 text-[11px] font-black uppercase tracking-widest"
+                  icon={<Save className="w-4 h-4" />}
                 >
-                  <Save className="w-4 h-4" />
-                  {loading ? 'Processing...' : 'Save Settings'}
-                </button>
+                  Deploy Global Node Updates
+                </Button>
               </div>
             </form>
-          </div>
+          </Card>
         )}
       </div>
     </div>
   );
 }
+
+const Loader2 = ({ className }: { className?: string }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+);

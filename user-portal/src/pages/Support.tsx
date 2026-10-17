@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
-
 import toast from 'react-hot-toast';
+
 export default function Support() {
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
@@ -83,7 +83,7 @@ export default function Support() {
     await supabase.from('cb_support_messages').insert([newMsg]);
     await supabase.from('cb_support_sessions').update({ 
       last_message_at: new Date().toISOString(),
-      unread_admin_count: 1 // Just a simple increment approach could be better, but this triggers admin attention
+      unread_admin_count: 1
     }).eq('id', sessionId);
   };
 
@@ -115,7 +115,7 @@ export default function Support() {
       const newMsg = {
         session_id: sessionId,
         sender: 'user',
-        content: '', // Optional: could be empty if just an image
+        content: '',
         image_url: imageUrl
       };
 
@@ -133,361 +133,125 @@ export default function Support() {
   };
 
   return (
-    <>
-      <div className="support-page scale-up">
-        {/* Support Header replicated from Screenshot 6 */}
-        <div className="support-header">
-          <div className="header-back-btn" onClick={() => navigate('/home')}>
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-          </div>
-          
-          <div className="agent-info-row">
-            {/* Agent Avatar representation */}
-            <div className="agent-avatar" style={{ backgroundColor: 'var(--bg-input)' }}>
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--primary-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-              <span className="online-indicator-dot"></span>
+    <div className="flex flex-col h-screen max-w-md mx-auto bg-slate-50 relative pb-32">
+      {/* Sticky Chat Header */}
+      <div className="h-16 px-4 bg-white/95 backdrop-blur border-b border-slate-100 flex items-center justify-between sticky top-0 z-20 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+              CS
             </div>
-            <div className="agent-titles">
-              <span className="agent-name">Online customer service</span>
-              <span className="agent-status">Always here to help</span>
-            </div>
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
           </div>
-
-          <div className="header-audio-btn">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
-            </svg>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">Live Support</h3>
+            <p className="text-[11px] text-emerald-600 font-medium">Online • Typically replies instantly</p>
           </div>
         </div>
 
-        {/* Message history */}
-        <div className="chat-history-container">
-          <span className="message-history-title">Message History</span>
-          <span className="chat-date-divider">5/28/2026</span>
-
-          {messages.map(msg => (
-            <div key={msg.id} className={`chat-bubble-row ${msg.sender === 'user' ? 'outgoing' : 'incoming'}`}>
-              {msg.sender === 'admin' && (
-                <div className="chat-avatar-mini">CS</div>
-              )}
-              <div className="chat-bubble-container">
-                <div className="chat-bubble" style={{ padding: msg.image_url ? '8px' : undefined }}>
-                  {msg.image_url ? (
-                    <img src={msg.image_url} alt="Attachment" style={{ maxWidth: '100%', borderRadius: '8px' }} />
-                  ) : null}
-                  {msg.content && <div style={{ marginTop: msg.image_url ? 8 : 0 }}>{msg.content}</div>}
-                </div>
-                <span className="chat-meta-time">
-                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} 
-                  {msg.sender === 'user' && <span className="read-status">{msg.is_read ? 'Read' : 'Delivered'}</span>}
-                </span>
-              </div>
-            </div>
-          ))}
-          <div ref={chatBottomRef} />
-        </div>
-
-        {/* Floating Chat input box */}
-        <div className="chat-input-bar">
-          <div className="chat-input-wrapper">
-            <button className="chat-tool-btn" title="Add emoji">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-                <line x1="9" y1="9" x2="9.01" y2="9" />
-                <line x1="15" y1="9" x2="15.01" y2="9" />
-              </svg>
-            </button>
-
-            <button className="chat-tool-btn" title="Attach image" onClick={() => !uploading && fileInputRef.current?.click()}>
-              {uploading ? (
-                <span style={{ fontSize: 10 }}>...</span>
-              ) : (
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
-                </svg>
-              )}
-            </button>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              style={{ display: 'none' }} 
-              accept="image/*" 
-              onChange={handleImageUpload} 
-            />
-
-            <input 
-              type="text" 
-              className="message-text-input" 
-              placeholder="Please enter message..." 
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              id="txt-support-message"
-            />
-
-            <button className="message-send-btn" onClick={handleSendMessage} id="btn-send-message">
-              Send
-            </button>
-          </div>
-        </div>
+        <button 
+          onClick={() => navigate('/home')} 
+          className="p-2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer rounded-xl hover:bg-slate-100"
+          title="Back to Home"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
       </div>
 
-      <style>{`
-        .support-page {
-          display: flex;
-          flex-direction: column;
-          height: calc(100vh - 68px); /* Height minus tab bar */
-          background-color: var(--bg-app);
-          position: relative;
-        }
+      {/* Messages Body */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-36">
+        {messages.map((msg) => {
+          const isUser = msg.sender === 'user';
+          return (
+            <div 
+              key={msg.id} 
+              className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+            >
+              <div 
+                className={
+                  isUser 
+                    ? "bg-blue-600 text-white rounded-2xl rounded-tr-xs px-4 py-2.5 text-sm max-w-[80%] ml-auto shadow-xs"
+                    : "bg-white border border-slate-200/80 text-slate-800 rounded-2xl rounded-tl-xs px-4 py-2.5 text-sm max-w-[80%] mr-auto shadow-2xs"
+                }
+              >
+                {msg.image_url && (
+                  <img 
+                    src={msg.image_url} 
+                    alt="Attachment" 
+                    className="max-w-full rounded-lg mb-2 object-cover" 
+                  />
+                )}
+                {msg.content && <div>{msg.content}</div>}
+              </div>
 
-        .support-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: var(--primary-gradient);
-          color: white;
-          padding: 10px 16px;
-          height: 60px;
-          box-shadow: 0 4px 12px rgba(255, 95, 31, 0.15);
-        }
+              <span className="text-[10px] text-slate-400 mt-1 block px-1 font-mono">
+                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {isUser && (
+                  <span className="ml-1 text-blue-500 font-medium">
+                    {msg.is_read ? '• Read' : '• Delivered'}
+                  </span>
+                )}
+              </span>
+            </div>
+          );
+        })}
+        <div ref={chatBottomRef} />
+      </div>
 
-        .agent-info-row {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex: 1;
-          margin-left: 8px;
-        }
+      {/* Docked Modern Input Bar */}
+      <div className="fixed bottom-20 inset-x-0 mx-auto w-full max-w-md bg-white border-t border-slate-200 px-3 py-3 z-[100001] shadow-lg">
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSendMessage();
+          }} 
+          className="flex items-center gap-2"
+        >
+          <button 
+            type="button" 
+            onClick={() => !uploading && fileInputRef.current?.click()} 
+            className="p-2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer rounded-xl hover:bg-slate-100 shrink-0"
+            title="Attach image"
+          >
+            {uploading ? (
+              <span className="text-xs font-bold animate-pulse">...</span>
+            ) : (
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+            )}
+          </button>
+          
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept="image/*" 
+            onChange={handleImageUpload} 
+          />
 
-        .agent-avatar {
-          width: 40px;
-          height: 40px;
-          background-color: white;
-          border-radius: 50%;
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 2px solid rgba(255,255,255,0.4);
-        }
+          <input
+            type="text"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            placeholder="Type your message..."
+            className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            id="txt-support-message"
+          />
 
-        .avatar-img-placeholder {
-          font-size: 24px;
-        }
-
-        .online-indicator-dot {
-          position: absolute;
-          bottom: 0;
-          right: 0;
-          width: 10px;
-          height: 10px;
-          background-color: #22c55e;
-          border: 2px solid white;
-          border-radius: 50%;
-        }
-
-        .agent-titles {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .agent-name {
-          font-size: 14px;
-          font-weight: 600;
-        }
-
-        .agent-status {
-          font-size: 10px;
-          opacity: 0.85;
-        }
-
-        .header-audio-btn {
-          width: 36px;
-          height: 36px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.15);
-        }
-
-        /* Message feed area */
-        .chat-history-container {
-          flex: 1;
-          overflow-y: auto;
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          padding-bottom: 74px; /* Space for input bar */
-        }
-
-        .message-history-title {
-          font-size: 12px;
-          color: var(--text-light);
-          text-align: center;
-          margin: 8px 0;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .chat-date-divider {
-          background-color: #e2e8f0;
-          color: var(--text-muted);
-          font-size: 10px;
-          font-weight: 550;
-          font-family: var(--font-secondary);
-          padding: 2px 8px;
-          border-radius: 4px;
-          align-self: center;
-          margin-bottom: 8px;
-        }
-
-        .chat-bubble-row {
-          display: flex;
-          gap: 8px;
-          max-width: 80%;
-        }
-
-        .chat-bubble-row.incoming {
-          align-self: flex-start;
-        }
-
-        .chat-bubble-row.outgoing {
-          align-self: flex-end;
-          flex-direction: row-reverse;
-        }
-
-        .chat-avatar-mini {
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background-color: var(--primary-light);
-          border: 1px solid var(--primary-color);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 10px;
-          font-weight: 700;
-          color: var(--primary-color);
-          margin-top: 4px;
-          flex-shrink: 0;
-        }
-
-        .chat-bubble-container {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .chat-bubble {
-          padding: 10px 14px;
-          border-radius: var(--border-radius-md);
-          font-size: 13px;
-          line-height: 1.5;
-          word-break: break-word;
-        }
-
-        .incoming .chat-bubble {
-          background-color: var(--bg-input);
-          color: var(--text-main);
-          border-top-left-radius: 4px;
-          border: var(--border-glass);
-        }
-
-        .outgoing .chat-bubble {
-          background: var(--primary-gradient);
-          color: white;
-          border-top-right-radius: 4px;
-          box-shadow: 0 2px 8px rgba(0, 113, 206, 0.2);
-        }
-
-        .chat-meta-time {
-          font-size: 9px;
-          color: var(--text-light);
-          font-family: var(--font-secondary);
-        }
-
-        .incoming .chat-meta-time {
-          align-self: flex-start;
-        }
-
-        .outgoing .chat-meta-time {
-          align-self: flex-end;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-
-        .read-status {
-          color: #3b82f6;
-          font-weight: 600;
-        }
-
-        /* Floating Input box */
-        .chat-input-bar {
-          position: absolute;
-          bottom: 12px;
-          left: 12px;
-          right: 12px;
-          z-index: 10;
-        }
-
-        .chat-input-wrapper {
-          display: flex;
-          align-items: center;
-          background-color: var(--bg-card);
-          padding: 6px;
-          border-radius: 30px;
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-          border: 1.5px solid var(--primary-color);
-        }
-
-        .chat-tool-btn {
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--text-light);
-        }
-
-        .chat-tool-btn:hover {
-          color: var(--text-muted);
-        }
-
-        .message-text-input {
-          flex: 1;
-          height: 36px;
-          padding: 0 10px;
-          font-size: 13px;
-          background-color: transparent;
-        }
-
-        .message-send-btn {
-          height: 34px;
-          padding: 0 16px;
-          border-radius: 17px;
-          background: var(--primary-gradient);
-          color: white;
-          font-size: 12px;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 2px 6px rgba(255, 95, 31, 0.2);
-        }
-      `}</style>
-    </>
+          <button
+            type="submit"
+            id="btn-send-message"
+            className="h-10 px-5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center justify-center shrink-0 cursor-pointer"
+          >
+            Send
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }

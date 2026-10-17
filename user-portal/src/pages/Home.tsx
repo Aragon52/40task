@@ -180,197 +180,198 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
 
   return (
     <>
-      <div className="home-container scale-up">
-        <div className="home-grid-layout">
-          <div className="home-left-col">
-            {/* ── Professional E-Commerce Banner Carousel ── */}
-            <div className="ec-banner-carousel">
-              {BANNERS.map((b, i) => (
-                <div
-                  key={b.id}
-                  className={`ec-slide ${i === slide ? 'ec-slide-active' : ''}`}
-                  style={{ backgroundImage: `url(${b.img})` }}
-                >
-                  {/* Dark gradient overlay */}
-                  <div className="ec-slide-overlay" style={{ '--accent': b.accent } as React.CSSProperties} />
-
-                  <div className="ec-slide-content">
-                    <span className="ec-tag" style={{ background: b.accent }}>{b.tag}</span>
-                    <h2 className="ec-title">{b.title}</h2>
-                    <p className="ec-sub">{b.sub}</p>
-                  </div>
-                </div>
-              ))}
-
-              {/* Dot indicators */}
-              <div className="ec-dots">
-                {BANNERS.map((_, i) => (
-                  <button
-                    key={i}
-                    className={`ec-dot ${i === slide ? 'ec-dot-active' : ''}`}
-                    onClick={() => setSlide(i)}
-                    style={i === slide ? { background: BANNERS[slide].accent, width: 20 } : {}}
-                  />
-                ))}
-              </div>
-
-              {/* Progress bar */}
-              <div className="ec-progress">
-                <div
-                  key={slide}
-                  className="ec-progress-bar"
-                  style={{ background: BANNERS[slide].accent }}
-                />
-              </div>
-            </div>
-
-            {/* Balance Card */}
-            <div className="balance-card">
-              <div className="balance-user-row">
-                <span className="username-text" id="lbl-username">{username}</span>
-              </div>
-              <div className="balance-amount-row">
-                <span className="balance-currency">$</span>
-                <span className="balance-value" id="lbl-balance">{formattedBalance}</span>
-              </div>
-              <div className="balance-label-row">
-                <span className="balance-label">
-                  {currentTheme === 'orange' ? 'Balance' : 'Account Balance'}
-                </span>
-              </div>
-            </div>
-
-            {/* Action Button: Earn / Start Earning */}
-            <button 
-              className="earn-action-btn"
-              onClick={() => navigate('/match')}
-              id="btn-start-earning"
+      <div className="flex flex-col space-y-5 px-4 pt-4 pb-32 w-full scale-up">
+        {/* ── 1. Top E-Commerce Banner Carousel ── */}
+        <div className="ec-banner-carousel">
+          {BANNERS.map((b, i) => (
+            <div
+              key={b.id}
+              className={`ec-slide ${i === slide ? 'ec-slide-active' : ''}`}
+              style={{ backgroundImage: `url(${b.img})` }}
             >
-              {currentTheme === 'orange' ? 'Earn' : 'Start Earning'}
-            </button>
+              {/* Dark gradient overlay */}
+              <div className="ec-slide-overlay" style={{ '--accent': b.accent } as React.CSSProperties} />
+
+              <div className="ec-slide-content">
+                <span className="ec-tag" style={{ background: b.accent }}>{b.tag}</span>
+                <h2 className="ec-title">{b.title}</h2>
+                <p className="ec-sub">{b.sub}</p>
+              </div>
+            </div>
+          ))}
+
+          {/* Dot indicators */}
+          <div className="ec-dots">
+            {BANNERS.map((_, i) => (
+              <button
+                key={i}
+                className={`ec-dot ${i === slide ? 'ec-dot-active' : ''}`}
+                onClick={() => setSlide(i)}
+                style={i === slide ? { background: BANNERS[slide].accent, width: 20 } : {}}
+              />
+            ))}
           </div>
 
-          <div className="home-right-col">
-            {/* Circular Icon Grid */}
-            <div className="icon-grid">
-              <div className="grid-item-container" onClick={() => navigate('/support')} id="btn-quick-notification">
-                <div className="icon-circle">
-                  {/* Notification bubble icon */}
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    <path d="M8 10h8" />
-                    <path d="M8 14h6" />
-                  </svg>
-                </div>
-                <span className="grid-label">
-                  {currentTheme === 'orange' ? 'Notification' : 'Notifications'}
-                </span>
-              </div>
+          {/* Progress bar */}
+          <div className="ec-progress">
+            <div
+              key={slide}
+              className="ec-progress-bar"
+              style={{ background: BANNERS[slide].accent }}
+            />
+          </div>
+        </div>
 
-              <div className="grid-item-container" onClick={() => navigate('/deposit')} id="btn-quick-deposit">
-                <div className="icon-circle">
-                  {/* Box with B letter */}
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="16" rx="2" />
-                    <path d="M7 10h4a2 2 0 0 1 0 4H7z" />
-                    <path d="M7 14h4a2 2 0 0 1 0 4H7z" />
-                    <path d="M9 8v12" />
-                  </svg>
-                </div>
-                <span className="grid-label">Deposit</span>
-              </div>
+        {/* ── 2. Balance Card ── */}
+        <div className="balance-card">
+          <div className="balance-user-row">
+            <span className="username-text" id="lbl-username">{username}</span>
+          </div>
+          <div className="balance-amount-row">
+            <span className="balance-currency">$</span>
+            <span className="balance-value" id="lbl-balance">{formattedBalance}</span>
+          </div>
+          <div className="balance-label-row">
+            <span className="balance-label">
+              {currentTheme === 'orange' ? 'Balance' : 'Account Balance'}
+            </span>
+          </div>
+        </div>
 
-              <div className="grid-item-container" onClick={() => navigate('/withdraw')} id="btn-quick-withdraw">
-                <div className="icon-circle">
-                  {/* Hand holding coin/B */}
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v3" />
-                    <path d="M14 10V5a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v5" />
-                    <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8.5a4 4 0 0 0 4 4h2a5 5 0 0 0 5-5" />
-                  </svg>
-                </div>
-                <span className="grid-label">Withdraw</span>
-              </div>
+        {/* ── 3. Interactive Earn Banner Strip ── */}
+        <div 
+          className="flex items-center justify-between p-3.5 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-transparent border border-blue-100/60 rounded-2xl cursor-pointer hover:bg-blue-50/50 transition-colors shadow-xs"
+          onClick={() => navigate('/match')}
+          id="btn-start-earning"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="flex items-center justify-center w-7 h-7 rounded-xl bg-blue-600 text-white text-xs font-bold shadow-xs">
+              ⚡
+            </span>
+            <div>
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-100">Earn Daily Commissions</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Match orders to boost daily yield</p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-blue-100 dark:border-blue-900/50 shadow-2xs">
+            Active
+          </span>
+        </div>
 
-              <div className="grid-item-container" onClick={() => navigate('/affiliate')} id="btn-quick-invite">
-                <div className="icon-circle">
-                  {/* Gift Icon */}
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 12 20 22 4 22 4 12" />
-                    <rect x="2" y="7" width="20" height="5" />
-                    <line x1="12" y1="22" x2="12" y2="7" />
-                    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
-                    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
-                  </svg>
-                </div>
-                <span className="grid-label">
-                  {currentTheme === 'orange' ? 'Invite' : 'Invite Friends'}
-                </span>
+        {/* ── 4. 4-Icon Quick Actions Grid ── */}
+        <div className="grid grid-cols-4 gap-2 my-2">
+          <div className="grid-item-container" onClick={() => navigate('/support')} id="btn-quick-notification">
+            <div className="icon-circle">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                <path d="M8 10h8" />
+                <path d="M8 14h6" />
+              </svg>
+            </div>
+            <span className="grid-label">
+              {currentTheme === 'orange' ? 'Notification' : 'Notifications'}
+            </span>
+          </div>
+
+          <div className="grid-item-container" onClick={() => navigate('/deposit')} id="btn-quick-deposit">
+            <div className="icon-circle">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <path d="M7 10h4a2 2 0 0 1 0 4H7z" />
+                <path d="M7 14h4a2 2 0 0 1 0 4H7z" />
+                <path d="M9 8v12" />
+              </svg>
+            </div>
+            <span className="grid-label">Deposit</span>
+          </div>
+
+          <div className="grid-item-container" onClick={() => navigate('/withdraw')} id="btn-quick-withdraw">
+            <div className="icon-circle">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v3" />
+                <path d="M14 10V5a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v5" />
+                <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8.5a4 4 0 0 0 4 4h2a5 5 0 0 0 5-5" />
+              </svg>
+            </div>
+            <span className="grid-label">Withdraw</span>
+          </div>
+
+          <div className="grid-item-container" onClick={() => navigate('/affiliate')} id="btn-quick-invite">
+            <div className="icon-circle">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 12 20 22 4 22 4 12" />
+                <rect x="2" y="7" width="20" height="5" />
+                <line x1="12" y1="22" x2="12" y2="7" />
+                <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+              </svg>
+            </div>
+            <span className="grid-label">
+              {currentTheme === 'orange' ? 'Invite' : 'Invite Friends'}
+            </span>
+          </div>
+        </div>
+
+        {/* ── 5. Total Earnings Section ── */}
+        <div className="earnings-section">
+          <div className="section-title-row">
+            <span className="title-indicator"></span>
+            <h3 className="section-title">
+              {currentTheme === 'orange' ? 'Total Earnings & Yesterday Earn' : 'Total Profits & Yesterday Earn'}
+            </h3>
+          </div>
+
+          <div className="earnings-grid">
+            <div className="earnings-card" id="card-total-profits">
+              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 mb-0.5">
+                <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                <span className="earning-label">Total Profits</span>
               </div>
+              <span className="earning-value font-mono text-emerald-600 dark:text-emerald-400" id="lbl-total-profits">
+                $ {profitStats.totalProfits.toFixed(2)}
+              </span>
             </div>
 
-            {/* Total Profits & Yesterday Earn Display Box */}
-            <div className="earnings-section">
-              <div className="section-title-row">
-                <span className="title-indicator"></span>
-                <h3 className="section-title">
-                  {currentTheme === 'orange' ? 'Total Earnings & Yesterday Earn' : 'Total Profits & Yesterday Earn'}
-                </h3>
+            <div className="earnings-card" id="card-yesterday-earn">
+              <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 mb-0.5">
+                <Calendar className="w-3.5 h-3.5 shrink-0" />
+                <span className="earning-label">Yesterday Earn</span>
               </div>
-
-              <div className="earnings-grid">
-                <div className="earnings-card" id="card-total-profits">
-                  <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 mb-0.5">
-                    <TrendingUp className="w-3.5 h-3.5 shrink-0" />
-                    <span className="earning-label">Total Profits</span>
-                  </div>
-                  <span className="earning-value font-mono text-emerald-600 dark:text-emerald-400" id="lbl-total-profits">
-                    $ {profitStats.totalProfits.toFixed(2)}
-                  </span>
-                </div>
-
-                <div className="earnings-card" id="card-yesterday-earn">
-                  <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 mb-0.5">
-                    <Calendar className="w-3.5 h-3.5 shrink-0" />
-                    <span className="earning-label">Yesterday Earn</span>
-                  </div>
-                  <span className="earning-value font-mono" id="lbl-yesterday-earn" style={{ color: '#f59e0b' }}>
-                    $ {profitStats.yesterdayEarn.toFixed(2)}
-                  </span>
-                </div>
-
-                <div className="earnings-card" id="card-today-profit">
-                  <div className="flex items-center gap-1.5 text-sky-600 dark:text-sky-400 mb-0.5">
-                    <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                    <span className="earning-label">Today's Profit</span>
-                  </div>
-                  <span className="earning-value font-mono" id="lbl-today-profit" style={{ color: '#0284c7' }}>
-                    $ {profitStats.todayProfit.toFixed(2)}
-                  </span>
-                </div>
-
-                <div className="earnings-card" id="card-balance-display">
-                  <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 mb-0.5">
-                    <Wallet className="w-3.5 h-3.5 shrink-0" />
-                    <span className="earning-label">Account Balance</span>
-                  </div>
-                  <span className="earning-value font-mono text-indigo-600 dark:text-indigo-400" id="lbl-home-balance">
-                    $ {formattedBalance}
-                  </span>
-                </div>
-              </div>
+              <span className="earning-value font-mono" id="lbl-yesterday-earn" style={{ color: '#f59e0b' }}>
+                $ {profitStats.yesterdayEarn.toFixed(2)}
+              </span>
             </div>
 
-            {/* Live Feed Scroll */}
-            <div className="live-feed-card">
-              <div className="feed-header">
-                <span className="pulse-indicator"></span>
-                <span className="feed-title">Recent Commission Allocations</span>
+            <div className="earnings-card" id="card-today-profit">
+              <div className="flex items-center gap-1.5 text-sky-600 dark:text-sky-400 mb-0.5">
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                <span className="earning-label">Today's Profit</span>
               </div>
-              <div className="feed-content">
-                <div className="feed-item">User yoo*** just completed matching task for <b>$194.33</b> (+$0.97 profit)</div>
-              </div>
+              <span className="earning-value font-mono" id="lbl-today-profit" style={{ color: '#0284c7' }}>
+                $ {profitStats.todayProfit.toFixed(2)}
+              </span>
             </div>
+
+            <div className="earnings-card" id="card-balance-display">
+              <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 mb-0.5">
+                <Wallet className="w-3.5 h-3.5 shrink-0" />
+                <span className="earning-label">Account Balance</span>
+              </div>
+              <span className="earning-value font-mono text-indigo-600 dark:text-indigo-400" id="lbl-home-balance">
+                $ {formattedBalance}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 6. Recent Commission Allocations ── */}
+        <div className="live-feed-card">
+          <div className="feed-header">
+            <span className="pulse-indicator"></span>
+            <span className="feed-title">Recent Commission Allocations</span>
+          </div>
+          <div className="feed-content">
+            <div className="feed-item">User yoo*** just completed matching task for <b>$194.33</b> (+$0.97 profit)</div>
           </div>
         </div>
       </div>
@@ -379,7 +380,7 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
         .home-container {
           display: flex;
           flex-direction: column;
-          padding: 16px;
+          padding: 24px 20px;
           width: 100%;
           max-width: 1280px;
           margin: 0 auto;
@@ -388,7 +389,7 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
         .home-grid-layout {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 24px;
         }
 
         /* ─── E-Commerce Banner Carousel ─── */
@@ -760,21 +761,21 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
           display: flex;
           align-items: center;
           gap: 8px;
+          margin-bottom: 12px;
         }
 
         .title-indicator {
-          width: 3.5px;
-          height: 14px;
-          background: #f59e0b; /* Golden Yellow Accent Indicator */
+          width: 4px;
+          height: 16px;
+          background: #f59e0b;
           border-radius: 2px;
         }
 
         .section-title {
-          font-size: 13px;
+          font-size: 14px;
           color: var(--text-main);
           font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
+          letter-spacing: -0.01em;
         }
 
         .earnings-grid {
@@ -785,15 +786,15 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
 
         .earnings-card {
           background-color: var(--bg-card);
-          border-radius: 14px;
-          padding: 14px 12px;
+          border-radius: 16px;
+          padding: 16px; /* p-4 minimum */
           box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
           border: 1px solid rgba(0, 0, 0, 0.04);
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 4px;
+          gap: 6px; /* gap-3 feel */
           transition: all 0.2s;
         }
 
@@ -804,13 +805,13 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
         }
 
         .earning-value {
-          font-size: 16px;
+          font-size: 18px;
           font-weight: 700;
           letter-spacing: -0.3px;
         }
 
         .earning-label {
-          font-size: 10px;
+          font-size: 11px;
           font-weight: 600;
           color: var(--text-light);
           text-transform: uppercase;
@@ -821,10 +822,10 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
         /* Live Feed */
         .live-feed-card {
           background-color: var(--bg-card);
-          border-radius: var(--border-radius-md);
-          padding: 12px 16px;
+          border-radius: 16px;
+          padding: 16px; /* p-4 minimum */
           box-shadow: var(--shadow-card);
-          border-left: 3px solid var(--success-color);
+          border-left: 4px solid var(--success-color);
         }
 
         .feed-header {
@@ -865,13 +866,6 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
             padding: 24px 32px;
           }
 
-          .home-grid-layout {
-            display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
-            gap: 24px;
-            align-items: start;
-          }
-
           .ec-banner-carousel {
             height: 220px;
           }
@@ -881,17 +875,13 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
           }
 
           .balance-value {
-            font-size: clamp(40px, 4vw, 52px);
+            font-size: clamp(36px, 4vw, 44px);
           }
         }
 
         @media (min-width: 1024px) {
-          .home-grid-layout {
-            gap: 32px;
-          }
-
           .ec-banner-carousel {
-            height: 250px;
+            height: 240px;
           }
         }
       `}</style>

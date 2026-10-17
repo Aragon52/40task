@@ -349,40 +349,19 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
           assigned_order_index: assignedOrderIndex !== -1 ? assignedOrderIndex : null
         };
 
-        if (!assignedTaskId) {
-          const { error: insertOrderError } = await supabase
-            .from('cb_orders')
-            .insert([newOrder]);
+        // Always insert or upsert matched order into cb_orders database table
+        const { error: insertOrderError } = await supabase
+          .from('cb_orders')
+          .upsert([newOrder], { onConflict: 'id' });
 
-          if (insertOrderError) {
-            console.error("Insert Order Error Detail:", insertOrderError);
-            toast.error(`Error matching order: ${insertOrderError.message}`);
-            setSpinning(false);
-            return;
-          }
-
-          setOrders(prev => [
-            {
-              id: newOrder.id,
-              timestamp: new Date(newOrder.timestamp).toLocaleString(),
-              status: newOrder.status,
-              title: newOrder.title,
-              image: newOrder.image,
-              price: newOrder.price.toString(),
-              profit: newOrder.profit.toString(),
-              type: newOrder.type,
-              assignedTaskId: newOrder.assigned_task_id,
-              assignedOrderIndex: newOrder.assigned_order_index
-            },
-            ...prev
-          ]);
+        if (insertOrderError) {
+          console.warn("Upsert Order warning, attempting direct insert:", insertOrderError.message);
+          await supabase.from('cb_orders').insert([newOrder]);
         }
 
-        setSpinResult(chosenProduct);
-        setSpinning(false);
-        setActiveOrderDetails({
+        const formattedNewOrder = {
           id: newOrder.id,
-          timestamp: new Date().toLocaleString(),
+          timestamp: new Date(newOrder.timestamp).toLocaleString(),
           status: newOrder.status,
           title: newOrder.title,
           image: newOrder.image,
@@ -391,7 +370,35 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
           type: newOrder.type,
           assignedTaskId: newOrder.assigned_task_id,
           assignedOrderIndex: newOrder.assigned_order_index
+        };
+
+        setOrders(prev => {
+          const exists = prev.some(o => String(o.id) === String(newOrder.id));
+          if (exists) {
+            return prev.map(o => String(o.id) === String(newOrder.id) ? formattedNewOrder : o);
+          }
+          return [formattedNewOrder, ...prev];
         });
+
+        setSpinResult(chosenProduct);
+        setSpinning(false);
+        
+        // Brief delay after spin stops to highlight the allocated product before popping the modal
+        setTimeout(() => {
+          if (!activeUser) return; // Guard against unmount
+          setActiveOrderDetails({
+            id: newOrder.id,
+            timestamp: new Date().toLocaleString(),
+            status: newOrder.status,
+            title: newOrder.title,
+            image: newOrder.image,
+            price: newOrder.price.toString(),
+            profit: newOrder.profit.toString(),
+            type: newOrder.type,
+            assignedTaskId: newOrder.assigned_task_id,
+            assignedOrderIndex: newOrder.assigned_order_index
+          });
+        }, 600);
       } catch (err) {
         console.error("Match loop error:", err);
         setSpinning(false);
@@ -519,42 +526,49 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
                     </div>
                   </div>
                 ) : spinResult ? (
-                  /* Allocated Product Showcase */
-                  <div className="slot-container static flex items-center justify-center p-3.5 bg-gradient-to-br from-white via-sky-50/30 to-indigo-50/30 dark:from-slate-900 dark:via-slate-900/90 dark:to-sky-950/30 border border-sky-200/80 dark:border-sky-800/80">
-                    <div className="flex items-center gap-3.5 w-full max-w-md bg-white/80 dark:bg-slate-900/80 p-3 rounded-2xl border border-sky-100 dark:border-sky-900/50 shadow-xs">
-                      <div className="w-16 h-16 rounded-xl bg-white dark:bg-slate-800 p-1 flex items-center justify-center border border-slate-200/90 dark:border-slate-700 shrink-0 overflow-hidden relative shadow-xs">
-                        {spinResult.image ? (
-                          <img 
-                            src={spinResult.image} 
-                            alt={spinResult.title}
-                            className="w-full h-full object-contain"
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = 'none';
-                              const fb = (e.target as HTMLElement).nextElementSibling as HTMLElement;
-                              if (fb) fb.style.display = 'flex';
-                            }}
-                          />
-                        ) : null}
-                        <div 
-                          className="w-full h-full flex items-center justify-center text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40"
-                          style={{ display: spinResult.image ? 'none' : 'flex' }}
-                        >
-                          <Package className="w-7 h-7" />
+                  /* High-Fidelity Allocated Product Showcase Card */
+                  <div className="slot-container static flex items-center justify-center p-3.5 bg-gradient-to-br from-white via-sky-50/20 to-indigo-50/20 dark:from-slate-900 dark:via-slate-900/90 dark:to-sky-950/20">
+                    <div className="w-full max-w-md bg-white dark:bg-slate-900 p-4 rounded-2xl border border-sky-100 dark:border-sky-800 shadow-xl shadow-sky-500/5 flex flex-col gap-3.5 animate-in zoom-in-95 duration-300">
+                      <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                            <CheckCircle2 className="w-4 h-4" />
+                          </div>
+                          <span className="text-[11px] font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight">Allocation Successful</span>
+                        </div>
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">#VP{spinResult.id}</span>
+                      </div>
+
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-16 h-16 rounded-xl bg-slate-50 dark:bg-slate-950 p-1 flex items-center justify-center border border-slate-100 dark:border-slate-800 shrink-0 overflow-hidden relative shadow-sm">
+                          {spinResult.image ? (
+                            <img src={spinResult.image} alt={spinResult.title} className="w-full h-full object-contain" />
+                          ) : (
+                            <Package className="w-7 h-7 text-sky-600" />
+                          )}
+                        </div>
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="text-[10px] font-semibold text-sky-600 uppercase mb-0.5">Worksheet Order #{orderCompleteCount + 1}</span>
+                          <span className="text-xs font-bold text-slate-900 dark:text-white truncate leading-snug">
+                            {spinResult.title}
+                          </span>
+                          <div className="flex items-center gap-2.5 mt-1.5">
+                            <div className="flex flex-col">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase">Price</span>
+                              <span className="text-[13px] font-extrabold font-mono text-slate-900 dark:text-slate-100">$ {spinResult.price}</span>
+                            </div>
+                            <div className="w-px h-6 bg-slate-100 dark:bg-slate-800 mx-1" />
+                            <div className="flex flex-col">
+                              <span className="text-[9px] font-bold text-emerald-500 uppercase">Comm.</span>
+                              <span className="text-[13px] font-extrabold font-mono text-emerald-600">+$ {spinResult.profit}</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> Allocated Order #{orderCompleteCount}
-                          </span>
-                        </div>
-                        <span className="text-xs font-semibold text-slate-900 dark:text-white truncate">
-                          {spinResult.title}
-                        </span>
-                        <div className="flex items-center gap-2 mt-1 text-xs">
-                          <span className="font-bold font-mono text-sky-600 dark:text-sky-400">$ {spinResult.price}</span>
-                          <span className="font-semibold font-mono text-emerald-600 dark:text-emerald-400 text-[11px]">+$ {spinResult.profit} comm.</span>
-                        </div>
+
+                      <div className="mt-1 bg-sky-50/50 dark:bg-sky-950/20 border border-sky-100/50 dark:border-sky-900/30 rounded-xl p-2.5 flex items-center justify-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[11px] font-bold text-sky-700 dark:text-sky-300">Ready for worksheet submission</span>
                       </div>
                     </div>
                   </div>
@@ -720,19 +734,19 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
         }
 
         .shop-content {
-          padding: 16px;
+          padding: 24px 20px;
         }
 
         .shop-grid-layout {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 24px;
         }
 
         .shop-left-col, .shop-right-col {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 24px;
         }
 
         @media (min-width: 768px) {
@@ -747,8 +761,8 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
         /* Balance card */
         .shop-balance-card {
           background: linear-gradient(135deg, #f0f4f8 0%, #ffffff 100%);
-          border-radius: 16px;
-          padding: 18px 24px;
+          border-radius: 18px;
+          padding: 24px; /* min p-6 */
           box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
           border: 1px solid rgba(0, 113, 206, 0.1);
           display: flex;
@@ -762,14 +776,14 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
         }
 
         .balance-amount-title {
-          font-size: 26px;
+          font-size: 28px;
           font-weight: 800;
           color: var(--primary-color);
           letter-spacing: -0.5px;
         }
 
         .balance-sub-label {
-          font-size: 10px;
+          font-size: 11px;
           color: var(--text-muted);
           text-transform: uppercase;
           letter-spacing: 0.5px;
@@ -777,8 +791,8 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
         }
 
         .add-balance-btn {
-          width: 42px;
-          height: 42px;
+          width: 48px; /* h-12 touch target */
+          height: 48px;
           background-color: var(--primary-color);
           color: white;
           border-radius: 14px;
@@ -802,17 +816,17 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
         /* Standalone task stats card */
         .matching-stats-card {
           background-color: var(--bg-card);
-          border-radius: 16px;
+          border-radius: 18px;
           border: 1px solid rgba(0,0,0,0.04);
           box-shadow: 0 4px 20px rgba(0,0,0,0.02);
-          padding: 18px 20px;
+          padding: 24px; /* min p-6 */
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 16px;
         }
 
         .stats-card-title {
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 700;
           color: var(--text-main);
           letter-spacing: 0.8px;
@@ -828,7 +842,7 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
         .stats-card-col {
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 4px;
         }
 
         .stats-card-col:not(:last-child) {
@@ -836,13 +850,13 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
         }
 
         .stats-card-num {
-          font-size: 18px;
+          font-size: 20px;
           font-weight: 800;
           color: var(--primary-color);
         }
 
         .stats-card-lbl {
-          font-size: 9px;
+          font-size: 11px;
           color: var(--text-light);
           text-transform: uppercase;
           letter-spacing: 0.3px;

@@ -1,10 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
+import { 
+  ChevronLeft, 
+  ArrowUpRight, 
+  ArrowDownLeft, 
+  Clock, 
+  Search,
+  Wallet,
+  History,
+  Info
+} from 'lucide-react';
+import { Card, Badge } from '@/src/shared/UI';
 
-export default function TransactionLogs({ username }) {
+interface TransactionLogsProps {
+  username: string;
+}
+
+export default function TransactionLogs({ username }: TransactionLogsProps) {
   const navigate = useNavigate();
-  const [logs, setLogs] = useState([]);
+  const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
 
@@ -13,127 +28,145 @@ export default function TransactionLogs({ username }) {
       if (!username) return;
       setLoading(true);
 
-      // Fetch deposits
-      const { data: deposits, error: depErr } = await supabase
-        .from('cb_deposits')
-        .select('*')
-        .eq('username', username);
+      try {
+        const [depRes, withRes] = await Promise.all([
+          supabase.from('cb_deposits').select('*').eq('username', username),
+          supabase.from('cb_withdrawals').select('*').eq('username', username)
+        ]);
 
-      // Fetch withdrawals
-      const { data: withdrawals, error: withErr } = await supabase
-        .from('cb_withdrawals')
-        .select('*')
-        .eq('username', username);
+        const formattedDeposits = (depRes.data || []).map(d => ({
+          id: d.id || `DEP-${Math.floor(Math.random() * 100000)}`,
+          type: 'Deposit',
+          amount: d.amount,
+          status: d.status,
+          timestamp: d.created_at || d.timestamp,
+          method: d.method || d.currency || 'USDT TRC20',
+          wallet: d.wallet_address || d.transaction_hash
+        }));
 
-      if (depErr) console.error(depErr);
-      if (withErr) console.error(withErr);
+        const formattedWithdrawals = (withRes.data || []).map(w => ({
+          id: w.id || `WIT-${Math.floor(Math.random() * 100000)}`,
+          type: 'Withdrawal',
+          amount: w.amount,
+          status: w.status,
+          timestamp: w.created_at || w.timestamp,
+          method: w.method || 'USDT TRC20',
+          wallet: w.wallet_address || w.account_info
+        }));
 
-      const formattedDeposits = (deposits || []).map(d => ({
-        id: d.id || `DEP-${Math.floor(Math.random() * 100000)}`,
-        type: 'Deposit',
-        amount: d.amount,
-        status: d.status,
-        timestamp: d.created_at || d.timestamp,
-        method: d.method || d.currency || 'USDT TRC20',
-        wallet: d.wallet_address || d.transaction_hash
-      }));
+        const combined = [...formattedDeposits, ...formattedWithdrawals].sort((a, b) => {
+          return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+        });
 
-      const formattedWithdrawals = (withdrawals || []).map(w => ({
-        id: w.id || `WIT-${Math.floor(Math.random() * 100000)}`,
-        type: 'Withdrawal',
-        amount: w.amount,
-        status: w.status,
-        timestamp: w.created_at || w.timestamp,
-        method: w.method || 'USDT TRC20',
-        wallet: w.wallet_address || w.account_info
-      }));
-
-      const combined = [...formattedDeposits, ...formattedWithdrawals].sort((a, b) => {
-        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-      });
-
-      setLogs(combined);
-      setLoading(false);
+        setLogs(combined);
+      } catch (err) {
+        console.error("Fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchLogs();
   }, [username]);
 
   const filteredLogs = logs.filter(log => {
     if (activeTab === 'All') return true;
-    if (activeTab === 'Deposits') return log.type === 'Deposit';
-    if (activeTab === 'Withdrawals') return log.type === 'Withdrawal';
-    return true;
+    return log.type === activeTab.slice(0, -1); // Deposits -> Deposit
   });
 
+  const getStatusBadge = (status: string) => {
+    const s = String(status || 'pending').toLowerCase();
+    if (s === 'approved' || s === 'success') return <Badge variant="success">Finished</Badge>;
+    if (s === 'rejected' || s === 'failed') return <Badge variant="error">Rejected</Badge>;
+    return <Badge variant="warning">Pending</Badge>;
+  };
+
   return (
-    <div className="transaction-logs-page" style={{ paddingBottom: '80px', display: 'flex', flexDirection: 'column', height: '100vh', overflowY: 'auto' }}>
-      <div className="orders-header">
-        <button className="header-back-btn" onClick={() => navigate('/profile')}>
-          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        </button>
-        <span className="orders-title">Transaction History</span>
-        <div style={{width: 40}}></div>
-      </div>
-
-      <div className="orders-tabs">
-        {['All', 'Deposits', 'Withdrawals'].map(tab => (
+    <div className="min-h-screen bg-brand-ivory dark:bg-slate-950 pb-20 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800">
+        <div className="max-w-xl mx-auto px-4 h-16 flex items-center justify-between">
           <button 
-            key={tab}
-            className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => navigate('/profile')}
+            className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-95 transition-all"
           >
-            {tab}
+            <ChevronLeft className="w-5 h-5" />
           </button>
-        ))}
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Transaction Logs</h1>
+          <div className="w-9" />
+        </div>
+
+        {/* Tab Bar */}
+        <div className="max-w-xl mx-auto px-4 flex gap-2 h-14 items-center">
+          {['All', 'Deposits', 'Withdrawals'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 h-9 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                activeTab === tab 
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
+                  : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="orders-list" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div className="max-w-xl mx-auto p-4 space-y-3">
         {loading ? (
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '40px' }}>Loading...</div>
+          <div className="py-20 flex flex-col items-center justify-center text-slate-400">
+            <div className="w-10 h-10 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin mb-3" />
+            <p className="text-[10px] font-black uppercase tracking-[0.2em]">Syncing Ledger</p>
+          </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="empty-orders">
-            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#94a3b8" strokeWidth="1.5">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-            </svg>
-            <span>No transactions found</span>
+          <div className="py-20 flex flex-col items-center justify-center text-center space-y-4">
+            <div className="w-20 h-20 rounded-full bg-white dark:bg-slate-900 flex items-center justify-center shadow-premium">
+              <Search className="w-8 h-8 text-slate-200" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-slate-400">No records found</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-tight">Complete a transaction to see it here</p>
+            </div>
           </div>
         ) : (
-          filteredLogs.map(log => (
-            <div className="order-item-card" key={log.id}>
-              <div className="order-item-header">
-                <span className="order-timestamp">{new Date(log.timestamp).toLocaleString()}</span>
-                <span className={`badge badge-${
-                  (log.status || 'pending').toLowerCase() === 'approved' ? 'success' : 
-                  (log.status || 'pending').toLowerCase() === 'rejected' ? 'rejected' : 
-                  'pending'
-                }`}>
-                  {log.status === 'Approved' ? 'Finished' : (log.status || 'Pending')}
-                </span>
-              </div>
-              <div className="order-item-body" style={{ alignItems: 'center' }}>
-                <div style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'var(--bg-input)', marginRight: '12px' }}>
-                  {log.type === 'Deposit' ? (
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--success-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 14h.01M10 14h.01"/></svg>
-                  ) : (
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--danger-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
-                  )}
+          filteredLogs.map((log) => (
+            <Card key={log.id} className="p-4 hover:border-blue-100 dark:hover:border-blue-900 transition-colors">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                    <Clock className="w-3 h-3" />
+                    {new Date(log.timestamp).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                  </div>
+                  {getStatusBadge(log.status)}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: 'var(--text-main)', fontWeight: 600, fontSize: '15px' }}>
-                    {log.type}
-                  </div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px', wordBreak: 'break-all' }}>
-                    {log.method} {log.wallet ? `- ${log.wallet}` : ''}
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ color: log.type === 'Deposit' ? 'var(--success-color)' : 'var(--text-main)', fontWeight: 600, fontSize: '16px' }}>
-                    {log.type === 'Deposit' ? '+' : '-'}$ {parseFloat(log.amount || 0).toFixed(2)}
-                  </div>
+                <div className="text-right">
+                  <p className={`text-lg font-black font-mono leading-none ${log.type === 'Deposit' ? 'text-emerald-600' : 'text-slate-900 dark:text-white'}`}>
+                    {log.type === 'Deposit' ? '+' : '-'}${parseFloat(log.amount || 0).toFixed(2)}
+                  </p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase mt-1 tracking-tighter">USD Settlement</p>
                 </div>
               </div>
-            </div>
+
+              <div className="flex items-center gap-3 pt-3 border-t border-slate-50 dark:border-slate-800">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${log.type === 'Deposit' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'}`}>
+                  {log.type === 'Deposit' ? <ArrowDownLeft className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-black text-slate-700 dark:text-slate-200">{log.type} via {log.method}</p>
+                  <p className="text-[10px] text-slate-400 font-mono truncate">{log.wallet || 'Internal Ledger Allocation'}</p>
+                </div>
+              </div>
+            </Card>
           ))
+        )}
+
+        {!loading && filteredLogs.length > 0 && (
+          <div className="py-8 flex flex-col items-center gap-2 text-slate-300">
+            <div className="w-1 h-1 rounded-full bg-slate-200" />
+            <div className="w-1 h-1 rounded-full bg-slate-200" />
+            <p className="text-[9px] font-bold uppercase tracking-widest">End of Ledger</p>
+          </div>
         )}
       </div>
     </div>

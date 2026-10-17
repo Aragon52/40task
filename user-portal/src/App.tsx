@@ -46,9 +46,9 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: 'system-ui, sans-serif', background: '#f8fafc', color: '#0f172a', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '8px' }}>Something went wrong</h2>
-          <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px', maxWidth: '400px' }}>
+        <div className="min-h-dvh flex flex-col items-center justify-center p-8 bg-slate-50 text-slate-900 text-center font-sans">
+          <h2 className="text-2xl font-black mb-3">Something went wrong</h2>
+          <p className="text-sm text-slate-500 mb-8 max-w-md leading-relaxed">
             We encountered an unexpected error loading the portal. Click below to reload.
           </p>
           <button
@@ -56,7 +56,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
               this.setState({ hasError: false, error: null });
               window.location.reload();
             }}
-            style={{ padding: '10px 24px', borderRadius: '12px', background: '#0071ce', color: '#fff', border: 'none', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}
+            className="px-8 py-3.5 rounded-2xl bg-[#0071ce] hover:bg-[#005fa7] text-white font-bold text-sm shadow-xl shadow-blue-500/20 transition-all cursor-pointer active:scale-95"
           >
             Reload Application
           </button>
@@ -448,7 +448,7 @@ function AppContent() {
           }
         }
 
-        // 2. Fetch matched orders list
+        // 2. Fetch matched orders list from cb_orders and cb_assigned_tasks
         const rawUser = activeUser.trim();
         const cleanUser = rawUser.replace(/^[+]/, '');
         const { data: ordersData, error: ordersError } = await supabase
@@ -457,29 +457,69 @@ function AppContent() {
           .or(`username.eq.${rawUser},phone.eq.${rawUser},username.eq.+${cleanUser},phone.eq.+${cleanUser}`)
           .order('id', { ascending: false });
 
+        let combinedOrders: any[] = [];
         if (!ordersError && ordersData) {
-          const formatted = ordersData.map(o => ({
+          combinedOrders = ordersData.map(o => ({
             id: o.id,
-            timestamp: new Date(o.timestamp).toLocaleString(),
-            status: o.status,
-            title: o.title,
-            image: o.image,
-            price: o.price.toString(),
-            profit: o.profit.toString(),
+            timestamp: o.timestamp ? new Date(o.timestamp).toLocaleString() : new Date().toLocaleString(),
+            status: o.status || 'Pending',
+            title: o.title || 'Matched Product Order',
+            image: o.image || null,
+            price: (o.price || 0).toString(),
+            profit: (o.profit || 0).toString(),
             type: o.type,
             assignedTaskId: o.assigned_task_id,
             assignedOrderIndex: o.assigned_order_index
           }));
-          
+        }
+
+        // Also fetch active/completed tasks from cb_assigned_tasks to ensure task orders are never missing
+        try {
+          const { data: taskData } = await supabase
+            .from('cb_assigned_tasks')
+            .select('*')
+            .ilike('username', rawUser);
+
+          if (taskData && taskData.length > 0) {
+            taskData.forEach(task => {
+              const taskOrders = Array.isArray(task.orders)
+                ? task.orders
+                : (typeof task.orders === 'string' ? JSON.parse(task.orders) : []);
+
+              taskOrders.forEach((to: any, idx: number) => {
+                const orderId = to.id || `task-${task.id}-${idx}`;
+                const exists = combinedOrders.some(co => String(co.id) === String(orderId));
+                if (!exists) {
+                  combinedOrders.push({
+                    id: orderId,
+                    timestamp: to.timestamp ? new Date(to.timestamp).toLocaleString() : new Date(task.created_at || Date.now()).toLocaleString(),
+                    status: to.status || 'Pending',
+                    title: to.title || `Matched Order #${idx + 1}`,
+                    image: to.image || null,
+                    price: (to.price || 0).toString(),
+                    profit: (to.profit || 0).toString(),
+                    type: to.type || 'gear',
+                    assignedTaskId: task.id,
+                    assignedOrderIndex: idx
+                  });
+                }
+              });
+            });
+          }
+        } catch (e) {
+          console.warn("Error merging assigned task orders:", e);
+        }
+
+        if (combinedOrders.length > 0) {
           setOrders(prevOrders => {
-            if (prevOrders.length === formatted.length) {
+            if (prevOrders.length === combinedOrders.length) {
               const isIdentical = prevOrders.every((po, idx) => {
-                const fo = formatted[idx];
+                const fo = combinedOrders[idx];
                 return fo && po.id === fo.id && po.status === fo.status && po.price === fo.price && po.profit === fo.profit;
               });
               if (isIdentical) return prevOrders;
             }
-            return formatted;
+            return combinedOrders;
           });
         }
       } catch (err) {
@@ -537,11 +577,12 @@ function AppContent() {
             path="/*"
             element={
               <ProtectedRoute>
-                <div className="portal-layout">
-                  {/* Show brand Header only on Home path */}
-                  <ConditionalHeader theme={theme} onThemeChange={handleThemeChange} />
-                  
-                  <div className="main-content-area">
+                <div className="min-h-screen bg-slate-200/60 flex justify-center w-full">
+                  <div className="w-full max-w-md min-h-screen bg-slate-50 shadow-2xl relative flex flex-col overflow-x-hidden">
+                    {/* Show brand Header only on Home path */}
+                    <ConditionalHeader theme={theme} onThemeChange={handleThemeChange} />
+                    
+                    <div className="flex-1 px-4 pt-20 pb-28 space-y-6 overflow-y-auto">
                     <Routes>
                       <Route path="" element={<Navigate to="/home" replace />} />
                       <Route 
@@ -618,7 +659,8 @@ function AppContent() {
                   {/* PWA custom prompt installer */}
                   <PWAInstallPrompt />
                 </div>
-              </ProtectedRoute>
+              </div>
+            </ProtectedRoute>
             }
           />
         </Routes>

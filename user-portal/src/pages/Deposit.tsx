@@ -1,13 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { QRCodeSVG } from 'qrcode.react';
+import { 
+  ChevronLeft, 
+  Copy, 
+  CheckCircle2, 
+  Upload, 
+  Globe, 
+  AlertTriangle, 
+  Info,
+  CreditCard,
+  QrCode,
+  RefreshCcw
+} from 'lucide-react';
+import { Button, Modal, Card, Input } from '@/src/shared/UI';
 import toast from 'react-hot-toast';
 
 // CDN base for official crypto color SVG icons
 const CDN = 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1a63530be6e374711a8554f31b17e4cb92c25fa/svg/color';
 
-// Network definitions with real token icons
 const NETWORKS = [
   { id: 'USDT (TRC20)', label: 'USDT', sub: 'TRC20',    color: '#26a17b', dbKey: 'usdt_address',       iconUrl: `${CDN}/usdt.svg` },
   { id: 'USDT (ERC20)', label: 'USDT', sub: 'ERC20',    color: '#627eea', dbKey: 'usdt_erc20_address',  iconUrl: `${CDN}/usdt.svg` },
@@ -19,7 +31,11 @@ const NETWORKS = [
   { id: 'DOGE',         label: 'DOGE', sub: 'Dogecoin',  color: '#c2a633', dbKey: 'doge_address',        iconUrl: `${CDN}/doge.svg` },
 ];
 
-export default function Deposit({ addPendingDeposit }) {
+interface DepositProps {
+  addPendingDeposit?: (req: any) => void;
+}
+
+export default function Deposit({ addPendingDeposit }: DepositProps) {
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
   const [selectedNet, setSelectedNet] = useState(NETWORKS[0]);
@@ -28,11 +44,8 @@ export default function Deposit({ addPendingDeposit }) {
   const [fileUrl, setFileUrl] = useState('');
   const [showIntlModal, setShowIntlModal] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [addresses, setAddresses] = useState<any>({});
 
-  // Crypto addresses from DB (keyed by dbKey)
-  const [addresses, setAddresses] = useState({});
-
-  // Computed current address
   const currentAddress = addresses[selectedNet.dbKey] || '';
 
   useEffect(() => {
@@ -66,11 +79,12 @@ export default function Deposit({ addPendingDeposit }) {
     if (!currentAddress) return;
     navigator.clipboard.writeText(currentAddress);
     setCopied(true);
+    toast.success('Address copied');
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       setFileName(file.name);
       try {
@@ -89,36 +103,32 @@ export default function Deposit({ addPendingDeposit }) {
           .from('cb_storage')
           .getPublicUrl(filePath);
 
-        const publicUrl = publicUrlData.publicUrl;
-        setFileUrl(publicUrl);
-        toast.success('Receipt screenshot uploaded successfully!');
-      } catch (err) {
-        console.error('Error uploading receipt screenshot:', err);
-        toast.error('Error uploading receipt: ' + err.message);
+        setFileUrl(publicUrlData.publicUrl);
+        toast.success('Receipt uploaded');
+      } catch (err: any) {
+        toast.error('Upload failed: ' + err.message);
         setFileName('');
         setFileUrl('');
-        e.target.value = '';
       } finally {
         setUploading(false);
       }
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || parseFloat(amount) <= 0) {
-      toast('Please enter a valid deposit amount.');
+      toast.error('Enter valid amount');
       return;
     }
     if (!fileUrl) {
-      toast('Please upload a deposit receipt screenshot and wait for it to finish uploading.');
+      toast.error('Upload receipt screenshot');
       return;
     }
 
     const sessionStr = localStorage.getItem('cb_user_session');
     const session = sessionStr ? JSON.parse(sessionStr) : null;
     if (!session) {
-      toast('User session not found. Please log in again.');
       navigate('/login');
       return;
     }
@@ -129,11 +139,7 @@ export default function Deposit({ addPendingDeposit }) {
         .select('*')
         .eq('username', session.username);
 
-      if (userError) {
-        toast.error('Error retrieving profile: ' + userError.message);
-        return;
-      }
-
+      if (userError) throw userError;
       const userProfile = users && users[0];
 
       const newRequest = {
@@ -143,598 +149,220 @@ export default function Deposit({ addPendingDeposit }) {
         amount: parseFloat(amount),
         currency: selectedNet.id,
         screenshot_name: fileName,
-        screenshot_url: fileUrl || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400',
+        screenshot_url: fileUrl,
         status: 'Pending',
         created_at: new Date().toISOString(),
         referred_by_staff_id: userProfile?.referred_by_staff_id || null,
         member_of_admin_id: userProfile?.member_of_admin_id || null,
       };
 
-      const { error: depositError } = await supabase
-        .from('cb_deposits')
-        .insert([newRequest]);
+      const { error: depositError } = await supabase.from('cb_deposits').insert([newRequest]);
+      if (depositError) throw depositError;
 
-      if (depositError) {
-        toast.error('Error submitting deposit: ' + depositError.message);
-        return;
-      }
-
-      toast.success(`Deposit request of $${amount} submitted! Awaiting admin approval.`);
+      toast.success(`Deposit of $${amount} submitted!`);
       navigate('/home');
-    } catch (err) {
-      toast.error('Failed to submit deposit: ' + err.message);
+    } catch (err: any) {
+      toast.error('Submission failed: ' + err.message);
     }
   };
 
   return (
-    <>
-      <div className="deposit-page scale-up">
-        {/* International Banking Modal */}
-        {showIntlModal && (
-          <div className="dep-modal-overlay" onClick={() => setShowIntlModal(false)}>
-            <div className="dep-modal-box scale-up" onClick={e => e.stopPropagation()}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>🌐</div>
-              <h3 style={{ fontSize: 18, marginBottom: 10, color: 'var(--text-main)' }}>International Banking</h3>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 20 }}>
-                For international wire transfers and banking, connect with our financial department representative for fastest routing and processing.
-              </p>
-              <button
-                className="submit-deposit-btn"
-                style={{ margin: 0, width: '100%' }}
-                onClick={() => navigate('/support')}
-              >
-                Connect to Representative
-              </button>
-            </div>
-          </div>
-        )}
+    <div className="min-h-screen bg-brand-ivory dark:bg-slate-950 pb-20 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800">
+        <div className="max-w-xl mx-auto px-4 h-16 flex items-center justify-between">
+          <button 
+            onClick={() => navigate('/home')}
+            className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-95 transition-all"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Deposit Funds</h1>
+          <div className="w-9" />
+        </div>
+      </div>
 
-        {/* Header */}
-        <div className="deposit-header">
-          <div className="header-back-btn" onClick={() => navigate('/home')}>
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="m15 18-6-6 6-6" />
-            </svg>
+      <form onSubmit={handleSubmit} className="max-w-xl mx-auto p-4 space-y-6">
+        
+        {/* Step 1: Network Selector */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-black">1</div>
+            <h2 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest">Select Network</h2>
           </div>
-          <span className="deposit-title">Deposit Funds</span>
-          <div style={{ width: 40 }} />
+          <div className="grid grid-cols-4 gap-2">
+            {NETWORKS.map(net => (
+              <button
+                type="button"
+                key={net.id}
+                onClick={() => setSelectedNet(net)}
+                className={`p-3 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
+                  selectedNet.id === net.id 
+                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 ring-2 ring-blue-500/10' 
+                    : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-slate-200'
+                }`}
+              >
+                <img src={net.iconUrl} alt={net.label} className="w-8 h-8 rounded-full shadow-sm" />
+                <div className="text-center">
+                  <p className={`text-[10px] font-black leading-none ${selectedNet.id === net.id ? 'text-blue-600' : 'text-slate-900 dark:text-white'}`}>{net.label}</p>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase mt-0.5">{net.sub}</p>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="deposit-content">
-
-          {/* Step 1: Network Selector */}
-          <div className="deposit-card card">
-            <h4 className="card-sec-title">1. Select Cryptocurrency & Network</h4>
-            <div className="network-grid">
-              {NETWORKS.map(net => (
-                  <button
-                  type="button"
-                  key={net.id}
-                  className={`net-tile ${selectedNet.id === net.id ? 'active' : ''}`}
-                  style={selectedNet.id === net.id ? {
-                    borderColor: net.color,
-                    background: `${net.color}14`,
-                    boxShadow: `0 0 0 2px ${net.color}30`,
-                  } : {}}
-                  onClick={() => setSelectedNet(net)}
-                  id={`btn-net-${net.id.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`}
-                >
-                  <span className="net-icon">
-                    <img
-                      src={net.iconUrl}
-                      alt={net.label}
-                      width="28"
-                      height="28"
-                      style={{ display: 'block', borderRadius: '50%' }}
-                      onError={e => { (e.target as HTMLImageElement).style.display='none'; }}
-                    />
-                  </span>
-                  <span className="net-label" style={selectedNet.id === net.id ? { color: net.color } : {}}>
-                    {net.label}
-                  </span>
-                  <span className="net-sub">{net.sub}</span>
-                </button>
-              ))}
-            </div>
+        {/* Step 2: Address & QR */}
+        <Card className="p-5 space-y-6">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-black">2</div>
+            <h2 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest">Payment Destination</h2>
           </div>
 
-          {/* Step 2: Deposit Address + QR Code */}
-          <div className="deposit-card card">
-            <h4 className="card-sec-title">
-              2. Send to {selectedNet.label} ({selectedNet.sub}) Address
-            </h4>
-
-            {currentAddress ? (
-              <>
-                <span className="pay-instruction-lbl">
-                  Transfer exactly the amount to the official address below. Do not send any other cryptocurrency to this address.
-                </span>
-
-                {/* Address row */}
-                <div className="address-copy-row">
-                  <span className="address-txt-display">{currentAddress}</span>
-                  <button
-                    type="button"
-                    className="copy-address-btn"
-                    style={{ background: selectedNet.color }}
-                    onClick={handleCopy}
-                  >
-                    {copied ? '✓ Copied' : 'Copy'}
-                  </button>
+          {currentAddress ? (
+            <div className="space-y-6">
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl flex flex-col items-center gap-4">
+                <div className="bg-white p-4 rounded-3xl shadow-premium">
+                  <QRCodeSVG value={currentAddress} size={160} level="H" includeMargin />
                 </div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <QrCode className="w-3 h-3" />
+                  Scan to Pay
+                </p>
+              </div>
 
-                {/* Live QR Code */}
-                <div className="qr-code-live">
-                  <div className="qr-inner">
-                    <QRCodeSVG
-                      value={currentAddress}
-                      size={160}
-                      bgColor="#ffffff"
-                      fgColor="#000000"
-                      level="H"
-                      includeMargin={true}
-                    />
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Official {selectedNet.id} Address</label>
+                <div className="flex gap-2">
+                  <div className="flex-1 p-3.5 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800 text-[10px] font-mono text-slate-600 dark:text-slate-300 break-all leading-relaxed">
+                    {currentAddress}
                   </div>
-                  <p className="qr-scan-hint">Scan QR code with your wallet app</p>
+                  <Button type="button" onClick={handleCopy} size="sm" className="h-auto px-4">
+                    {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
                 </div>
-
-                {/* Network warning */}
-                <div className="network-warning-box" style={{ borderLeftColor: selectedNet.color }}>
-                  <span>⚠️</span>
-                  <span>
-                    Only send <b>{selectedNet.label}</b> on the <b>{selectedNet.sub}</b> network to this address.
-                    Sending the wrong asset will result in permanent loss.
-                  </span>
-                </div>
-              </>
-            ) : (
-              <div className="no-address-notice">
-                <div style={{ fontSize: 32, marginBottom: 8 }}>🔒</div>
-                <p>The <b>{selectedNet.label} ({selectedNet.sub})</b> deposit address has not been configured yet.</p>
-                <p style={{ fontSize: 11, marginTop: 6 }}>Please contact support or select a different network.</p>
               </div>
-            )}
-          </div>
 
-          {/* Step 3: Amount */}
-          <div className="deposit-card card">
-            <h4 className="card-sec-title">3. Enter Deposit Amount (USD)</h4>
-            <div className="amount-input-row">
-              <span className="currency-symbol">$</span>
-              <input
-                type="number"
-                className="deposit-amount-input"
-                placeholder="0.00"
-                value={amount}
-                onChange={e => setAmount(e.target.value)}
-                required
-                id="txt-deposit-amount"
-              />
-            </div>
-            <div className="amount-chips-row">
-              {[50, 100, 500, 1000, 3000, 5000].map(val => (
-                <button
-                  type="button"
-                  key={val}
-                  className="amount-chip"
-                  onClick={() => setAmount(val.toString())}
-                >
-                  +${val}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Step 4: Screenshot Upload */}
-          <div className="deposit-card card">
-            <h4 className="card-sec-title">4. Upload Payment Receipt</h4>
-            <span className="pay-instruction-lbl">
-              Provide a screenshot of your completed transaction for node verification:
-            </span>
-            <div className="file-upload-container">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden-file-input"
-                id="file-screenshot"
-                required
-              />
-              <label htmlFor="file-screenshot" className="file-upload-label">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 8 }}>
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-                <span>{uploading ? 'Uploading screenshot...' : (fileName || 'Choose screenshot image')}</span>
-              </label>
-            </div>
-            {fileUrl && (
-              <div className="screenshot-preview-box">
-                <img src={fileUrl} alt="Receipt Preview" className="receipt-preview-img" />
+              <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50 flex gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-[10px] text-amber-700 dark:text-amber-300 font-medium leading-relaxed">
+                  Only send <span className="font-black underline">{selectedNet.label}</span> on the <span className="font-black underline">{selectedNet.sub}</span> network. Sending other assets will result in permanent loss.
+                </p>
               </div>
-            )}
+            </div>
+          ) : (
+            <div className="py-12 flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 rounded-3xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+                <Info className="w-8 h-8 text-slate-200" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-slate-400">Address not configured</p>
+                <p className="text-[10px] text-slate-500">Contact support for manual deposit routing</p>
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* Step 3: Amount */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-black">3</div>
+            <h2 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest">Deposit Amount</h2>
           </div>
+          <div className="relative">
+            <Input 
+              type="number" 
+              value={amount} 
+              onChange={e => setAmount(e.target.value)} 
+              placeholder="0.00" 
+              className="pl-12 text-2xl font-black h-16 rounded-2xl shadow-sm"
+              required
+            />
+            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xl font-black text-slate-400">$</span>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            {[50, 100, 500, 1000, 3000, 5000].map(val => (
+              <button
+                type="button"
+                key={val}
+                onClick={() => setAmount(val.toString())}
+                className="h-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:border-blue-200 dark:hover:border-blue-900 transition-all active:scale-95"
+              >
+                +${val}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          <button type="submit" className="submit-deposit-btn" id="btn-submit-deposit" disabled={uploading}>
-            {uploading ? 'Uploading image...' : '✓ Confirm & Submit Deposit Request'}
-          </button>
+        {/* Step 4: Receipt */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-black">4</div>
+            <h2 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest">Upload Receipt</h2>
+          </div>
+          
+          <label className={`block w-full cursor-pointer transition-all ${uploading ? 'pointer-events-none' : ''}`}>
+            <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" required />
+            <div className={`p-8 rounded-3xl border-2 border-dashed flex flex-col items-center gap-4 text-center ${
+              fileUrl 
+                ? 'bg-emerald-50/30 border-emerald-200 dark:border-emerald-900/30' 
+                : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-900'
+            }`}>
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${fileUrl ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600'}`}>
+                {uploading ? <RefreshCcw className="w-7 h-7 animate-spin" /> : fileUrl ? <CheckCircle2 className="w-7 h-7" /> : <Upload className="w-7 h-7" />}
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-black text-slate-900 dark:text-white">{uploading ? 'Processing Screenshot...' : fileName || 'Tap to select screenshot'}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">JPG, PNG or GIF (Max 10MB)</p>
+              </div>
+            </div>
+          </label>
 
-          <div style={{ margin: '4px 0 8px', textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>
-            — OR —
+          {fileUrl && (
+            <Card className="p-3 bg-slate-50 dark:bg-slate-950 overflow-hidden">
+              <img src={fileUrl} alt="Receipt Preview" className="w-full h-auto rounded-xl shadow-sm max-h-64 object-contain" />
+            </Card>
+          )}
+        </div>
+
+        <div className="pt-6 space-y-4">
+          <Button type="submit" className="w-full h-16 text-base" isLoading={uploading}>
+            Submit Deposit Request
+          </Button>
+          
+          <div className="relative py-4 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100 dark:border-slate-800" /></div>
+            <span className="relative px-4 bg-brand-ivory dark:bg-slate-950 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Alternative</span>
           </div>
 
           <button
             type="button"
-            className="intl-banking-btn"
             onClick={() => setShowIntlModal(true)}
+            className="w-full h-14 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-center gap-3 hover:border-blue-200 dark:hover:border-blue-900 transition-all active:scale-[0.98] group"
           >
-            🏦 International Bank Wire Transfer
+            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 group-hover:scale-110 transition-transform">
+              <Globe className="w-5 h-5" />
+            </div>
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">International Bank Wire</span>
           </button>
-        </form>
-      </div>
+        </div>
+      </form>
 
-      <style>{`
-        .deposit-page {
-          display: flex;
-          flex-direction: column;
-          padding-bottom: 32px;
-        }
-
-        .deposit-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          height: 54px;
-          padding: 0 16px;
-          background-color: var(--bg-nav);
-          border-bottom: var(--border-glass);
-          position: sticky;
-          top: 0;
-          z-index: 10;
-        }
-
-        .deposit-title {
-          font-size: 17px;
-          font-weight: 600;
-          color: var(--text-main);
-          letter-spacing: 0.5px;
-        }
-
-        .deposit-content {
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-
-        .deposit-card {
-          animation: fadeInUp 0.3s ease both;
-        }
-
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .card-sec-title {
-          font-size: 13px;
-          font-weight: 700;
-          color: var(--text-main);
-          margin-bottom: 14px;
-          letter-spacing: 0.2px;
-        }
-
-        /* Network tile grid */
-        .network-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 8px;
-        }
-
-        .net-tile {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 4px;
-          padding: 10px 4px;
-          border-radius: 10px;
-          border: 1.5px solid var(--border-glass);
-          background: var(--bg-input);
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .net-tile:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-        }
-
-        .net-tile.active {
-          box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-        }
-
-        .net-icon {
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          filter: drop-shadow(0 1px 3px rgba(0,0,0,0.15));
-          transition: filter 0.2s ease, transform 0.2s ease;
-        }
-
-        .net-tile.active .net-icon {
-          filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
-          transform: scale(1.08);
-        }
-
-        .net-label {
-          font-size: 11px;
-          font-weight: 700;
-          color: var(--text-main);
-        }
-
-        .net-sub {
-          font-size: 8px;
-          color: var(--text-light);
-          text-transform: uppercase;
-          letter-spacing: 0.3px;
-        }
-
-        /* Address section */
-        .pay-instruction-lbl {
-          font-size: 11px;
-          color: var(--text-muted);
-          margin-bottom: 10px;
-          display: block;
-          line-height: 1.5;
-        }
-
-        .address-copy-row {
-          display: flex;
-          align-items: center;
-          background-color: var(--bg-input);
-          border-radius: 8px;
-          padding: 10px 12px;
-          gap: 10px;
-          margin-bottom: 16px;
-          border: var(--border-glass);
-        }
-
-        .address-txt-display {
-          font-size: 10px;
-          color: var(--text-main);
-          font-family: 'Courier New', monospace;
-          word-break: break-all;
-          flex: 1;
-          line-height: 1.5;
-        }
-
-        .copy-address-btn {
-          color: white;
-          padding: 6px 12px;
-          border-radius: 6px;
-          font-size: 11px;
-          font-weight: 700;
-          border: none;
-          cursor: pointer;
-          white-space: nowrap;
-          transition: opacity 0.2s;
-          flex-shrink: 0;
-        }
-
-        .copy-address-btn:hover { opacity: 0.9; }
-
-        /* QR Code */
-        .qr-code-live {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 10px;
-          padding: 16px 0 8px;
-        }
-
-        .qr-inner {
-          padding: 12px;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-          border: 1px solid rgba(0,0,0,0.06);
-        }
-
-        .qr-scan-hint {
-          font-size: 11px;
-          color: var(--text-muted);
-          text-align: center;
-        }
-
-        /* Network warning */
-        .network-warning-box {
-          display: flex;
-          gap: 8px;
-          align-items: flex-start;
-          font-size: 11px;
-          line-height: 1.5;
-          color: var(--text-muted);
-          background: rgba(239,68,68,0.04);
-          border-left: 3px solid #ef4444;
-          border-radius: 4px;
-          padding: 10px 12px;
-          margin-top: 8px;
-        }
-
-        /* No address configured */
-        .no-address-notice {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          padding: 24px 16px;
-          color: var(--text-muted);
-          font-size: 13px;
-          line-height: 1.6;
-        }
-
-        /* Amount */
-        .amount-input-row {
-          display: flex;
-          align-items: center;
-          background-color: var(--bg-input);
-          border: var(--border-glass);
-          border-radius: 8px;
-          padding: 10px 14px;
-          gap: 8px;
-        }
-
-        .currency-symbol {
-          font-size: 20px;
-          font-weight: 700;
-          color: var(--text-muted);
-        }
-
-        .deposit-amount-input {
-          flex: 1;
-          font-size: 20px;
-          font-weight: 700;
-          background-color: transparent;
-          color: var(--text-main);
-          border: none;
-          outline: none;
-        }
-
-        .amount-chips-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-top: 12px;
-        }
-
-        .amount-chip {
-          flex: 1;
-          min-width: 56px;
-          height: 32px;
-          border-radius: 16px;
-          border: var(--border-glass);
-          background-color: var(--bg-input);
-          font-size: 11px;
-          font-weight: 600;
-          color: var(--text-muted);
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-
-        .amount-chip:active {
-          border-color: var(--primary-color);
-          color: var(--primary-color);
-          background: var(--primary-light);
-        }
-
-        /* File upload */
-        .file-upload-container { display: flex; flex-direction: column; }
-        .hidden-file-input { display: none; }
-
-        .file-upload-label {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          height: 46px;
-          border-radius: 8px;
-          background-color: var(--bg-input);
-          border: 1.5px dashed var(--primary-color);
-          color: var(--primary-color);
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .file-upload-label:hover {
-          background-color: var(--primary-light);
-        }
-
-        .screenshot-preview-box {
-          margin-top: 12px;
-          display: flex;
-          justify-content: center;
-          border-radius: 8px;
-          border: var(--border-glass);
-          background-color: var(--bg-input);
-          padding: 10px;
-        }
-
-        .receipt-preview-img {
-          max-width: 100%;
-          max-height: 200px;
-          object-fit: contain;
-          border-radius: 6px;
-        }
-
-        /* Submit button */
-        .submit-deposit-btn {
-          height: 50px;
-          background: var(--primary-gradient);
-          color: white;
-          border-radius: 25px;
-          font-size: 15px;
-          font-weight: 700;
-          box-shadow: 0 6px 20px rgba(0,113,206,0.25);
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          letter-spacing: 0.3px;
-        }
-
-        .submit-deposit-btn:active { transform: scale(0.98); }
-
-        .intl-banking-btn {
-          width: 100%;
-          height: 46px;
-          border-radius: 23px;
-          background-color: var(--bg-card);
-          color: var(--text-muted);
-          border: var(--border-glass);
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 8px;
-          transition: all 0.2s ease;
-        }
-
-        .intl-banking-btn:hover {
-          border-color: var(--primary-color);
-          color: var(--primary-color);
-        }
-
-        /* Modal */
-        .dep-modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.55);
-          backdrop-filter: blur(6px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          padding: 24px;
-        }
-
-        .dep-modal-box {
-          background: var(--bg-card);
-          border-radius: 16px;
-          padding: 28px 24px;
-          text-align: center;
-          max-width: 320px;
-          width: 100%;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-          border: var(--border-luxury);
-        }
-      `}</style>
-    </>
+      {/* Intl Modal */}
+      <Modal isOpen={showIntlModal} onClose={() => setShowIntlModal(false)} title="International Banking">
+        <div className="text-center space-y-6">
+          <div className="w-20 h-20 rounded-3xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mx-auto">
+            <Globe className="w-10 h-10 text-blue-600" />
+          </div>
+          <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+            For international wire transfers and swift processing, please connect with our specialized financial department representative.
+          </p>
+          <Button onClick={() => navigate('/support')} className="w-full h-14">
+            Connect to Representative
+          </Button>
+          <Button variant="ghost" onClick={() => setShowIntlModal(false)} className="w-full">Close</Button>
+        </div>
+      </Modal>
+    </div>
   );
 }

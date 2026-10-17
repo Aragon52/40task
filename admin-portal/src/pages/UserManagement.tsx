@@ -28,8 +28,13 @@ import {
   Database,
   TrendingUp,
   Briefcase,
-  AlertTriangle
+  AlertTriangle,
+  History,
+  ShieldCheck,
+  ChevronRight,
+  ArrowRight
 } from 'lucide-react';
+import { Button, Modal, Card, Input, Badge } from '@/src/shared/UI';
 
 export default function UserManagement() {
   const [users, setUsers] = useState<any[]>([]);
@@ -57,12 +62,12 @@ export default function UserManagement() {
   const stats = React.useMemo(() => {
     const total = users.length;
     const online = users.filter(u => u.online === 'Online').length;
-    const totalBalance = users.reduce((acc, u) => acc + u.balance, 0);
-    const totalFrozen = users.reduce((acc, u) => acc + u.frozen, 0);
+    const totalBalance = users.reduce((acc, u) => acc + (u.balance || 0), 0);
+    const totalFrozen = users.reduce((acc, u) => acc + (u.frozen || 0), 0);
     return { total, online, totalBalance, totalFrozen };
   }, [users]);
 
-  const getTemplateName = (task) => {
+  const getTemplateName = (task: any) => {
     if (!task) return 'Custom';
     const amt = parseFloat(task.total_amount || 0);
     const count = parseInt(task.order_count || 0);
@@ -87,7 +92,7 @@ export default function UserManagement() {
     }
     
     const firstTitle = ordersList[0]?.title || '';
-    const sumPrices = ordersList.reduce((acc, o) => acc + parseFloat(o.price || 0), 0);
+    const sumPrices = ordersList.reduce((acc: number, o: any) => acc + parseFloat(o.price || 0), 0);
     if (Math.abs(sumPrices - 30718.07) < 100) return 'Order Template M-1';
     if (Math.abs(sumPrices - 98290.93) < 100) return 'Order Template M-2';
     if (Math.abs(sumPrices - 353999.72) < 500) return 'Order Template M-3';
@@ -200,9 +205,9 @@ export default function UserManagement() {
   useEffect(() => {
     fetchUsers();
     const interval = setInterval(() => {
-      if (document.hidden) return; // Save bandwidth when tab is in background!
+      if (document.hidden) return; 
       fetchUsers();
-    }, 15000); // Poll every 15 seconds instead of 5
+    }, 15000); 
     return () => clearInterval(interval);
   }, []);
 
@@ -215,8 +220,7 @@ export default function UserManagement() {
         u.email.toLowerCase().includes(q) ||
         u.id.toLowerCase().includes(q) ||
         u.phone.includes(q) ||
-        (u.invite_code && u.invite_code.toLowerCase().includes(q)) ||
-        (u.referral_id && u.referral_id.toLowerCase().includes(q)) ||
+        (u.inviteCode && u.inviteCode.toLowerCase().includes(q)) ||
         (u.referred_by_staff_id && u.referred_by_staff_id.toLowerCase().includes(q)) ||
         (u.member_of_admin_id && u.member_of_admin_id.toLowerCase().includes(q))
       );
@@ -227,7 +231,7 @@ export default function UserManagement() {
     setFilteredUsers(result);
   }, [users, searchQuery, filterOnline]);
 
-  const openEdit = (user) => {
+  const openEdit = (user: any) => {
     setEditUser(user);
     setEditFields({
       username: user.username || '',
@@ -300,14 +304,14 @@ export default function UserManagement() {
       toast.success(`User ${editUser.username} updated successfully!`);
       setEditUser(null);
       fetchUsers();
-    } catch (err) {
+    } catch (err: any) {
       toast.error('Failed: ' + err.message);
     } finally {
       setSaving(false);
     }
   };
 
-  const openResetPasswords = (user) => {
+  const openResetPasswords = (user: any) => {
     setResetPWUser(user);
     setResetPWFields({
       loginPassword: user.password_plain || user.password || '',
@@ -343,23 +347,21 @@ export default function UserManagement() {
       toast.success(`Security credentials for ${resetPWUser.username} updated successfully!`);
       setResetPWUser(null);
       fetchUsers();
-    } catch (err) {
+    } catch (err: any) {
       toast.error('Reset failed: ' + err.message);
     } finally {
       setResettingPW(false);
     }
   };
 
-  const handleDeleteUser = async (user) => {
+  const handleDeleteUser = async (user: any) => {
     if (!window.confirm(`⚠️ Are you sure you want to permanently delete user "${user.username}"? This cannot be undone.`)) return;
     try {
-      // Delete related records first
       await supabase.from('cb_orders').delete().eq('username', user.username);
       await supabase.from('cb_assigned_tasks').delete().eq('username', user.username);
       await supabase.from('cb_deposits').delete().eq('username', user.username);
       await supabase.from('cb_withdrawals').delete().eq('username', user.username);
 
-      // Delete user
       const { error } = await supabase.from('cb_users').delete().eq('id', user.id);
       if (error) {
         toast.error('Error deleting user: ' + error.message);
@@ -367,12 +369,12 @@ export default function UserManagement() {
       }
       toast.success(`User ${user.username} and all related data deleted.`);
       fetchUsers();
-    } catch (err) {
+    } catch (err: any) {
       toast.error('Delete failed: ' + err.message);
     }
   };
 
-  const handleToggleWithdraw = async (user) => {
+  const handleToggleWithdraw = async (user: any) => {
     const isCurrentlyEnabled = user.withdraw === 'Enable' || user.withdraw === 'Enabled';
     const newVal = isCurrentlyEnabled ? 'Disabled' : 'Enabled';
     const { error } = await supabase.from('cb_users').update({ withdraw: newVal }).eq('id', user.id);
@@ -384,8 +386,7 @@ export default function UserManagement() {
     }
   };
 
-  // Helper to generate dynamic initials color
-  const getAvatarColorClass = (username) => {
+  const getAvatarColorClass = (username: string) => {
     const colors = [
       'bg-indigo-500 text-indigo-50 border-indigo-200',
       'bg-purple-500 text-purple-50 border-purple-200',
@@ -400,24 +401,25 @@ export default function UserManagement() {
   };
 
   return (
-    <div className="admin-page-container scale-up">
-      <div className="w-full space-y-6">
-        {/* Top statistics panel */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Top statistics panel */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
             title: 'Registered Users',
             value: stats.total,
             sub: 'Operational Accounts',
             icon: User,
-            color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400'
+            color: 'text-indigo-600 dark:text-indigo-400',
+            bg: 'bg-indigo-500/10'
           },
           {
             title: 'Users Online Now',
             value: stats.online,
             sub: 'Active Live Sessions',
             icon: Activity,
-            color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400',
+            color: 'text-emerald-600 dark:text-emerald-400',
+            bg: 'bg-emerald-500/10',
             pulse: true
           },
           {
@@ -425,96 +427,110 @@ export default function UserManagement() {
             value: `$${stats.totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
             sub: 'Available Net Capital',
             icon: DollarSign,
-            color: 'text-sky-600 bg-sky-50 dark:bg-sky-950/40 dark:text-sky-400'
+            color: 'text-sky-600 dark:text-sky-400',
+            bg: 'bg-sky-500/10'
           },
           {
             title: 'Frozen Securities',
             value: `$${stats.totalFrozen.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
             sub: 'Locked Order Escrows',
             icon: Lock,
-            color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-400'
+            color: 'text-amber-600 dark:text-amber-400',
+            bg: 'bg-amber-500/10'
           }
         ].map((item, idx) => (
-          <div key={idx} className={`admin-card flex items-center justify-between overflow-hidden relative ${item.color}`} style={{ padding: '20px', borderColor: 'transparent' }}>
-            <div className="absolute inset-0 opacity-5 bg-current pointer-events-none"></div>
-            <div className="space-y-1.5 relative z-10">
-              <span className="text-xs font-bold uppercase tracking-wider opacity-80">{item.title}</span>
-              <div className="flex items-center gap-2">
-                <h3 className="text-2xl font-bold tracking-tight opacity-100">{item.value}</h3>
-                {item.pulse && (
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                  </span>
-                )}
+          <Card key={idx} className="relative overflow-hidden group">
+            <div className={`absolute top-0 right-0 w-24 h-24 ${item.bg} rounded-full -mr-8 -mt-8 blur-2xl group-hover:scale-125 transition-transform duration-500`} />
+            <div className="flex items-center justify-between relative z-10">
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.title}</span>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">{item.value}</h3>
+                  {item.pulse && (
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] font-bold text-slate-500">{item.sub}</p>
               </div>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">{item.sub}</p>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.bg} ${item.color}`}>
+                <item.icon className="w-5 h-5" />
+              </div>
             </div>
-            <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${item.color}`}>
-              <item.icon className="w-5.5 h-5.5" />
-            </div>
-          </div>
+          </Card>
         ))}
       </div>
 
       {/* Main dashboard list container */}
-      <div className="admin-card">
-        {/* Card Header & Search Panel */}
-        <h3 className="section-title" style={{ marginBottom: 12 }}>User Management Console</h3>
-        <p style={{ fontSize: 13, color: 'var(--text-admin-light)', marginBottom: 16 }}>
-          Monitor user balances, adjust account levels, edit referral networks, and manage payout restrictions. ({filteredUsers.length} Match{filteredUsers.length !== 1 ? 'es' : ''})
-        </p>
-
-        <div className="filter-controls-row" style={{ padding: 0, marginBottom: 16 }}>
-          <div className="search-box-wrapper" style={{ flex: 1, maxWidth: 360, position: 'relative' }}>
-            <Search className="absolute left-3 top-3 text-slate-400 w-4 h-4 pointer-events-none" />
-            <input 
-              type="text" 
-              placeholder="Search user ID, username, email, phone number..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-xs focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all outline-none"
-            />
+      <Card className="p-0 overflow-hidden">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">User Management Console</h3>
+              <p className="text-xs text-slate-500 font-medium">
+                Monitor user balances, adjust account levels, and manage payout restrictions.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest py-1 px-3">
+                {filteredUsers.length} Match{filteredUsers.length !== 1 ? 'es' : ''}
+              </Badge>
+            </div>
           </div>
-          <div className="relative min-w-[160px]">
-            <Filter className="absolute left-3 top-3 text-slate-400 w-4 h-4 pointer-events-none" />
-            <select
-              value={filterOnline}
-              onChange={e => setFilterOnline(e.target.value)}
-              className="w-full pl-9 pr-8 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-xs focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all outline-none appearance-none"
-            >
-              <option value="All">All Status Levels</option>
-              <option value="Online">Live (Online)</option>
-              <option value="Offline">Offline</option>
-            </select>
+
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <input 
+                type="text" 
+                placeholder="Search user ID, username, email, phone number..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-50 text-xs font-medium focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none transition-all"
+              />
+            </div>
+            <div className="relative min-w-[200px]">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <select
+                value={filterOnline}
+                onChange={e => setFilterOnline(e.target.value)}
+                className="w-full pl-9 pr-8 h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-50 text-xs font-bold uppercase tracking-wider outline-none appearance-none transition-all focus:ring-2 focus:ring-indigo-600"
+              >
+                <option value="All">All Status Levels</option>
+                <option value="Online">Live (Online)</option>
+                <option value="Offline">Offline</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        {/* Responsive Table Grid */}
-        <div style={{ overflowX: 'auto' }}>
-          <table className="admin-table w-full whitespace-nowrap">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr>
-                <th className="w-full">Client Profile</th>
-                <th className="w-[15%]">Secure Contact</th>
-                <th className="w-[10%]">SLA Referral Bond</th>
-                <th className="w-0">Assets</th>
-                <th className="w-0">Payout Info</th>
-                <th className="w-0">Financial Stats</th>
-                <th className="w-0">Completed</th>
-                <th className="w-0">Ongoing</th>
-                <th className="w-0">Cashout Lock</th>
-                <th className="w-0 text-right">Actions</th>
+              <tr className="bg-slate-50/50 dark:bg-slate-900/30 border-b border-slate-100 dark:border-slate-800">
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Client Profile</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Secure Contact</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Referral Bond</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Available Assets</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Payout Config</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Financial Stats</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Templates</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="p-12 text-center text-slate-500 dark:text-slate-400">
+                  <td colSpan={9} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
-                      <UserX className="w-10 h-10 text-slate-300 dark:text-slate-600" />
-                      <div className="text-sm font-semibold">No operational users found</div>
-                      <p className="text-xs text-slate-400">Try adjusting your filter or query string parameters.</p>
+                      <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                        <UserX className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                      </div>
+                      <div className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">No operational users found</div>
+                      <p className="text-xs text-slate-500 max-w-xs">Try adjusting your filter or search query parameters.</p>
                     </div>
                   </td>
                 </tr>
@@ -523,209 +539,176 @@ export default function UserManagement() {
                   const avatarClass = getAvatarColorClass(u.username);
                   const isOnline = u.online === 'Online';
                   return (
-                    <tr key={u.id} id={`row-user-${u.id}`}>
-                      {/* Name Card */}
-                      <td>
+                    <tr key={u.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors group">
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm border flex-shrink-0 shadow-sm ${avatarClass}`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs border shadow-sm shrink-0 ${avatarClass}`}>
                             {u.username.substring(0, 2).toUpperCase()}
                           </div>
                           <div className="space-y-0.5">
-                            <div className="font-bold text-slate-900 dark:text-slate-50 text-[13px] flex items-center gap-1.5">
+                            <div className="font-black text-slate-900 dark:text-white text-xs uppercase tracking-tight flex items-center gap-2">
                               {u.username}
+                              {isOnline && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
                             </div>
-                            <div className="text-[10px] text-slate-400 font-mono tracking-wider">{u.id.substring(0, 12)}…</div>
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <span className={`inline-block w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
-                              <span className={`text-[10px] font-semibold uppercase ${isOnline ? 'text-emerald-500' : 'text-slate-500 dark:text-slate-400'}`}>
-                                {u.online}
-                              </span>
-                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono tracking-wider">ID: {u.id.substring(0, 8)}…</div>
+                            <Badge variant={isOnline ? 'success' : 'neutral'} className="text-[9px] font-black py-0 px-1.5 uppercase">
+                              {u.online}
+                            </Badge>
                           </div>
                         </div>
                       </td>
 
-                      {/* Contact Credentials */}
-                      <td>
-                        <div className="space-y-1 text-xs">
-                          <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
-                            <Mail className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                            <span className="font-medium truncate max-w-[150px]">{u.email}</span>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2 text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                            <Mail className="w-3.5 h-3.5 text-slate-400" />
+                            {u.email}
                           </div>
-                          <div className="flex items-center gap-1.5 text-slate-500">
-                            <Smartphone className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                            <span className="font-mono">{u.phone}</span>
-                          </div>
-                          {u.ip && (
-                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">IP: {u.ip}</div>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Referral Node binding */}
-                      <td>
-                        <div className="space-y-1 text-xs">
-                          <div className="flex items-center gap-1">
-                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Agent:</span>
-                            {u.referred_by_username ? (
-                              <span className="font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/5 px-2 py-0.5 rounded-md border border-indigo-500/10">
-                                👤 {u.referred_by_username}
-                              </span>
-                            ) : (
-                              <span className="text-slate-400 italic">Unbound</span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 text-[11px]">
-                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Promo Code:</span>
-                            <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{u.inviteCode}</span>
+                          <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500">
+                            <Smartphone className="w-3.5 h-3.5 text-slate-400" />
+                            {u.phone}
                           </div>
                         </div>
                       </td>
 
-                      {/* Available Assets */}
-                      <td>
-                        <div className="space-y-1.5 flex flex-col min-w-[130px]">
-                          <div className="flex justify-between items-center bg-indigo-50 dark:bg-indigo-900/20 px-2 py-1.5 rounded-md border border-indigo-100 dark:border-indigo-800/50">
-                            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Available</span>
-                            <span className="font-mono font-bold text-indigo-700 dark:text-indigo-400 text-xs">${u.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                          </div>
-                          <div className="flex justify-between items-center bg-amber-50 dark:bg-amber-900/20 px-2 py-1.5 rounded-md border border-amber-100 dark:border-amber-800/50">
-                            <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">Escrow</span>
-                            <span className="font-mono font-bold text-amber-700 dark:text-amber-400 text-xs">${u.frozen.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* USDT payout gateways */}
-                      <td>
-                        <div className="space-y-1 text-xs min-w-[140px]">
-                          {u.usdt_address ? (
-                            <div className="flex items-center gap-1 font-mono text-[10px] text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200/50 dark:border-slate-700/50 w-fit">
-                              <Coins className="w-3 h-3 text-teal-500" />
-                              <span>{u.usdt_address.substring(0, 12)}…{u.usdt_address.substring(u.usdt_address.length - 4)}</span>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1.5">
+                          {u.referred_by_username ? (
+                            <div className="flex items-center gap-1.5 text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest bg-indigo-500/5 px-2 py-1 rounded-md border border-indigo-500/10 w-fit">
+                              <UserCheck className="w-3 h-3" />
+                              {u.referred_by_username}
                             </div>
                           ) : (
-                            <div className="text-[10px] text-slate-400 italic">No USDT Address Set</div>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic opacity-50">Unbound</span>
                           )}
-                          
-                          {u.bank_name ? (
-                            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/30 dark:border-slate-800 rounded p-1.5 mt-1 space-y-0.5 text-[10px] text-slate-600 dark:text-slate-400">
-                              <div className="font-bold flex items-center gap-1 text-slate-800 dark:text-slate-300">
-                                <Database className="w-3 h-3 text-indigo-500" />
+                          <div className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                            <Layers className="w-3 h-3" />
+                            CODE: {u.inviteCode}
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between gap-4 bg-indigo-500/5 px-2.5 py-1.5 rounded-lg border border-indigo-500/10 min-w-[120px]">
+                            <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Balance</span>
+                            <span className="text-xs font-black text-indigo-700 dark:text-indigo-400 font-mono">${u.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-4 bg-amber-500/5 px-2.5 py-1.5 rounded-lg border border-amber-500/10 min-w-[120px]">
+                            <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Escrow</span>
+                            <span className="text-xs font-black text-amber-700 dark:text-amber-400 font-mono">${u.frozen.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="space-y-2 min-w-[140px]">
+                          {u.usdt_address ? (
+                            <div className="flex items-center gap-1.5 font-mono text-[9px] text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 w-fit">
+                              <Coins className="w-3 h-3 text-teal-500" />
+                              {u.usdt_address.substring(0, 10)}…{u.usdt_address.substring(u.usdt_address.length - 4)}
+                            </div>
+                          ) : (
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic opacity-50">No Address</span>
+                          )}
+                          {u.bank_name && (
+                            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg p-2 space-y-1">
+                              <div className="text-[9px] font-black text-indigo-600 flex items-center gap-1">
+                                <Database className="w-2.5 h-2.5" />
                                 {u.bank_name}
                               </div>
-                              <div className="font-mono text-slate-500">{u.bank_account}</div>
-                              <div className="text-slate-400 truncate max-w-[140px]">Hdr: {u.bank_holder}</div>
+                              <div className="text-[9px] font-mono font-bold text-slate-500 leading-none">{u.bank_account}</div>
                             </div>
-                          ) : null}
-                        </div>
-                      </td>
-
-                      {/* Earnings Stats */}
-                      <td>
-                        <div className="space-y-1.5 flex flex-col min-w-[120px]">
-                          <div className="flex justify-between items-center bg-sky-50 dark:bg-sky-900/20 px-2 py-1 rounded border border-sky-100 dark:border-sky-800/50">
-                            <span className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">Deposits</span>
-                            <span className="font-mono font-bold text-sky-700 dark:text-sky-400 text-xs">${u.topup.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between items-center bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded border border-emerald-100 dark:border-emerald-800/50">
-                            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Profits</span>
-                            <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400 text-xs">${u.earnings.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between items-center bg-rose-50 dark:bg-rose-900/20 px-2 py-1 rounded border border-rose-100 dark:border-rose-800/50">
-                            <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Payouts</span>
-                            <span className="font-mono font-bold text-rose-700 dark:text-rose-400 text-xs">${u.withdrawals.toFixed(2)}</span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Completed Templates */}
-                      <td>
-                        <div className="flex flex-col gap-1 min-w-[110px]">
-                          {u.completedTemplates && u.completedTemplates.length > 0 ? (
-                            u.completedTemplates.map((tpl, i) => (
-                              <span key={i} className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-500/10">
-                                ✓ {tpl}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-[10px] text-slate-400 italic">None</span>
                           )}
                         </div>
                       </td>
 
-                      {/* Ongoing Templates */}
-                      <td>
-                        <div className="flex flex-col gap-1 min-w-[110px]">
-                          {u.ongoingTemplates && u.ongoingTemplates.length > 0 ? (
-                            u.ongoingTemplates.map((tpl, i) => (
-                              <span key={i} className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-500/10">
-                                ⏳ {tpl}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-[10px] text-slate-400 italic">None</span>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1 min-w-[120px]">
+                          <div className="flex items-center justify-between text-[10px] font-bold">
+                            <span className="text-slate-400">Deposits:</span>
+                            <span className="text-sky-600 font-mono">${u.topup.toFixed(2)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[10px] font-bold">
+                            <span className="text-slate-400">Profits:</span>
+                            <span className="text-emerald-600 font-mono">${u.earnings.toFixed(2)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[10px] font-bold">
+                            <span className="text-slate-400">Payouts:</span>
+                            <span className="text-rose-600 font-mono">${u.withdrawals.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1.5 min-w-[120px]">
+                          {u.ongoingTemplates && u.ongoingTemplates.length > 0 && (
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Ongoing</span>
+                              {u.ongoingTemplates.map((tpl: string, i: number) => (
+                                <Badge key={i} variant="warning" className="text-[9px] font-black py-0 px-1.5 uppercase truncate max-w-[100px]">
+                                  {tpl}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          {u.completedTemplates && u.completedTemplates.length > 0 && (
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Completed</span>
+                              {u.completedTemplates.slice(0, 2).map((tpl: string, i: number) => (
+                                <Badge key={i} variant="success" className="text-[9px] font-black py-0 px-1.5 uppercase truncate max-w-[100px]">
+                                  {tpl}
+                                </Badge>
+                              ))}
+                            </div>
                           )}
                         </div>
                       </td>
 
-                      {/* Toggle withdraw restriction */}
-                      <td style={{ textAlign: 'center' }}>
+                      <td className="px-6 py-4 text-center">
                         <button
                           onClick={() => handleToggleWithdraw(u)}
-                          className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all active:scale-[0.96] flex items-center justify-center gap-1.5 mx-auto ${
+                          className={`h-8 px-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all active:scale-[0.95] flex items-center gap-2 mx-auto ${
                             (u.withdraw === 'Enable' || u.withdraw === 'Enabled')
-                              ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20 dark:text-emerald-400'
-                              : 'bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/20 dark:text-rose-400'
+                              ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20'
+                              : 'bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/20'
                           }`}
-                          id={`btn-toggle-withdraw-${u.id}`}
                         >
                           {(u.withdraw === 'Enable' || u.withdraw === 'Enabled') ? (
-                            <>
-                              <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-                              Unlocked
-                            </>
+                            <><ShieldCheck className="w-3.5 h-3.5" /> Unlock</>
                           ) : (
-                            <>
-                              <Ban className="w-3.5 h-3.5 text-rose-500" />
-                              Locked
-                            </>
+                            <><Lock className="w-3.5 h-3.5" /> Lock</>
                           )}
                         </button>
                       </td>
 
-                      {/* Actions */}
-                      <td>
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => setViewUser(u)}
-                            className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-colors"
-                            title="View full record"
-                            id={`btn-view-${u.id}`}
+                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-lg transition-all"
+                            title="View Records"
                           >
                             <FileText className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => openEdit(u)}
-                            className="p-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 rounded-lg transition-colors"
-                            title="Edit user params"
-                            id={`btn-edit-${u.id}`}
+                            className="p-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 text-indigo-500 hover:text-indigo-600 rounded-lg transition-all"
+                            title="Edit User"
                           >
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => openResetPasswords(u)}
-                            className="p-2 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-600 dark:text-amber-400 rounded-lg transition-colors"
-                            title="Reset Security Passwords"
-                            id={`btn-reset-pw-${u.id}`}
+                            className="p-2 hover:bg-amber-50 dark:hover:bg-amber-900/40 text-amber-500 hover:text-amber-600 rounded-lg transition-all"
+                            title="Security Reset"
                           >
                             <Lock className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteUser(u)}
-                            className="p-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 rounded-lg transition-colors"
-                            title="Permanently remove"
-                            id={`btn-delete-${u.id}`}
+                            className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/40 text-rose-500 hover:text-rose-600 rounded-lg transition-all"
+                            title="Delete User"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -738,398 +721,264 @@ export default function UserManagement() {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
-      {/* Edit User Param Modal */}
+      {/* Edit User Modal */}
       {editUser && (
-        <div className="modal-overlay">
-          <div className="modal-content-card" style={{ maxWidth: 620, width: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div className="modal-header">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                  <Edit3 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-slate-50 text-base">Modify Client Profile</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Edit credentials and balance matrices for <b>{editUser.username}</b></p>
-                </div>
-              </div>
-              <button className="modal-close-btn" onClick={() => setEditUser(null)}>
-                <X className="w-4 h-4" />
-              </button>
+        <Modal
+          isOpen={!!editUser}
+          onClose={() => setEditUser(null)}
+          title="Modify Client Profile"
+        >
+          <div className="space-y-6">
+            <div className="bg-rose-500/5 border border-rose-500/10 p-4 rounded-2xl flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+              <p className="text-[11px] font-bold text-rose-700 dark:text-rose-400 leading-relaxed uppercase tracking-tight">
+                Save updates directly modifies real-time databases. Ensure accuracy when altering net balances or escrows to prevent client reconciliation issues.
+              </p>
             </div>
 
-            <div className="modal-body py-4 space-y-4">
-              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 p-3.5 rounded-2xl flex items-start gap-3 text-xs leading-relaxed">
-                <AlertTriangle className="w-5 h-5 flex-shrink-0 text-rose-500 mt-0.5" />
-                <span>
-                  <b>⚠️ Warning Alert:</b> Saving updates directly modifies real-time databases and balance sheets. Ensure accuracy when altering net balances or escrows to prevent client reconciliation issues.
-                </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Username"
+                value={editFields.username}
+                onChange={e => setEditFields((f: any) => ({ ...f, username: e.target.value }))}
+                icon={<User className="w-4 h-4" />}
+              />
+              <Input
+                label="Email"
+                type="email"
+                value={editFields.email}
+                onChange={e => setEditFields((f: any) => ({ ...f, email: e.target.value }))}
+                icon={<Mail className="w-4 h-4" />}
+              />
+              <Input
+                label="Phone"
+                value={editFields.phone}
+                onChange={e => setEditFields((f: any) => ({ ...f, phone: e.target.value }))}
+                icon={<Smartphone className="w-4 h-4" />}
+              />
+              <Input
+                label="Login Password"
+                value={editFields.password_plain}
+                onChange={e => setEditFields((f: any) => ({ ...f, password_plain: e.target.value, password: e.target.value }))}
+                icon={<Lock className="w-4 h-4" />}
+              />
+              <Input
+                label="Withdrawal Password"
+                value={editFields.withdraw_password}
+                onChange={e => setEditFields((f: any) => ({ ...f, withdraw_password: e.target.value }))}
+                icon={<Shield className="w-4 h-4" />}
+              />
+              <Input
+                label="Available Balance ($)"
+                type="number"
+                value={editFields.balance}
+                onChange={e => setEditFields((f: any) => ({ ...f, balance: e.target.value }))}
+                icon={<DollarSign className="w-4 h-4" />}
+              />
+              <Input
+                label="Escrow Balance ($)"
+                type="number"
+                value={editFields.frozen}
+                onChange={e => setEditFields((f: any) => ({ ...f, frozen: e.target.value }))}
+                icon={<Briefcase className="w-4 h-4" />}
+              />
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">User Tier Level</label>
+                <select 
+                  value={editFields.level} 
+                  onChange={e => setEditFields((f: any) => ({ ...f, level: e.target.value }))} 
+                  className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-xs font-bold uppercase tracking-wider outline-none focus:ring-2 focus:ring-indigo-600"
+                >
+                  <option value="1">Tier 1</option>
+                  <option value="2">Tier 2</option>
+                  <option value="3">Tier 3</option>
+                  <option value="4">Tier 4</option>
+                  <option value="5">Tier 5</option>
+                </select>
               </div>
+            </div>
 
-              {/* Grid block */}
+            <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <Coins className="w-4 h-4 text-teal-500" />
+                Payout Gateway Configurations
+              </h4>
+              <Input
+                label="USDT Payout Destination (TRC20/ERC20)"
+                value={editFields.usdt_address}
+                onChange={e => setEditFields((f: any) => ({ ...f, usdt_address: e.target.value }))}
+                className="font-mono"
+              />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="form-group-sla">
-                  <label>Username</label>
-                  <input type="text" value={editFields.username} onChange={e => setEditFields(f => ({ ...f, username: e.target.value }))} className="input-sla-field" id="edit-username" />
-                </div>
-                <div className="form-group-sla">
-                  <label>Email Address</label>
-                  <input type="email" value={editFields.email} onChange={e => setEditFields(f => ({ ...f, email: e.target.value }))} className="input-sla-field" id="edit-email" />
-                </div>
-                <div className="form-group-sla">
-                  <label>Contact Phone</label>
-                  <input type="text" value={editFields.phone} onChange={e => setEditFields(f => ({ ...f, phone: e.target.value }))} className="input-sla-field" id="edit-phone" />
-                </div>
-                <div className="form-group-sla">
-                  <label>Login Password</label>
-                  <input type="text" value={editFields.password_plain} onChange={e => setEditFields(f => ({ ...f, password_plain: e.target.value, password: e.target.value }))} className="input-sla-field" id="edit-password" />
-                </div>
-                <div className="form-group-sla">
-                  <label>Withdrawal Password</label>
-                  <input type="text" value={editFields.withdraw_password || ''} onChange={e => setEditFields(f => ({ ...f, withdraw_password: e.target.value }))} className="input-sla-field" id="edit-withdraw-password" placeholder="Defaults to Login Password" />
-                </div>
-                <div className="form-group-sla">
-                  <label>Current Available Balance ($)</label>
-                  <input type="number" step="0.01" value={editFields.balance} onChange={e => setEditFields(f => ({ ...f, balance: e.target.value }))} className="input-sla-field" id="edit-balance" />
-                </div>
-                <div className="form-group-sla">
-                  <label>Locked Escrow Balance ($)</label>
-                  <input type="number" step="0.01" value={editFields.frozen} onChange={e => setEditFields(f => ({ ...f, frozen: e.target.value }))} className="input-sla-field" id="edit-frozen" />
-                </div>
-                <div className="form-group-sla">
-                  <label>User Tier Level</label>
-                  <select value={editFields.level} onChange={e => setEditFields(f => ({ ...f, level: e.target.value }))} className="input-sla-field" id="edit-level">
-                    <option value="1">Tier 1</option>
-                    <option value="2">Tier 2</option>
-                    <option value="3">Tier 3</option>
-                    <option value="4">Tier 4</option>
-                    <option value="5">Tier 5</option>
-                  </select>
-                </div>
-                <div className="form-group-sla">
-                  <label>Withdraw Lock Privilege</label>
-                  <select value={editFields.withdraw} onChange={e => setEditFields(f => ({ ...f, withdraw: e.target.value }))} className="input-sla-field" id="edit-withdraw">
-                    <option value="Enabled">🔓 Allowed (Enable)</option>
-                    <option value="Disabled">🔒 Locked (Disable)</option>
-                  </select>
-                </div>
-                <div className="form-group-sla sm:col-span-2">
-                  <label>Referred By (User ID)</label>
-                  <input type="text" value={editFields.invited_by_user_id} onChange={e => setEditFields(f => ({ ...f, invited_by_user_id: e.target.value }))} className="input-sla-field" placeholder="Owner Referrer ID (e.g. UUID)" id="edit-referrer-id" />
-                </div>
-              </div>
-
-              {/* Dividers */}
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest flex items-center gap-1.5 mb-3">
-                  <Coins className="w-4 h-4 text-teal-500" />
-                  Payout Gateways Configurations
-                </span>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="form-group-sla sm:col-span-2">
-                    <label>TRC20 / ERC20 USDT Payout Destination</label>
-                    <input type="text" value={editFields.usdt_address} onChange={e => setEditFields(f => ({ ...f, usdt_address: e.target.value }))} className="input-sla-field font-mono" placeholder="TRC20 / ERC20 target address" id="edit-usdt-address" />
-                  </div>
-                  <div className="form-group-sla">
-                    <label>Receiving Bank Name</label>
-                    <input type="text" value={editFields.bank_name} onChange={e => setEditFields(f => ({ ...f, bank_name: e.target.value }))} className="input-sla-field" id="edit-bank-name" />
-                  </div>
-                  <div className="form-group-sla">
-                    <label>Account Number</label>
-                    <input type="text" value={editFields.bank_account} onChange={e => setEditFields(f => ({ ...f, bank_account: e.target.value }))} className="input-sla-field font-mono" id="edit-bank-account" />
-                  </div>
-                  <div className="form-group-sla sm:col-span-2">
-                    <label>Account Beneficiary Holder Name</label>
-                    <input type="text" value={editFields.bank_holder} onChange={e => setEditFields(f => ({ ...f, bank_holder: e.target.value }))} className="input-sla-field" id="edit-bank-holder" />
-                  </div>
+                <Input
+                  label="Bank Name"
+                  value={editFields.bank_name}
+                  onChange={e => setEditFields((f: any) => ({ ...f, bank_name: e.target.value }))}
+                />
+                <Input
+                  label="Account Number"
+                  value={editFields.bank_account}
+                  onChange={e => setEditFields((f: any) => ({ ...f, bank_account: e.target.value }))}
+                />
+                <div className="sm:col-span-2">
+                  <Input
+                    label="Account Holder Name"
+                    value={editFields.bank_holder}
+                    onChange={e => setEditFields((f: any) => ({ ...f, bank_holder: e.target.value }))}
+                  />
                 </div>
               </div>
             </div>
 
-            <div className="modal-footer pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
-              <button 
-                className="px-5 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-all active:scale-[0.98]" 
-                onClick={() => setEditUser(null)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="px-6 h-11 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold text-sm transition-all active:scale-[0.98] shadow-md hover:shadow-lg hover:shadow-indigo-500/10 flex items-center justify-center gap-1.5" 
+            <div className="flex justify-end gap-3 pt-6">
+              <Button variant="secondary" onClick={() => setEditUser(null)}>Cancel</Button>
+              <Button 
                 onClick={handleSaveEdit} 
-                disabled={saving} 
-                id="btn-save-edit"
+                loading={saving}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20"
               >
-                <CheckCircle className="w-4 h-4" />
-                {saving ? 'Processing...' : 'Commit Changes'}
-              </button>
+                Commit Changes
+              </Button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
-      {/* View User Record Details Modal */}
-      {viewUser && (
-        <div className="modal-overlay">
-          <div className="modal-content-card" style={{ maxWidth: 520, width: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div className="modal-header">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                  <User className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-slate-50 text-base">Client Dossier Report</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Comprehensive platform credentials database entry</p>
-                </div>
-              </div>
-              <button className="modal-close-btn" onClick={() => setViewUser(null)}>
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="modal-body py-4 space-y-3 text-xs">
-              {[
-                { label: 'System Client UUID', val: viewUser.id, mono: true },
-                { label: 'Authorized Username', val: viewUser.username },
-                { label: 'Primary Email Address', val: viewUser.email },
-                { label: 'Registered Telephone', val: viewUser.phone, mono: true },
-                { label: 'Operational Password', val: viewUser.password_plain || '(N/A)', badge: true },
-                { label: 'Withdrawal Password', val: viewUser.withdraw_password || '(N/A)', badge: true },
-                { label: 'Net Liquid Capital', val: `$${viewUser.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, highlight: 'text-emerald-600 dark:text-emerald-400 font-bold' },
-                { label: 'Escrow Holdings', val: `$${viewUser.frozen.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, highlight: 'text-amber-500 font-bold' },
-                { label: 'Total Deposited Assets', val: `$${viewUser.topup.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-                { label: 'Cumulative Net Income', val: `$${viewUser.earnings.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-                { label: 'Total Processed Cashouts', val: `$${viewUser.withdrawals.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-                { label: 'User Invite Code', val: viewUser.inviteCode, mono: true },
-                { label: 'Introduced Inviter Name', val: viewUser.inviter || '—' },
-                { label: 'Staff Node Operator', val: viewUser.referred_by_staff_id || 'Root System' },
-                { label: 'Admin Node Master', val: viewUser.member_of_admin_id || 'Root System' },
-                { label: 'Registrar IP Address', val: viewUser.ip || '—', mono: true },
-                { label: 'Registration Date', val: viewUser.regTime },
-                { label: 'USDT Target Address', val: viewUser.usdt_address || '—', mono: true },
-                { label: 'Receiving Bank Entity', val: viewUser.bank_name || '—' },
-                { label: 'Receiving Bank Account', val: viewUser.bank_account || '—', mono: true },
-                { label: 'Receiving Holder Name', val: viewUser.bank_holder || '—' },
-                { label: 'payout Status Access', val: (viewUser.withdraw === 'Enable' || viewUser.withdraw === 'Enabled') ? '🔓 Enabled (Allowed)' : '🔒 Locked (Restricted)', badge: true },
-              ].map((item, index) => (
-                <div key={index} className="flex justify-between items-start py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0 gap-4">
-                  <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px] min-w-[150px] mt-0.5">{item.label}</span>
-                  <span className={`text-slate-800 dark:text-slate-200 text-right break-all ${item.mono ? 'font-mono' : ''} ${item.highlight || ''}`}>
-                    {item.val}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="modal-footer pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
-              <button 
-                className="px-4 h-10 rounded-xl bg-slate-150 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors" 
-                onClick={() => { setViewUser(null); openEdit(viewUser); }}
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                Modify Record
-              </button>
-              <button 
-                className="px-4 h-10 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors" 
-                onClick={() => { setViewUser(null); handleDeleteUser(viewUser); }}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Erase File
-              </button>
-              <button 
-                className="px-5 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 text-slate-500 font-bold text-xs flex items-center justify-center transition-colors" 
-                onClick={() => setViewUser(null)}
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Quick Reset Passwords Modal */}
+      {/* Security Reset Modal */}
       {resetPWUser && (
-        <div className="modal-overlay">
-          <div className="modal-content-card" style={{ maxWidth: 440, width: '95%' }}>
-            <div className="modal-header">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center text-amber-600 dark:text-amber-400">
-                  <Lock className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-slate-50 text-base">Reset Passwords</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Quickly update security credentials for <b>{resetPWUser.username}</b></p>
-                </div>
-              </div>
-              <button className="modal-close-btn" onClick={() => setResetPWUser(null)}>
-                <X className="w-4 h-4" />
-              </button>
+        <Modal
+          isOpen={!!resetPWUser}
+          onClose={() => setResetPWUser(null)}
+          title="Security Credentials Reset"
+        >
+          <div className="space-y-6">
+            <div className="bg-amber-500/5 border border-amber-500/10 p-4 rounded-2xl flex items-start gap-3">
+              <Shield className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-[11px] font-bold text-amber-700 dark:text-amber-400 leading-relaxed uppercase tracking-tight">
+                You are modifying the security credentials for {resetPWUser.username}. Ensure the client has authorized this reset.
+              </p>
             </div>
 
-            <div className="modal-body py-5 space-y-4">
-              <div className="form-group-sla">
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Account Login Password</label>
-                <div className="relative mt-1">
-                  <input
-                    type="text"
-                    value={resetPWFields.loginPassword}
-                    onChange={e => setResetPWFields(f => ({ ...f, loginPassword: e.target.value }))}
-                    className="input-sla-field"
-                    placeholder="Enter new account password"
-                  />
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">This updates both original plain-text keys and auth schemas.</p>
-              </div>
-
-              <div className="form-group-sla">
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Withdrawal Security Password</label>
-                <div className="relative mt-1">
-                  <input
-                    type="text"
-                    value={resetPWFields.withdrawPassword}
-                    onChange={e => setResetPWFields(f => ({ ...f, withdrawPassword: e.target.value }))}
-                    className="input-sla-field"
-                    placeholder="Enter new withdrawal password"
-                  />
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">The security key verified during asset withdrawal transactions.</p>
-              </div>
+            <div className="space-y-4">
+              <Input
+                label="New Login Password"
+                value={resetPWFields.loginPassword}
+                onChange={e => setResetPWFields(f => ({ ...f, loginPassword: e.target.value }))}
+                icon={<Lock className="w-4 h-4" />}
+              />
+              <Input
+                label="New Withdrawal Password"
+                value={resetPWFields.withdrawPassword}
+                onChange={e => setResetPWFields(f => ({ ...f, withdrawPassword: e.target.value }))}
+                icon={<ShieldCheck className="w-4 h-4" />}
+                placeholder="Defaults to Login Password if empty"
+              />
             </div>
 
-            <div className="modal-footer pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
-              <button
-                className="px-4 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs transition-colors"
-                onClick={() => setResetPWUser(null)}
+            <div className="flex justify-end gap-3 pt-6">
+              <Button variant="secondary" onClick={() => setResetPWUser(null)}>Cancel</Button>
+              <Button 
+                onClick={handleSaveResetPW} 
+                loading={resettingPW}
+                className="bg-amber-600 hover:bg-amber-700 text-white"
               >
-                Cancel
-              </button>
-              <button
-                className="px-5 h-10 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
-                onClick={handleSaveResetPW}
-                disabled={resettingPW}
-              >
-                {resettingPW ? 'Updating...' : 'Save New Credentials'}
-              </button>
+                Update Credentials
+              </Button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
-      </div>
 
-      <style>{`
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: rgba(15, 23, 42, 0.45);
-          backdrop-filter: blur(5px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          animation: fadeOverlayIn 0.2s ease-out;
-        }
+      {/* View Records Modal */}
+      {viewUser && (
+        <Modal
+          isOpen={!!viewUser}
+          onClose={() => setViewUser(null)}
+          title="Client Record Audit"
+        >
+          <div className="space-y-8">
+            <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl border shadow-sm ${getAvatarColorClass(viewUser.username)}`}>
+                {viewUser.username.substring(0, 2).toUpperCase()}
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">{viewUser.username}</h4>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest py-0.5 px-2">TIER {viewUser.level}</Badge>
+                  <span className="text-[10px] font-bold text-slate-400">REGISTERED {viewUser.regTime}</span>
+                </div>
+              </div>
+            </div>
 
-        @keyframes fadeOverlayIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 space-y-1">
+                <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Available Assets</span>
+                <div className="text-xl font-black text-indigo-700 dark:text-indigo-400 font-mono tracking-tight">
+                  ${viewUser.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+              <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 space-y-1">
+                <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Escrow Escrow</span>
+                <div className="text-xl font-black text-amber-700 dark:text-amber-400 font-mono tracking-tight">
+                  ${viewUser.frozen.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+            </div>
 
-        .modal-content-card {
-          background-color: var(--bg-admin-card);
-          border-radius: 24px;
-          border: 1px solid var(--border-color);
-          width: 90%;
-          padding: 24px;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-          display: flex;
-          flex-direction: column;
-          animation: slideModalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        }
+            <div className="space-y-4">
+              <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <History className="w-4 h-4 text-sky-500" />
+                Ledger Summaries
+              </h5>
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {[
+                  { label: 'Total Deposits', value: viewUser.topup, icon: ArrowUpRight, color: 'text-sky-500' },
+                  { label: 'Net Earnings', value: viewUser.earnings, icon: TrendingUp, color: 'text-emerald-500' },
+                  { label: 'Network Commissions', value: viewUser.commissions, icon: Award, color: 'text-indigo-500' },
+                  { label: 'Total Withdrawals', value: viewUser.withdrawals, icon: ArrowRight, color: 'text-rose-500' }
+                ].map((item, i) => (
+                  <div key={i} className="py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg ${item.color} bg-current/10 flex items-center justify-center`}>
+                        <item.icon className="w-4 h-4" />
+                      </div>
+                      <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-tight">{item.label}</span>
+                    </div>
+                    <span className="text-sm font-black text-slate-900 dark:text-white font-mono">${item.value.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-        @keyframes slideModalIn {
-          from { transform: scale(0.96) translateY(8px); opacity: 0; }
-          to { transform: scale(1) translateY(0); opacity: 1; }
-        }
+            <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <Globe className="w-4 h-4 text-emerald-500" />
+                Network Connectivity
+              </h5>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">SLA Referral Agent</span>
+                  <div className="text-[11px] font-bold text-slate-900 dark:text-white">
+                    {viewUser.referred_by_username || 'None'}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Network Admin Node</span>
+                  <div className="text-[11px] font-bold text-slate-900 dark:text-white">
+                    {viewUser.member_of_admin_id || 'Global'}
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          border-bottom: 1px solid var(--border-color);
-          padding-bottom: 14px;
-        }
-
-        .modal-close-btn {
-          background: var(--bg-surface-hover);
-          border: none;
-          font-size: 12px;
-          color: var(--text-admin-light);
-          cursor: pointer;
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-        }
-
-        .modal-close-btn:hover {
-          background: var(--border-color);
-          color: var(--text-admin-main);
-          transform: rotate(90deg);
-        }
-
-        .modal-body {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .form-group-sla {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-
-        .form-group-sla label {
-          font-size: 10px;
-          font-weight: 700;
-          color: var(--text-admin-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .input-sla-field {
-          height: 38px;
-          border-radius: 8px;
-          border: 1px solid var(--border-color);
-          padding: 0 12px;
-          font-size: 13px;
-          color: var(--text-admin-main);
-          background-color: var(--bg-surface);
-          outline: none;
-          transition: all 0.15s ease;
-        }
-
-        .input-sla-field:focus {
-          background-color: var(--bg-admin-card);
-          border-color: var(--color-primary);
-          box-shadow: 0 0 0 3px rgba(53, 28, 150, 0.12);
-        }
-
-        select.input-sla-field {
-          appearance: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
-          background-repeat: no-repeat;
-          background-position: right 10px center;
-          background-size: 16px;
-          padding-right: 32px;
-        }
-      `}</style>
+            <div className="flex justify-end pt-4">
+              <Button onClick={() => setViewUser(null)} className="w-full">Close Audit</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

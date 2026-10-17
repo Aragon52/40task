@@ -1,9 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import { createClient } from '@supabase/supabase-js';
-
 import toast from 'react-hot-toast';
-// Isolated client to prevent overwriting current session when creating users
+import { 
+  Users, 
+  UserPlus, 
+  Shield, 
+  ShieldCheck, 
+  ShieldAlert, 
+  MoreVertical, 
+  Mail, 
+  Smartphone, 
+  Building2, 
+  Calendar, 
+  CheckCircle2, 
+  X,
+  Plus,
+  Lock,
+  Loader2,
+  Trash2,
+  ChevronRight,
+  Fingerprint
+} from 'lucide-react';
+import { Button, Modal, Card, Input, Badge } from '@/src/shared/UI';
+
 const adminAuthClient = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY,
@@ -11,9 +31,9 @@ const adminAuthClient = createClient(
 );
 
 export default function SLAAdmins() {
-  const [admins, setAdmins] = useState([]);
-  const [staff, setStaff] = useState([]);
-  const [session, setSession] = useState(null);
+  const [admins, setAdmins] = useState<any[]>([]);
+  const [staff, setStaff] = useState<any[]>([]);
+  const [session, setSession] = useState<any>(null);
   const updatingStaffIdsRef = useRef(new Set());
 
   // Form states for creating staff
@@ -24,17 +44,14 @@ export default function SLAAdmins() {
   const [staffDept, setStaffDept] = useState('');
   const [staffPassword, setStaffPassword] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [formError, setFormError] = useState('');
-  const [formSuccess, setFormSuccess] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   const fetchAdminsAndStaff = async () => {
     try {
-      // Session
       const savedSession = localStorage.getItem('cb_admin_session');
       const parsedSession = savedSession ? JSON.parse(savedSession) : { role: 'Owner', name: 'System Owner', email: 'owner@wallmark.com' };
       setSession(parsedSession);
 
-      // Admins
       const { data: adminsData, error: adminsError } = await supabase
         .from('cb_admins')
         .select('*')
@@ -53,7 +70,6 @@ export default function SLAAdmins() {
         setAdmins(mappedAdmins);
       }
 
-      // Staff
       const { data: staffData, error: staffError } = await supabase
         .from('cb_staff')
         .select('*')
@@ -88,29 +104,26 @@ export default function SLAAdmins() {
   useEffect(() => {
     fetchAdminsAndStaff();
     const interval = setInterval(() => {
-      if (document.hidden) return; // Save bandwidth when tab is in background!
+      if (document.hidden) return; 
       fetchAdminsAndStaff();
-    }, 20000); // Poll every 20 seconds instead of 3
+    }, 20000); 
     return () => clearInterval(interval);
   }, []);
 
-  // Filter admins based on role
   const displayAdmins = admins.filter(a => {
-    if (a.accountId === 'OWNER') return false; // Hide owner
+    if (a.accountId === 'OWNER') return false; 
     if (!session || session.role === 'Owner') return true;
     if (session.role === 'Admin') return a.accountId === session.accountId;
     return false;
   });
 
-  const handleOpenCreateStaff = (admin) => {
+  const handleOpenCreateStaff = (admin: any) => {
     setSelectedAdminId(admin.accountId);
     setStaffName('');
     setStaffEmail('');
     setStaffPhone('');
     setStaffDept('');
     setStaffPassword('');
-    setFormError('');
-    setFormSuccess('');
     setShowModal(true);
   };
 
@@ -130,12 +143,10 @@ export default function SLAAdmins() {
     setStaffPhone('');
     setStaffDept('');
     setStaffPassword('');
-    setFormError('');
-    setFormSuccess('');
     setShowModal(true);
   };
 
-  const generateReferralCode = (staffId, name) => {
+  const generateReferralCode = (staffId: string) => {
     let adminId = 'OWNER';
     const match = staffId.match(/^(AD\d+)SI(\d+)$/);
     if (match) {
@@ -144,7 +155,7 @@ export default function SLAAdmins() {
       adminId = selectedAdminId || 'OWNER';
     }
 
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid confusing O, 0, I, 1
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let randomPart = '';
     for (let i = 0; i < 6; i++) {
       randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -153,24 +164,20 @@ export default function SLAAdmins() {
     return `WK${randomPart}${adminId}`;
   };
 
-  const handleCreateStaff = async (e) => {
+  const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError('');
-    setFormSuccess('');
-
     if (!staffName || !staffEmail || !staffPassword) {
-      setFormError("Please fill in name, email, and password.");
+      toast.error("Please fill in name, email, and password.");
       return;
     }
 
-    // Filter staff belonging to this specific admin node to calculate next ID
+    setIsCreating(true);
     const staffUnderAdmin = staff.filter(s => s.createdByAdminId === selectedAdminId);
     const nextNum = staffUnderAdmin.length + 1;
     const staffId = `${selectedAdminId}SI${nextNum}`;
-    const referralCode = generateReferralCode(staffId, staffName);
+    const referralCode = generateReferralCode(staffId);
 
     try {
-      // 1. First register the user natively in Supabase Auth to ensure login works perfectly
       const { data: authData, error: authError } = await adminAuthClient.auth.signUp({
         email: staffEmail,
         password: staffPassword,
@@ -183,16 +190,15 @@ export default function SLAAdmins() {
       });
 
       if (authError) {
-        setFormError("Error creating authentication account: " + authError.message);
+        toast.error("Auth account error: " + authError.message);
         return;
       }
 
       if (!authData?.user) {
-        setFormError("Failed to create authentication credentials natively.");
+        toast.error("Failed to create authentication credentials.");
         return;
       }
 
-      // 2. Map and link the user details and role using the secure database RPC function
       const { data: newUserId, error: rpcError } = await supabase.rpc('create_staff_member', {
         p_email: staffEmail,
         p_password: staffPassword,
@@ -205,16 +211,15 @@ export default function SLAAdmins() {
       });
 
       if (rpcError) {
-        setFormError("Error creating staff account: " + rpcError.message);
+        toast.error("Staff account error: " + rpcError.message);
         return;
       }
 
       if (!newUserId) {
-        setFormError("Failed to retrieve user ID from authentication system.");
+        toast.error("Failed to retrieve system ID.");
         return;
       }
 
-      // Track Audit Log
       const auditLog = {
         id: Date.now().toString(),
         admin_email: session?.email || 'admin@wallmark.com',
@@ -224,31 +229,19 @@ export default function SLAAdmins() {
         timestamp: new Date().toISOString()
       };
 
-      await supabase
-        .from('cb_audit_logs')
-        .insert([auditLog]);
+      await supabase.from('cb_audit_logs').insert([auditLog]);
 
-      // Success
-      setFormSuccess(`Staff Member ${staffId} (${staffName}) created successfully!`);
-      setStaffName('');
-      setStaffEmail('');
-      setStaffPhone('');
-      setStaffDept('');
-      setStaffPassword('');
+      toast.success(`Staff Member ${staffId} (${staffName}) created!`);
+      setShowModal(false);
       fetchAdminsAndStaff();
-
-      // Auto-close modal
-      setTimeout(() => {
-        setShowModal(false);
-        setFormSuccess('');
-      }, 2000);
-
-    } catch (err) {
-      setFormError("Failed to create staff account: " + err.message);
+    } catch (err: any) {
+      toast.error("Operation failed: " + err.message);
+    } finally {
+      setIsCreating(false);
     }
   };
 
-  const toggleAdminStatus = async (id, currentStatus) => {
+  const toggleAdminStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'Active' ? 'Suspended' : 'Active';
     try {
       const { error } = await supabase
@@ -261,14 +254,14 @@ export default function SLAAdmins() {
         return;
       }
 
-      toast(`Admin node status changed to ${newStatus}.`);
+      toast.success(`Admin node status changed to ${newStatus}.`);
       fetchAdminsAndStaff();
-    } catch (err) {
+    } catch (err: any) {
       toast.error("Failed to update status: " + err.message);
     }
   };
 
-  const getStaffPermissions = (profilePhoto) => {
+  const getStaffPermissions = (profilePhoto: any) => {
     let perms = {
       userManagement: true,
       ordersInProgress: true,
@@ -293,7 +286,7 @@ export default function SLAAdmins() {
     return perms;
   };
 
-  const handleTogglePermission = async (staffMember, field) => {
+  const handleTogglePermission = async (staffMember: any, field: string) => {
     const currentPerms = getStaffPermissions(staffMember.profile_photo);
     const updatedPerms = {
       ...currentPerms,
@@ -301,11 +294,8 @@ export default function SLAAdmins() {
     };
 
     const updatedPhotoStr = JSON.stringify(updatedPerms);
-
-    // Track active local update to prevent polling overwrite
     updatingStaffIdsRef.current.add(staffMember.id);
 
-    // Optimistic UI update
     setStaff(prevStaff => prevStaff.map(s => {
       if (s.id === staffMember.id) {
         return { ...s, profile_photo: updatedPhotoStr };
@@ -314,474 +304,236 @@ export default function SLAAdmins() {
     }));
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('cb_staff')
         .update({ profile_photo: updatedPhotoStr })
-        .eq('id', staffMember.id)
-        .select();
+        .eq('id', staffMember.id);
 
-      if (error) {
-        throw error;
-      }
-
-      if (!data || data.length === 0) {
-        throw new Error("No rows were updated. You might not have administrative permissions to update this staff member.");
-      }
-
+      if (error) throw error;
       toast.success(`Permission updated for ${staffMember.name}`);
-      
-      // Stop tracking updating ID before refetching so that fetch receives the new db state
       updatingStaffIdsRef.current.delete(staffMember.id);
       fetchAdminsAndStaff();
-    } catch (err) {
+    } catch (err: any) {
       toast.error("Failed to update permission: " + err.message);
-      
-      // Stop tracking on failure so that rollback state is restored properly
       updatingStaffIdsRef.current.delete(staffMember.id);
-      
-      // Rollback on error
-      setStaff(prevStaff => prevStaff.map(s => {
-        if (s.id === staffMember.id) {
-          return { ...s, profile_photo: staffMember.profile_photo };
-        }
-        return s;
-      }));
+      fetchAdminsAndStaff(); 
     }
   };
 
-  return (
-    <div className="admin-page-container scale-up">
-      <div className="flex-row-title-bar">
-        <div>
-          <h2 className="admin-page-title">Administrator Nodes</h2>
-          <p className="admin-page-subtitle">Manage system administrator nodes and operational staff hierarchies</p>
-        </div>
-        <button className="btn-create-item" onClick={handleOpenGeneralCreateStaff}>
-          + Create Staff Account
-        </button>
-      </div>
+  const ownStaff = staff.filter(s => {
+    if (!session) return false;
+    if (session.role === 'Owner') return true;
+    if (session.role === 'Admin') return s.createdByAdminId === session.accountId;
+    return false;
+  });
 
-      <div className="display-admins-grid">
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Header Card */}
+      <Card className="relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-1">
+            <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
+              <ShieldCheck className="w-6 h-6 text-indigo-500" />
+              Administrator Nodes
+            </h3>
+            <p className="text-xs text-slate-500 font-medium">
+              Manage system administrator nodes and operational staff hierarchies.
+            </p>
+          </div>
+          <Button 
+            onClick={handleOpenGeneralCreateStaff}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 text-[11px] font-black uppercase tracking-widest h-11 px-6"
+            icon={<UserPlus className="w-4 h-4" />}
+          >
+            Create Staff Account
+          </Button>
+        </div>
+      </Card>
+
+      {/* Admin Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {displayAdmins.map(admin => {
           const myStaffCount = staff.filter(s => s.createdByAdminId === admin.accountId).length;
+          const isActive = admin.status === 'Active';
 
           return (
-            <div className="admin-node-card card" key={admin.id}>
-              <div className="node-card-header">
-                <div className="node-identity">
-                  <span className="node-id-label">{admin.accountId}</span>
-                  <h3 className="node-name">{admin.name}</h3>
+            <Card key={admin.id} className="flex flex-col h-full group hover:border-indigo-500/30 transition-all duration-300">
+              <div className="flex items-start justify-between mb-6">
+                <div className="space-y-1.5">
+                  <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest px-2 font-mono">{admin.accountId}</Badge>
+                  <h4 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight truncate">{admin.name}</h4>
                 </div>
-                <span className={`status-pill ${admin.status.toLowerCase()}`}>{admin.status}</span>
+                <Badge variant={isActive ? 'success' : 'error'} className="text-[9px] font-black uppercase py-0.5 px-2">
+                  {admin.status}
+                </Badge>
               </div>
 
-              <div className="node-card-body">
-                <div className="node-detail-row">
-                  <span className="lbl">Email:</span>
-                  <span className="val">{admin.email}</span>
+              <div className="flex-1 space-y-4">
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400">
+                    <Mail className="w-3.5 h-3.5 text-slate-400" />
+                    {admin.email}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs font-mono text-slate-500">
+                    <Smartphone className="w-3.5 h-3.5 text-slate-400" />
+                    {admin.phone}
+                  </div>
                 </div>
-                <div className="node-detail-row">
-                  <span className="lbl">Phone:</span>
-                  <span className="val">{admin.phone}</span>
-                </div>
-                <div className="node-detail-row">
-                  <span className="lbl">Staff Members:</span>
-                  <span className="val highlight-count">{myStaffCount} active staff</span>
-                </div>
-                <div className="node-detail-row">
-                  <span className="lbl">Node Created:</span>
-                  <span className="val">{admin.createdAt}</span>
+
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Staff</span>
+                  <span className="text-sm font-black text-indigo-600 dark:text-indigo-400 font-mono">{myStaffCount} Units</span>
                 </div>
               </div>
 
-              <div className="node-card-actions">
-                {session && session.role === 'Owner' && (
-                  <button 
-                    className={`btn-node-opt ${admin.status === 'Active' ? 'btn-red-outline' : 'btn-green-outline'}`}
+              <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex gap-2">
+                {session?.role === 'Owner' && (
+                  <Button 
+                    variant="secondary"
+                    className={`flex-1 h-9 text-[10px] font-black uppercase ${isActive ? 'text-rose-600 hover:bg-rose-50' : 'text-emerald-600 hover:bg-emerald-50'}`}
                     onClick={() => toggleAdminStatus(admin.id, admin.status)}
                   >
-                    {admin.status === 'Active' ? 'Suspend Node' : 'Activate Node'}
-                  </button>
+                    {isActive ? 'Suspend' : 'Activate'}
+                  </Button>
                 )}
-                <button 
-                  className="btn-node-opt btn-blue-filled"
+                <Button 
+                  className="flex-1 h-9 text-[10px] font-black uppercase bg-indigo-600 hover:bg-indigo-700 text-white"
                   onClick={() => handleOpenCreateStaff(admin)}
-                  disabled={admin.status !== 'Active'}
+                  disabled={!isActive}
                 >
-                  + Add Staff Account
-                </button>
+                  Add Staff
+                </Button>
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>
 
-      {/* Staff Permissions Management */}
-      <div className="mt-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Staff Account Permissions</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Configure granular access permissions for staff nodes under your management</p>
-        </div>
-        
-        {staff.filter(s => {
-          if (!session) return false;
-          if (session.role === 'Owner') return true;
-          if (session.role === 'Admin') return s.createdByAdminId === session.accountId;
-          return false;
-        }).length === 0 ? (
-          <div className="p-8 text-center text-slate-500">
-            No staff members created yet under your management.
+      {/* Staff Permissions Section */}
+      <Card className="p-0 overflow-hidden">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div className="space-y-1">
+            <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Node Access Matrix</h4>
+            <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">Configure granular permissions for secondary operational staff</p>
           </div>
-        ) : (
-          <div className="table-responsive-wrapper border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-            <table className="admin-table w-full">
-              <thead>
+          <Badge variant="outline" className="text-[10px] font-black uppercase px-3 py-1">{ownStaff.length} Operatives</Badge>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/50 dark:bg-slate-900/30 border-b border-slate-100 dark:border-slate-800">
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Operative</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">User Mgmt</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Tasking</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">In-Progress</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Financials</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Support</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {ownStaff.length === 0 ? (
                 <tr>
-                  <th className="px-4 py-4 text-left font-bold text-xs uppercase text-slate-500 tracking-wider">Staff ID</th>
-                  <th className="px-4 py-4 text-left font-bold text-xs uppercase text-slate-500 tracking-wider">Name / Email</th>
-                  <th className="px-4 py-4 text-left font-bold text-xs uppercase text-slate-500 tracking-wider">Department</th>
-                  <th className="px-4 py-4 text-center font-bold text-xs uppercase text-slate-500 tracking-wider">User Management</th>
-                  <th className="px-4 py-4 text-center font-bold text-xs uppercase text-slate-500 tracking-wider">Order Tasking</th>
-                  <th className="px-4 py-4 text-center font-bold text-xs uppercase text-slate-500 tracking-wider">Orders In Progress</th>
-                  <th className="px-4 py-4 text-center font-bold text-xs uppercase text-slate-500 tracking-wider">Financial Center</th>
-                  <th className="px-4 py-4 text-center font-bold text-xs uppercase text-slate-500 tracking-wider">Support & Chat</th>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500 text-xs font-medium">No staff operatives bound to your node.</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                {staff.filter(s => {
-                  if (!session) return false;
-                  if (session.role === 'Owner') return true;
-                  if (session.role === 'Admin') return s.createdByAdminId === session.accountId;
-                  return false;
-                }).map(s => {
+              ) : (
+                ownStaff.map(s => {
                   const perms = getStaffPermissions(s.profile_photo);
                   return (
-                    <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors">
-                      <td className="px-4 py-4 font-mono font-bold text-sm text-indigo-600 dark:text-indigo-400">{s.staffId}</td>
-                      <td className="px-4 py-4">
-                        <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">{s.name}</div>
-                        <div className="text-xs text-slate-500">{s.email}</div>
+                    <tr key={s.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 uppercase">
+                            {s.name.substring(0,2)}
+                          </div>
+                          <div>
+                             <div className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{s.name}</div>
+                             <div className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter">{s.staffId} • {s.department}</div>
+                          </div>
+                        </div>
                       </td>
-                      <td className="px-4 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
-                          {s.department}
-                        </span>
-                      </td>
-                      
-                      {/* User Management */}
-                      <td className="px-4 py-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleTogglePermission(s, 'userManagement')}
-                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                            perms.userManagement ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-700'
-                          }`}
-                        >
-                          <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                              perms.userManagement ? 'translate-x-5' : 'translate-x-0'
+                      {[
+                        { key: 'userManagement', color: 'bg-indigo-600' },
+                        { key: 'orderTasking', color: 'bg-emerald-600' },
+                        { key: 'ordersInProgress', color: 'bg-sky-600' },
+                        { key: 'financialCenter', color: 'bg-amber-600' },
+                        { key: 'supportChat', color: 'bg-rose-600' }
+                      ].map(p => (
+                        <td key={p.key} className="px-6 py-4 text-center">
+                          <button
+                            onClick={() => handleTogglePermission(s, p.key)}
+                            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                              perms[p.key as keyof typeof perms] ? p.color : 'bg-slate-200 dark:bg-slate-700'
                             }`}
-                          />
-                        </button>
-                      </td>
-                      
-                      {/* Order Tasking */}
-                      <td className="px-4 py-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleTogglePermission(s, 'orderTasking')}
-                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                            perms.orderTasking ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-700'
-                          }`}
-                        >
-                          <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                              perms.orderTasking ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </td>
-                      
-                      {/* Orders In Progress */}
-                      <td className="px-4 py-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleTogglePermission(s, 'ordersInProgress')}
-                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                            perms.ordersInProgress ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-700'
-                          }`}
-                        >
-                          <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                              perms.ordersInProgress ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </td>
-                      
-                      {/* Financial Center */}
-                      <td className="px-4 py-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleTogglePermission(s, 'financialCenter')}
-                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                            perms.financialCenter ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-700'
-                          }`}
-                        >
-                          <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                              perms.financialCenter ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </td>
-                      
-                      {/* Support & Chat */}
-                      <td className="px-4 py-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleTogglePermission(s, 'supportChat')}
-                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                            perms.supportChat ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-700'
-                          }`}
-                        >
-                          <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                              perms.supportChat ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </td>
+                          >
+                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${perms[p.key as keyof typeof perms] ? 'translate-x-4' : 'translate-x-0'}`} />
+                          </button>
+                        </td>
+                      ))}
                     </tr>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
       {/* Create Staff Modal */}
       {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-content-admin">
-            <div className="modal-header-admin">
-              <h3>Create Staff Account</h3>
-              <button onClick={() => { setShowModal(false); setFormError(''); setFormSuccess(''); }} style={{ fontSize: 18, color: '#94a3b8' }}>&times;</button>
+        <Modal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          title="Commission Secure Operative"
+        >
+          <form onSubmit={handleCreateStaff} className="space-y-6">
+            <div className="bg-indigo-500/5 border border-indigo-500/10 p-4 rounded-2xl flex items-start gap-3">
+              <Fingerprint className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+              <p className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 leading-relaxed uppercase tracking-tight">
+                New operatives will be granted immediate access to the administrative dashboard under your node's supervision. Credentials must be shared securely.
+              </p>
             </div>
-            <form onSubmit={handleCreateStaff}>
-              <div className="modal-body-admin">
-                {formError && <div className="inline-alert-error">{formError}</div>}
-                {formSuccess && <div className="inline-alert-success">{formSuccess}</div>}
-                
-                {session && session.role === 'Owner' ? (
-                  <div className="form-group-admin">
-                    <label>Administrator Node (Belongs To)</label>
-                    <select 
-                      value={selectedAdminId} 
-                      onChange={(e) => setSelectedAdminId(e.target.value)} 
-                      required 
-                      style={{ 
-                        width: '100%', 
-                        padding: '10px', 
-                        borderRadius: '4px', 
-                        border: '1px solid var(--border-color)', 
-                        background: 'var(--bg-surface)', 
-                        color: 'var(--text-color)',
-                        outline: 'none'
-                      }}
-                    >
-                      <option value="">-- Select Admin Node --</option>
-                      {admins.filter(a => a.status === 'Active' && a.accountId !== 'OWNER').map(a => (
-                        <option key={a.id} value={a.accountId}>{a.name} ({a.accountId})</option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <div className="form-group-admin">
-                    <label>Administrator Node</label>
-                    <input type="text" value={selectedAdminId} disabled style={{ background: 'var(--bg-app)', cursor: 'not-allowed', color: 'var(--text-light)' }} />
-                  </div>
-                )}
 
-                <div className="form-group-admin">
-                  <label>Staff Member Name</label>
-                  <input type="text" value={staffName} onChange={(e) => setStaffName(e.target.value)} required placeholder="e.g. David Staff" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {session?.role === 'Owner' ? (
+                <div className="sm:col-span-2 space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ADMINISTRATOR NODE BINDING</label>
+                  <select 
+                    value={selectedAdminId} 
+                    onChange={(e) => setSelectedAdminId(e.target.value)} 
+                    required 
+                    className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-xs font-bold uppercase text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-600 appearance-none transition-all"
+                  >
+                    <option value="">-- Select Target Admin Node --</option>
+                    {admins.filter(a => a.status === 'Active' && a.accountId !== 'OWNER').map(a => (
+                      <option key={a.id} value={a.accountId}>{a.name} ({a.accountId})</option>
+                    ))}
+                  </select>
                 </div>
-                <div className="form-group-admin">
-                  <label>Email Address</label>
-                  <input type="email" value={staffEmail} onChange={(e) => setStaffEmail(e.target.value)} required placeholder="david@wallmark.com" />
-                </div>
-                <div className="form-group-admin">
-                  <label>Phone Number (Optional)</label>
-                  <input type="text" value={staffPhone} onChange={(e) => setStaffPhone(e.target.value)} placeholder="+1 999 888 777" />
-                </div>
-                <div className="form-group-admin">
-                  <label>Department / Segment</label>
-                  <input type="text" value={staffDept} onChange={(e) => setStaffDept(e.target.value)} placeholder="e.g. Customer Support" />
-                </div>
-                <div className="form-group-admin">
-                  <label>Password</label>
-                  <input type="password" value={staffPassword} onChange={(e) => setStaffPassword(e.target.value)} required placeholder="••••••••" />
-                </div>
+              ) : (
+                <Input label="PARENT NODE ID" value={selectedAdminId} disabled icon={<Building2 className="w-4 h-4" />} />
+              )}
+
+              <Input label="FULL NAME" value={staffName} onChange={e => setStaffName(e.target.value)} required placeholder="e.g. Michael Chen" icon={<Fingerprint className="w-4 h-4" />} />
+              <Input label="EMAIL ADDRESS" type="email" value={staffEmail} onChange={e => setStaffEmail(e.target.value)} required placeholder="chen@walmark.com" icon={<Mail className="w-4 h-4" />} />
+              <Input label="PHONE (OPTIONAL)" value={staffPhone} onChange={e => setStaffPhone(e.target.value)} placeholder="+1 000 000 000" icon={<Smartphone className="w-4 h-4" />} />
+              <Input label="DEPARTMENT" value={staffDept} onChange={e => setStaffDept(e.target.value)} placeholder="e.g. Risk Audit" icon={<Building2 className="w-4 h-4" />} />
+              <div className="sm:col-span-2">
+                <Input label="ACCESS PASSWORD" type="password" value={staffPassword} onChange={e => setStaffPassword(e.target.value)} required placeholder="••••••••" icon={<Lock className="w-4 h-4" />} />
               </div>
-              <div className="modal-footer-admin">
-                <button type="button" className="btn-modal-cancel" onClick={() => { setShowModal(false); setFormError(''); setFormSuccess(''); }}>Cancel</button>
-                <button type="submit" className="btn-modal-submit">Create Staff Account</button>
-              </div>
-            </form>
-          </div>
-        </div>
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <Button variant="secondary" onClick={() => setShowModal(false)} className="flex-1">Cancel</Button>
+              <Button type="submit" loading={isCreating} className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 text-[11px] font-black uppercase tracking-widest">
+                 Initialize Staff Node
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
-
-      <style>{`
-        .flex-row-title-bar {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
-        }
-        .btn-create-item {
-          background-color: var(--color-primary);
-          color: white;
-          padding: 8px 16px;
-          border-radius: 6px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background-color 0.2s ease;
-          border: none;
-        }
-        .btn-create-item:hover {
-          background-color: var(--color-primary-hover);
-        }
-        .admin-page-title {
-          font-size: 20px;
-          font-weight: 700;
-          color: var(--text-admin-main);
-        }
-        .admin-page-subtitle {
-          font-size: 13px;
-          color: var(--text-admin-light);
-        }
-        .display-admins-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
-          gap: 20px;
-        }
-        .admin-node-card {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          border: var(--border-luxury);
-        }
-        .node-card-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          border-bottom: var(--border-glass);
-          padding-bottom: 12px;
-        }
-        .node-identity {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        .node-id-label {
-          background-color: #fef3c7;
-          color: #d97706;
-          padding: 2px 8px;
-          border-radius: 4px;
-          font-family: monospace;
-          font-weight: 700;
-          font-size: 11px;
-          align-self: flex-start;
-        }
-        .node-name {
-          font-size: 16px;
-          font-weight: 600;
-          color: var(--text-admin-main);
-        }
-        .node-card-body {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          font-size: 13px;
-        }
-        .node-detail-row {
-          display: flex;
-          justify-content: space-between;
-        }
-        .node-detail-row .lbl {
-          color: var(--text-admin-light);
-        }
-        .node-detail-row .val {
-          font-weight: 550;
-          color: var(--text-admin-main);
-        }
-        .node-detail-row .highlight-count {
-          color: #2563eb;
-          font-weight: 600;
-        }
-        .node-card-actions {
-          display: flex;
-          gap: 10px;
-          margin-top: auto;
-          padding-top: 12px;
-          border-top: var(--border-glass);
-        }
-        .btn-node-opt {
-          flex: 1;
-          height: 34px;
-          border-radius: 4px;
-          font-size: 12px;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .btn-red-outline {
-          border: 1px solid #fca5a5;
-          color: #b91c1c;
-          background: none;
-        }
-        .btn-red-outline:hover {
-          background-color: #fef2f2;
-        }
-        .btn-green-outline {
-          border: 1px solid #86efac;
-          color: #15803d;
-          background: none;
-        }
-        .btn-green-outline:hover {
-          background-color: #f0fdf4;
-        }
-        .btn-blue-filled {
-          background-color: var(--color-primary);
-          color: white;
-        }
-        .btn-blue-filled:disabled {
-          background-color: #cbd5e1;
-          color: #94a3b8;
-          cursor: not-allowed;
-        }
-        .status-pill {
-          display: inline-block;
-          font-size: 10px;
-          font-weight: 700;
-          padding: 2px 8px;
-          border-radius: 12px;
-          text-transform: uppercase;
-        }
-        .status-pill.active {
-          background-color: #d1fae5;
-          color: #065f46;
-        }
-        .status-pill.suspended {
-          background-color: #fee2e2;
-          color: #991b1b;
-        }
-      `}</style>
     </div>
   );
 }

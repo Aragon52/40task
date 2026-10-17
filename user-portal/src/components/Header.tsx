@@ -8,7 +8,7 @@ interface HeaderProps {
 
 export default function Header({ currentTheme, onThemeChange }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-40 w-full h-14 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-4 flex items-center justify-between shadow-xs">
+    <header className="sticky top-0 z-40 w-full h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-4 flex items-center justify-between shadow-xs">
       <div className="flex items-center">
         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50/50 dark:bg-indigo-950/40 border border-indigo-100/80 dark:border-indigo-900/40 rounded-xl">
           <span className="font-extrabold text-sm text-sky-600 dark:text-sky-400 tracking-tight">Walmart</span>

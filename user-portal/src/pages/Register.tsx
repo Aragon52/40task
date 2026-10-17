@@ -3,7 +3,21 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../supabase';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import loginBg from '@/login.png';
-
+import { 
+  User, 
+  Phone, 
+  Lock, 
+  ShieldCheck, 
+  Key, 
+  Ticket, 
+  CheckCircle2, 
+  ArrowRight,
+  ChevronDown,
+  Search,
+  Globe,
+  Info
+} from 'lucide-react';
+import { Button, Modal, Input } from '@/src/shared/UI';
 import toast from 'react-hot-toast';
 
 const COUNTRIES = [
@@ -104,19 +118,17 @@ export default function Register() {
   const [termsAgreed, setTermsAgreed] = useState(true);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPoliciesModal, setShowPoliciesModal] = useState(false);
-  const [formError, setFormError] = useState('');
-  const [formSuccess, setFormSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Country code selector state
+  // Country selector
   const [selectedCountry, setSelectedCountry] = useState(COUNTRIES.find(c => c.code === '+1' && c.flagCode === 'us') || COUNTRIES[0]);
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
   const [countrySearchQuery, setCountrySearchQuery] = useState('');
-  const countryDropdownRef = useRef(null);
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Click-away listener for country picker
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target as Node)) {
         setCountryDropdownOpen(false);
       }
     }
@@ -124,118 +136,56 @@ export default function Register() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Automatically fetch referral code from URL search param 'ref' if present
   useEffect(() => {
-    const ref = searchParams.get('ref');
-    if (ref) {
-      setReferralCode(ref);
-    }
+    const ref = searchParams.get('ref') || searchParams.get('invite');
+    if (ref) setReferralCode(ref);
   }, [searchParams]);
 
-  const handleRegister = async (e) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError('');
-    setFormSuccess('');
-
     if (!username || !phone || !password || !confirmPassword || !referralCode || !withdrawPassword) {
-      setFormError('Please fill in all required fields (Username, Phone Number, Passwords, Withdrawal Password, and Invitation Code).');
+      toast.error('Please fill all required fields');
       return;
     }
-
     if (!termsAgreed) {
-      setFormError('You must agree to the Terms & Conditions.');
+      toast.error('You must agree to terms');
       return;
     }
-
     if (password !== confirmPassword) {
-      setFormError('Passwords do not match.');
+      toast.error('Passwords do not match');
       return;
     }
 
+    setIsLoading(true);
     try {
       const codeInput = referralCode.trim().toUpperCase();
 
-      // ── Step 1a: Check if code matches a USER's invitation code (user-to-user binding) ──
       const { data: inviterUsers } = await supabase
         .from('cb_users')
         .select('id, username, invite_code, referred_by_staff_id, member_of_admin_id')
         .ilike('invite_code', codeInput);
 
-      const inviterUser = inviterUsers && inviterUsers[0];
+      const inviterUser = inviterUsers?.[0];
 
-      // ── Step 1b: Check if code matches a STAFF referral code ──
-      const { data: staffList, error: staffError } = await supabase
+      const { data: staffList } = await supabase
         .from('cb_staff')
         .select('*')
-        .ilike('referral_code', referralCode.trim());
+        .ilike('referral_code', codeInput);
 
-      if (staffError) {
-        setFormError('Error verifying invitation code: ' + staffError.message);
+      let matchingStaff = staffList?.[0];
+
+      if (!matchingStaff && !inviterUser) {
+        toast.error('Invalid Invitation Code');
+        setIsLoading(false);
         return;
       }
 
-      let matchingStaff = staffList && staffList[0];
-
-      // Dynamic parse pattern fallback
-      if (!matchingStaff && !inviterUser) {
-        let parsedStaffId = null;
-        let parsedAdminId = null;
-
-        const cleanInput = codeInput.trim().toUpperCase();
-        const refMatchRandom = cleanInput.match(/^WK-([A-Z0-9]{6})-(AD\d+|OWNER)$/);
-        const refMatchNoHyphen = cleanInput.match(/^WK([A-Z0-9]{6})(AD\d+|OWNER)$/);
-        const refMatchNew = cleanInput.match(/^WK-STF-(AD\d+)-(SI\d+)-([A-Z]{3})$/);
-        const refMatchOld = cleanInput.match(/^WK(AD\d+SI\d+)([A-Z]{3})$/);
-
-        if (refMatchRandom) {
-          parsedAdminId = refMatchRandom[2];
-          parsedStaffId = `${parsedAdminId}SI1`;
-        } else if (refMatchNoHyphen) {
-          parsedAdminId = refMatchNoHyphen[2];
-          parsedStaffId = `${parsedAdminId}SI1`;
-        } else if (refMatchNew) {
-          parsedAdminId = refMatchNew[1];
-          parsedStaffId = `${parsedAdminId}${refMatchNew[2]}`;
-        } else if (refMatchOld) {
-          parsedStaffId = refMatchOld[1];
-          parsedAdminId = parsedStaffId.split('SI')[0];
-        }
-
-        if (parsedStaffId && parsedAdminId) {
-          const newStaffMember = {
-            id: 'staff-' + Date.now(),
-            staff_id: parsedStaffId,
-            name: `Staff ${parsedStaffId}`,
-            email: `staff_${parsedStaffId.toLowerCase()}@wallmark.com`,
-            phone: 'Unassigned',
-            status: 'Active',
-            created_by_admin_id: parsedAdminId,
-            department: 'Operations',
-            referral_code: codeInput,
-            created_at: new Date().toISOString(),
-          };
-
-          const { error: insertStaffError } = await supabase
-            .from('cb_staff')
-            .insert([newStaffMember]);
-
-          if (!insertStaffError) matchingStaff = newStaffMember;
-        }
-      }
-
-      if (!matchingStaff && !inviterUser) {
-        toast.error('Invalid Invitation Code. Please contact your referrer or support for a valid code.');
-        return;
-      }
-
-      // If user-to-user invite, inherit the inviter's staff/admin node
       if (inviterUser && !matchingStaff) {
-        // We need the staff for this inviter — fetch based on their referred_by_staff_id
         const { data: inheritedStaff } = await supabase
           .from('cb_staff')
           .select('*')
           .eq('staff_id', inviterUser.referred_by_staff_id);
-        matchingStaff = (inheritedStaff && inheritedStaff[0]) || {
+        matchingStaff = inheritedStaff?.[0] || {
           staff_id: inviterUser.referred_by_staff_id,
           name: inviterUser.username,
           status: 'Active',
@@ -243,54 +193,36 @@ export default function Register() {
         };
       }
 
-      if (matchingStaff && matchingStaff.status && matchingStaff.status !== 'Active') {
-        toast.error('This invitation code belongs to a suspended account.');
+      if (matchingStaff?.status && matchingStaff.status !== 'Active') {
+        toast.error('Suspended invitation code');
+        setIsLoading(false);
         return;
       }
 
-      // Map phone to username and email (combining country code + raw digits beautifully)
-      const rawDigits = phone.trim().replace(/^[+]/, ''); // Strip typed '+'
+      const rawDigits = phone.trim().replace(/^[+]/, '');
       const finalPhoneCombined = `${selectedCountry.code}${rawDigits}`;
-      const finalPhoneWithSpace = `${selectedCountry.code} ${rawDigits}`;
-
       const computedUsername = username.trim();
-      const computedEmail = `${finalPhoneCombined}@merchant.wallmark.com`;
+      const computedEmail = `${finalPhoneCombined}@merchant.walmark.com`;
 
-      // 2. Check if phone or username already exists
-      const queryCheck = `username.eq.${computedUsername},phone.eq.${finalPhoneCombined},phone.eq.${finalPhoneWithSpace},phone.eq.${rawDigits}`;
-
-      const { data: existingUsers, error: userCheckError } = await supabase
+      const { data: existingUsers } = await supabase
         .from('cb_users')
-        .select('username, email, phone')
-        .or(queryCheck);
-
-      if (userCheckError) {
-        setFormError("Error checking existing users: " + userCheckError.message);
-        return;
-      }
+        .select('username, phone')
+        .or(`username.eq.${computedUsername},phone.eq.${finalPhoneCombined}`);
 
       if (existingUsers && existingUsers.length > 0) {
-        // Find out if it's the username or phone that clashed
-        const isUsernameTaken = existingUsers.some(u => u.username === computedUsername);
-        if (isUsernameTaken) {
-          setFormError("This username is already taken.");
-        } else {
-          setFormError("This phone number is already registered.");
-        }
+        toast.error('Username or Phone already registered');
+        setIsLoading(false);
         return;
       }
 
-      // 3. Create client registration
       const newUserId = 'ID-' + Math.floor(10000 + Math.random() * 90000);
-      const parentAdminId = matchingStaff.created_by_admin_id || matchingStaff.createdByAdminId || 'OWNER';
+      const parentAdminId = matchingStaff.created_by_admin_id || 'OWNER';
       
-      const generateRandomCode = (length) => {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid confusing O, 0, I, 1
-        let result = '';
-        for (let i = 0; i < length; i++) {
-          result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
+      const generateRandomCode = (len: number) => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let res = '';
+        for (let i = 0; i < len; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
+        return res;
       };
       
       const inviteCode = `WK${generateRandomCode(8)}${parentAdminId}`;
@@ -319,878 +251,261 @@ export default function Register() {
         withdrawals: 0.00,
         invite_code: inviteCode,
         subs: 0,
-        inviter: `${matchingStaff.name} (${matchingStaff.staff_id || matchingStaff.staffId})`,
-        referred_by_staff_id: matchingStaff.staff_id || matchingStaff.staffId,
-        member_of_admin_id: matchingStaff.created_by_admin_id || matchingStaff.createdByAdminId,
-        referral_id: referralCode.trim().toUpperCase(),
-        // Bind to the inviting user if they used a user-to-user invitation code
+        inviter: `${matchingStaff.name} (${matchingStaff.staff_id})`,
+        referred_by_staff_id: matchingStaff.staff_id,
+        member_of_admin_id: matchingStaff.created_by_admin_id,
+        referral_id: codeInput,
         invited_by_user_id: inviterUser ? inviterUser.id : '',
         l1_agent: matchingStaff.name,
-        l2_agent: matchingStaff.created_by_admin_id || matchingStaff.createdByAdminId,
+        l2_agent: matchingStaff.created_by_admin_id,
         ip: '192.168.1.' + Math.floor(Math.random() * 254),
         reg_time: new Date().toISOString(),
         password: password,
         password_plain: password,
+        withdraw_password: withdrawPassword
       };
 
-      let insertUserError;
-      const { error: primaryError } = await supabase
-        .from('cb_users')
-        .insert([{ ...newUser, withdraw_password: withdrawPassword }]);
+      const { error: insertError } = await supabase.from('cb_users').insert([newUser]);
+      if (insertError) throw insertError;
 
-      insertUserError = primaryError;
-
-      if (primaryError && (primaryError.message.includes('withdraw_password') || primaryError.code === 'PGRST204' || primaryError.message.includes('column'))) {
-        console.warn("withdraw_password column missing in database. Retrying fallback insertion...");
-        const { error: fallbackError } = await supabase
-          .from('cb_users')
-          .insert([newUser]);
-        insertUserError = fallbackError;
-        if (!fallbackError) {
-          toast("Warning: 'withdraw_password' column missing. Please run add_withdrawal_password.sql, but registration was successful!", { duration: 5000 });
-        }
-      }
-
-      if (insertUserError) {
-        setFormError("Error registering user: " + insertUserError.message);
-        return;
-      }
-
-      // Log user session in
       localStorage.setItem('cb_username', computedUsername);
       localStorage.setItem('cb_balance', '0.00');
       localStorage.setItem('cb_user_session', JSON.stringify({
         id: newUserId,
         username: computedUsername,
-        referredBy: matchingStaff.staff_id || matchingStaff.staffId
+        referredBy: matchingStaff.staff_id
       }));
       window.dispatchEvent(new Event('cb_session_updated'));
 
-      setFormSuccess(`Account created successfully under staff ${matchingStaff.staff_id || matchingStaff.staffId}!`);
-      setTimeout(() => {
-        navigate('/home');
-      }, 1500);
-    } catch (err) {
-      setFormError("Registration failed: " + err.message);
+      toast.success('Merchant account activated');
+      navigate('/home');
+    } catch (err: any) {
+      toast.error('Registration failed: ' + err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="login-container scale-up" style={{ backgroundImage: `linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.08) 100%), url(${loginBg})` }}>
-      {/* Background blurred glowing layers for high fidelity glassmorphic effects */}
-      <div className="glass-ambient-glow glow-1"></div>
-      <div className="glass-ambient-glow glow-2"></div>
-
-      {/* Upper Top Corner Language Swapper */}
-      <div className="login-lang-corner">
-        <LanguageSwitcher />
+    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden bg-slate-950">
+      {/* Background */}
+      <div className="absolute inset-0 z-0">
+        <img src={loginBg} alt="bg" className="w-full h-full object-cover opacity-30 scale-110 blur-sm" />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/95 to-indigo-950/40" />
       </div>
 
-      <div className="login-glass-card">
-        <div className="login-brand-header">
-          <div className="logo-badge-walmart large">
-            <span className="logo-text-walmart">Walmart</span>
-            <span className="logo-spark-walmart">
-              <svg viewBox="0 0 100 100" width="24" height="24">
-                <g transform="translate(50,50)" stroke="#FFC220" strokeWidth="15" strokeLinecap="round">
-                  <line x1="0" y1="-10" x2="0" y2="-38" />
-                  <line x1="0" y1="-10" x2="0" y2="-38" transform="rotate(60)" />
-                  <line x1="0" y1="-10" x2="0" y2="-38" transform="rotate(120)" />
-                  <line x1="0" y1="-10" x2="0" y2="-38" transform="rotate(180)" />
-                  <line x1="0" y1="-10" x2="0" y2="-38" transform="rotate(240)" />
-                  <line x1="0" y1="-10" x2="0" y2="-38" transform="rotate(300)" />
-                </g>
-              </svg>
-            </span>
-          </div>
-          <p className="brand-tagline">Financial Enhancement In Your Pocket</p>
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-blue-600/10 rounded-full blur-[120px] animate-pulse-slow" />
+        <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-indigo-600/10 rounded-full blur-[120px] animate-pulse-slow delay-1000" />
+      </div>
+
+      <div className="fixed top-6 right-6 z-50">
+        <div className="glass px-4 py-2 rounded-2xl flex items-center gap-2">
+          <Globe className="w-4 h-4 text-white" />
+          <LanguageSwitcher />
         </div>
+      </div>
 
-        <form className="login-card-form" onSubmit={handleRegister}>
-          <h3 className="form-title">Merchant Account Creation</h3>
-
-          {formError && <div className="inline-alert-error" style={{ marginBottom: 16 }}>{formError}</div>}
-          {formSuccess && <div className="inline-alert-success" style={{ marginBottom: 16 }}>{formSuccess}</div>}
-
-          <div className="login-form-group">
-            <label>Username</label>
-            <input 
-              type="text" 
-              placeholder="Enter your username" 
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
+      <div className="relative z-10 w-full max-w-lg my-12 animate-in fade-in zoom-in-95 duration-700">
+        <div className="glass-dark border border-white/10 rounded-[40px] p-8 md:p-10 shadow-2xl backdrop-blur-2xl">
+          {/* Header */}
+          <div className="text-center space-y-4 mb-10">
+            <div className="inline-flex items-center gap-3 px-6 py-2.5 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/20 border border-blue-400/30">
+              <span className="text-xl font-black text-white tracking-tighter italic">Walmart</span>
+              <div className="w-px h-5 bg-white/20" />
+              <ShieldCheck className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-white tracking-tight">Merchant Onboarding</h2>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Activate your global matching node</p>
+            </div>
           </div>
 
-          <div className="login-form-group">
-            <label>Phone Number</label>
-            <div className="phone-input-wrapper" ref={countryDropdownRef}>
-              <div className="country-code-selector">
-                <button 
-                  type="button" 
-                  className="country-trigger-btn"
-                  onClick={() => { setCountryDropdownOpen(!countryDropdownOpen); setCountrySearchQuery(''); }}
-                >
-                  <span className="country-flag-icon">
-                    <img 
-                      src={`https://flagcdn.com/w40/${selectedCountry.flagCode}.png`} 
-                      alt="" 
-                      className="real-flag-img" 
-                      referrerPolicy="no-referrer"
-                    />
-                  </span>
-                  <span className="country-code-text">{selectedCountry.code}</span>
-                  <span className="country-chevron">▼</span>
-                </button>
-                {countryDropdownOpen && (
-                  <div className="country-dropdown-list">
-                    
-                    <div className="country-search-box">
-                      <input 
-                        type="text" 
-                        placeholder="Search country..." 
-                        value={countrySearchQuery}
-                        onChange={(e) => setCountrySearchQuery(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="country-search-input"
-                      />
-                    </div>
-                    {COUNTRIES.filter(c => c.name.toLowerCase().includes(countrySearchQuery.toLowerCase()) || c.code.includes(countrySearchQuery)).map(c => (
-                      <div 
-                        key={c.flagCode} 
-                        className="country-dropdown-item"
-                        onClick={() => {
-                          setSelectedCountry(c);
-                          setCountryDropdownOpen(false);
-                        }}
-                      >
-                        <span className="item-flag-icon">
-                          <img 
-                            src={`https://flagcdn.com/w40/${c.flagCode}.png`} 
-                            alt="" 
-                            className="real-flag-img" 
-                            referrerPolicy="no-referrer"
-                          />
-                        </span>
-                        <span className="country-item-title">{c.name}</span>
-                        <span className="item-code">{c.code}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <input 
-                type="tel" 
-                className="phone-input-field"
-                placeholder="Enter your phone number" 
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+          <form onSubmit={handleRegister} className="space-y-5">
+            {/* Username */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                <User className="w-3 h-3" />
+                Merchant Identity
+              </label>
+              <Input 
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="Choose merchant username"
+                className="h-14 bg-white/5 border-white/10 text-white rounded-2xl focus:ring-blue-500/20"
                 required
               />
             </div>
-          </div>
 
-          <div className="login-form-group">
-            <label>Secure Password</label>
-            <input 
-              type="password" 
-              placeholder="••••••••" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
+            {/* Phone */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                <Phone className="w-3 h-3" />
+                Mobile Connection
+              </label>
+              <div className="flex h-14 bg-white/5 border border-white/10 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+                <div className="relative" ref={countryDropdownRef}>
+                  <button 
+                    type="button"
+                    onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
+                    className="h-full px-4 flex items-center gap-2 bg-white/5 border-r border-white/10 hover:bg-white/10 transition-colors"
+                  >
+                    <img src={`https://flagcdn.com/w40/${selectedCountry.flagCode}.png`} className="w-5 h-3.5 object-cover rounded-sm" alt="" />
+                    <span className="text-sm font-black text-white">{selectedCountry.code}</span>
+                    <ChevronDown className="w-3 h-3 text-slate-400" />
+                  </button>
 
-          <div className="login-form-group">
-            <label>Confirm Password</label>
-            <input 
-              type="password" 
-              placeholder="••••••••" 
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-          </div>
+                  {countryDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in slide-in-from-top-2">
+                      <div className="p-2 border-b border-white/10 flex items-center gap-2 bg-white/5">
+                        <Search className="w-4 h-4 text-slate-400" />
+                        <input 
+                          type="text" 
+                          placeholder="Search..." 
+                          className="bg-transparent border-none text-sm text-white w-full outline-none py-1"
+                          value={countrySearchQuery}
+                          onChange={e => setCountrySearchQuery(e.target.value)}
+                        />
+                      </div>
+                      <div className="max-h-60 overflow-y-auto p-1">
+                        {COUNTRIES.filter(c => c.name.toLowerCase().includes(countrySearchQuery.toLowerCase()) || c.code.includes(countrySearchQuery)).map(c => (
+                          <button
+                            key={c.flagCode}
+                            type="button"
+                            onClick={() => { setSelectedCountry(c); setCountryDropdownOpen(false); }}
+                            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors text-left"
+                          >
+                            <img src={`https://flagcdn.com/w40/${c.flagCode}.png`} className="w-5 h-3.5 object-cover rounded-sm" alt="" />
+                            <span className="flex-1 text-xs font-bold text-slate-300">{c.name}</span>
+                            <span className="text-[10px] font-black text-blue-500">{c.code}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <input 
+                  type="tel" 
+                  placeholder="Phone number" 
+                  className="flex-1 bg-transparent px-4 text-sm font-bold text-white outline-none"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
 
-          <div className="login-form-group">
-            <label>Withdrawal Password (6-digit PIN or Secure Password)</label>
-            <input 
-              id="txt-register-withdraw-password"
-              type="password" 
-              placeholder="••••••••" 
-              value={withdrawPassword}
-              onChange={(e) => setWithdrawPassword(e.target.value)}
-              required
-            />
-          </div>
+            {/* Passwords Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                  <Lock className="w-3 h-3" />
+                  Access Key
+                </label>
+                <Input 
+                  type="password" 
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="h-14 bg-white/5 border-white/10 text-white rounded-2xl"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                  <Lock className="w-3 h-3" />
+                  Confirm
+                </label>
+                <Input 
+                  type="password" 
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="h-14 bg-white/5 border-white/10 text-white rounded-2xl"
+                  required
+                />
+              </div>
+            </div>
 
-          <div className="login-form-group">
-            <label>Invitation Code</label>
-            <input 
-              type="text" 
-              placeholder="Referral Code" 
-              value={referralCode}
-              onChange={(e) => setReferralCode(e.target.value)}
-              required
-              readOnly={!!searchParams.get('ref')}
-            />
-            <span style={{ fontSize: 9.5, color: 'var(--text-muted, #475569)', marginTop: 2, fontWeight: 500 }}>
-              * Enter your recruiter's staff code OR a friend's invitation code.
-            </span>
-          </div>
+            {/* Security Passwords */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                  <Key className="w-3 h-3 text-amber-500" />
+                  Payout PIN
+                </label>
+                <Input 
+                  type="password" 
+                  value={withdrawPassword}
+                  onChange={e => setWithdrawPassword(e.target.value)}
+                  placeholder="Security Key"
+                  className="h-14 bg-white/5 border-white/10 text-white rounded-2xl"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                  <Ticket className="w-3 h-3 text-blue-500" />
+                  Invitation
+                </label>
+                <Input 
+                  value={referralCode}
+                  onChange={e => setReferralCode(e.target.value)}
+                  placeholder="Staff Code"
+                  className="h-14 bg-white/5 border-white/10 text-white rounded-2xl"
+                  readOnly={!!searchParams.get('ref') || !!searchParams.get('invite')}
+                  required
+                />
+              </div>
+            </div>
 
-          <div className="login-form-group" style={{ flexDirection: 'row', alignItems: 'flex-start', gap: '8px', marginTop: '4px' }}>
-            <input 
-              type="checkbox" 
-              id="termsCheckbox" 
-              checked={termsAgreed}
-              onChange={(e) => setTermsAgreed(e.target.checked)}
-              style={{ width: '16px', height: '16px', margin: '3px 0 0 0', cursor: 'pointer', accentColor: 'var(--primary-color, #0071ce)' }}
-            />
-            <label htmlFor="termsCheckbox" style={{ margin: 0, fontSize: '11.5px', cursor: 'pointer', color: 'var(--text-muted, #475569)', fontWeight: 500, lineHeight: '1.4', textAlign: 'left' }}>
-              I agree to the <span style={{ color: 'var(--primary-color, #0071ce)', fontWeight: 'bold', textDecoration: 'underline' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowTermsModal(true); }}>Terms & Conditions</span> and <span style={{ color: 'var(--primary-color, #0071ce)', fontWeight: 'bold', textDecoration: 'underline' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowPoliciesModal(true); }}>Operational Policies</span>.
-            </label>
-          </div>
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex gap-3">
+              <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+              <p className="text-[10px] text-slate-400 leading-relaxed font-medium">Use your recruiter's authorized staff code to successfully bind your merchant node to the global ledger.</p>
+            </div>
 
-          <button type="submit" className="login-submit-btn" style={{ marginTop: '12px' }}>
-            Submit & Register
-          </button>
+            <div className="flex items-start gap-3 p-1">
+              <div className="relative flex items-center">
+                <input 
+                  type="checkbox" 
+                  id="terms"
+                  checked={termsAgreed} 
+                  onChange={e => setTermsAgreed(e.target.checked)}
+                  className="w-5 h-5 rounded-lg border-2 border-white/10 bg-white/5 checked:bg-blue-600 checked:border-blue-600 transition-all cursor-pointer appearance-none"
+                />
+                <CheckCircle2 className={`absolute w-3 h-3 text-white pointer-events-none left-1 transition-opacity ${termsAgreed ? 'opacity-100' : 'opacity-0'}`} />
+              </div>
+              <label htmlFor="terms" className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                I agree to the <button type="button" onClick={() => setShowTermsModal(true)} className="text-blue-500 font-black underline">Service Terms</button> and <button type="button" onClick={() => setShowPoliciesModal(true)} className="text-blue-500 font-black underline">Operational Policies</button>.
+              </label>
+            </div>
 
-          <p className="register-prompt">
-            Already have an account? <span className="reg-link-inline" onClick={() => navigate('/login')}>Sign In</span>
-          </p>
-        </form>
+            <Button type="submit" className="w-full h-16 text-base group" isLoading={isLoading}>
+              <span>Create Merchant Account</span>
+              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+
+            <p className="text-center text-xs font-bold text-slate-600 uppercase tracking-widest pt-2">
+              Existing Member? <button type="button" onClick={() => navigate('/login')} className="text-blue-500 hover:underline">Sign In</button>
+            </p>
+          </form>
+        </div>
       </div>
 
-      <style>{`
-        .login-container {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          min-height: 100vh;
-          padding: 40px 16px;
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.08) 100%), 
-                      url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=2000');
-          background-size: cover;
-          background-position: center;
-          background-attachment: fixed;
-          overflow: hidden;
-        }
-
-        /* Ambient lighting backplate orbs behind glass */
-        .glass-ambient-glow {
-          position: absolute;
-          border-radius: 50%;
-          filter: blur(80px);
-          opacity: 0.25;
-          z-index: 0;
-          pointer-events: none;
-        }
-        .glow-1 {
-          width: 300px;
-          height: 300px;
-          background: #0071ce;
-          top: 15%;
-          left: 10%;
-        }
-        .glow-2 {
-          width: 250px;
-          height: 250px;
-          background: #FFC220;
-          bottom: 20%;
-          right: 10%;
-        }
-
-        .login-lang-corner {
-          position: fixed;
-          top: 16px;
-          right: 16px;
-          z-index: 10001;
-        }
-
-        .login-glass-card {
-          position: relative;
-          z-index: 1;
-          width: 100%;
-          max-width: 420px;
-          background: rgba(255, 255, 255, 0.015);
-          backdrop-filter: blur(10px) saturate(140%);
-          -webkit-backdrop-filter: blur(10px) saturate(140%);
-          border: 1px solid rgba(255, 255, 255, 0.75);
-          border-radius: 24px;
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 15px 35px -5px rgba(0, 0, 0, 0.04);
-          padding: 36px 28px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          animation: cardBounce 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes cardBounce {
-          0% { transform: scale(0.92) translateY(10px); opacity: 0; }
-          100% { transform: scale(1) translateY(0); opacity: 1; }
-        }
-
-        .login-brand-header {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 20px;
-          text-align: center;
-          background: rgba(255, 255, 255, 0.02);
-          padding: 16px;
-          border-radius: 16px;
-          border: 1px solid rgba(255, 255, 255, 0.55);
-        }
-
-        .brand-tagline {
-          font-size: 11px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.8px;
-          background: linear-gradient(135deg, #0071ce 0%, #d97706 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          display: inline-block;
-          margin: 0;
-        }
-
-        .login-card-form {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-          background: transparent;
-          border: none;
-          padding: 0;
-          box-shadow: none;
-        }
-
-        .form-title {
-          font-size: 18px;
-          font-weight: 700;
-          color: #0f172a;
-          text-align: center;
-          margin-bottom: 4px;
-          letter-spacing: -0.3px;
-        }
-
-        .login-form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .login-form-group label {
-          font-size: 11px;
-          font-weight: 700;
-          color: #334155;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .login-form-group > input {
-          height: 40px;
-          border-radius: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.45);
-          background-color: rgba(255, 255, 255, 0.15);
-          padding: 0 16px;
-          font-size: 14px;
-          color: #0f172a;
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .login-form-group > input:focus {
-          border-color: #0071ce;
-          background-color: rgba(255, 255, 255, 0.85);
-          box-shadow: 0 0 0 4px rgba(0, 113, 206, 0.15);
-          outline: none;
-        }
-
-        /* Combined/nested country flag phone input wrapper styles */
-        .phone-input-wrapper {
-          display: flex;
-          align-items: center;
-          height: 40px;
-          border-radius: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.45);
-          background-color: rgba(255, 255, 255, 0.15);
-          position: relative;
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .phone-input-wrapper:focus-within {
-          border-color: #0071ce;
-          background-color: rgba(255, 255, 255, 0.85);
-          box-shadow: 0 0 0 4px rgba(0, 113, 206, 0.15);
-        }
-
-        .country-code-selector {
-          position: relative;
-          height: 100%;
-          border-right: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .country-trigger-btn {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 0 12px;
-          height: 100%;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 600;
-          color: #0f172a;
-        }
-
-        .country-flag-icon {
-          width: 20px;
-          height: 15px;
-          border-radius: 2px;
-          overflow: hidden;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-          border: 1px solid rgba(0,0,0,0.06);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .country-flag-icon img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .country-code-text {
-          font-size: 14px;
-          font-weight: 600;
-          color: #1e293b;
-        }
-
-        .country-chevron {
-          font-size: 8px;
-          color: #64748b;
-          margin-left: 2px;
-        }
-
-        .country-search-box {
-          padding: 8px;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-          position: sticky;
-          top: 0;
-          background: rgba(255, 255, 255, 0.98);
-          z-index: 2;
-        }
-        .country-search-input {
-          width: 100%;
-          padding: 6px 10px;
-          font-size: 13px;
-          border: 1px solid #e2e8f0;
-          border-radius: 6px;
-          outline: none;
-        }
-        .country-search-input:focus {
-          border-color: var(--primary-color);
-        }
-        .country-dropdown-list {
-          position: absolute;
-          top: calc(100% + 6px);
-          left: 0;
-          width: 190px;
-          max-height: 200px;
-          overflow-y: auto;
-          background: rgba(255, 255, 255, 0.98);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(0, 0, 0, 0.08);
-          border-radius: 12px;
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-          z-index: 100;
-          padding: 4px;
-        }
-
-        .country-dropdown-item {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px 10px;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.15s ease;
-          font-size: 13px;
-          color: #334155;
-        }
-
-        .country-dropdown-item:hover {
-          background: rgba(0, 113, 206, 0.08);
-          color: #0071ce;
-        }
-
-        .item-flag-icon {
-          width: 20px;
-          height: 15px;
-          border-radius: 2px;
-          overflow: hidden;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.15);
-          border: 1px solid rgba(0,0,0,0.06);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .item-flag-icon img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .country-item-title {
-          flex: 1;
-          font-weight: 500;
-          text-align: left;
-        }
-
-        .item-code {
-          font-weight: 600;
-          color: #64748b;
-        }
-
-        .phone-input-field {
-          flex: 1;
-          height: 100%;
-          border: none !important;
-          background: transparent !important;
-          padding: 0 16px !important;
-          font-size: 14px;
-          color: #0f172a;
-          box-shadow: none !important;
-          outline: none !important;
-        }
-
-        .login-submit-btn {
-          height: 46px;
-          border-radius: 23px;
-          background: linear-gradient(135deg, #0071ce 0%, #004b87 100%);
-          color: white;
-          font-weight: 700;
-          font-size: 15px;
-          box-shadow: 0 10px 20px -5px rgba(0, 113, 206, 0.3);
-          margin-top: 10px;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .login-submit-btn:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 12px 24px -5px rgba(0, 113, 206, 0.4);
-          background: linear-gradient(135deg, #0080eb 0%, #00569c 100%);
-        }
-
-        .register-prompt {
-          font-size: 13px;
-          color: #475569;
-          text-align: center;
-          margin-top: 8px;
-        }
-
-        .reg-link-inline {
-          color: #0071ce;
-          font-weight: 700;
-          cursor: pointer;
-          transition: color 0.15s;
-        }
-
-        .reg-link-inline:hover {
-          color: #004b87;
-          text-decoration: underline;
-        }
-
-        .inline-alert-error {
-          padding: 10px 14px;
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid rgba(239, 68, 68, 0.2);
-          color: #b91c1c;
-          border-radius: 10px;
-          font-size: 12px;
-          font-weight: 600;
-        }
-
-        .inline-alert-success {
-          padding: 10px 14px;
-          background: rgba(16, 185, 129, 0.1);
-          border: 1px solid rgba(16, 185, 129, 0.2);
-          color: #047857;
-          border-radius: 10px;
-          font-size: 12px;
-          font-weight: 600;
-        }
-
-        /* Modals inside Register */
-        .login-modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.6);
-          backdrop-filter: blur(4px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 10002;
-          padding: 20px;
-        }
-        .login-modal-content {
-          background: white;
-          border-radius: 16px;
-          max-width: 500px;
-          width: 100%;
-          max-height: 80vh;
-          display: flex;
-          flex-direction: column;
-          box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
-          animation: modalScaleUp 0.25s ease-out;
-          color: #1e293b;
-        }
-        @keyframes modalScaleUp {
-          from { transform: scale(0.95); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        .login-modal-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 16px 20px;
-          border-bottom: 1px solid #e2e8f0;
-        }
-        .login-modal-header h3 {
-          font-size: 16px;
-          font-weight: 700;
-          color: #0f172a;
-          margin: 0;
-        }
-        .login-modal-close {
-          background: none;
-          border: none;
-          font-size: 16px;
-          cursor: pointer;
-          color: #64748b;
-          transition: color 0.15s;
-        }
-        .login-modal-close:hover {
-          color: #0f172a;
-        }
-        .login-modal-body {
-          padding: 20px;
-          overflow-y: auto;
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          text-align: left;
-        }
-        .login-modal-body h4 {
-          font-size: 13px;
-          font-weight: 700;
-          color: #1e293b;
-          margin-top: 8px;
-          margin-bottom: 2px;
-        }
-        .login-modal-body p {
-          font-size: 12px;
-          color: #475569;
-          line-height: 1.5;
-          margin: 0;
-        }
-        .login-modal-footer {
-          padding: 12px 20px;
-          border-top: 1px solid #e2e8f0;
-          display: flex;
-          justify-content: flex-end;
-        }
-        .login-modal-btn {
-          background: #0071ce;
-          color: white;
-          border: none;
-          padding: 8px 16px;
-          font-size: 13px;
-          font-weight: 600;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: background 0.15s;
-        }
-        .login-modal-btn:hover {
-          background: #00569c;
-        }
-
-        /* Dark Mode overrides for Register page */
-        @media (prefers-color-scheme: dark) {
-          .login-glass-card {
-            background: rgba(15, 23, 42, 0.45);
-            border-color: rgba(255, 255, 255, 0.15);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 20px 40px rgba(0, 0, 0, 0.5);
-          }
-          .login-brand-header {
-            background: rgba(255, 255, 255, 0.01);
-            border-color: rgba(255, 255, 255, 0.08);
-          }
-          .form-title {
-            color: #f1f5f9;
-          }
-          .login-form-group label {
-            color: #94a3b8;
-          }
-          .login-form-group > input {
-            background-color: rgba(15, 23, 42, 0.35);
-            border-color: rgba(255, 255, 255, 0.12);
-            color: #f8fafc;
-          }
-          .login-form-group > input:focus {
-            background-color: rgba(15, 23, 42, 0.6);
-            border-color: #3b82f6;
-          }
-          .phone-input-wrapper {
-            background-color: rgba(15, 23, 42, 0.35);
-            border-color: rgba(255, 255, 255, 0.12);
-          }
-          .phone-input-wrapper:focus-within {
-            background-color: rgba(15, 23, 42, 0.6);
-            border-color: #3b82f6;
-          }
-          .country-trigger-btn {
-            color: #f8fafc;
-          }
-          .country-code-text {
-            color: #f8fafc;
-          }
-          .country-search-box {
-            background: #1e293b;
-            border-bottom-color: rgba(255, 255, 255, 0.08);
-          }
-          .country-search-input {
-            background: #0f172a;
-            border-color: rgba(255, 255, 255, 0.15);
-            color: #f8fafc;
-          }
-          .country-dropdown-list {
-            background: #1e293b;
-            border-color: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-          }
-          .country-dropdown-item {
-            color: #cbd5e1;
-          }
-          .country-dropdown-item:hover {
-            background: rgba(59, 130, 246, 0.15);
-            color: #60a5fa;
-          }
-          .phone-input-field {
-            color: #f8fafc !important;
-          }
-          .register-prompt {
-            color: #94a3b8;
-          }
-          .reg-link-inline {
-            color: #60a5fa;
-          }
-          .reg-link-inline:hover {
-            color: #93c5fd;
-          }
-          .login-modal-content {
-            background: #1e293b;
-            color: #cbd5e1;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-          }
-          .login-modal-header {
-            border-bottom-color: rgba(255, 255, 255, 0.08);
-          }
-          .login-modal-header h3 {
-            color: #f1f5f9;
-          }
-          .login-modal-close {
-            color: #94a3b8;
-          }
-          .login-modal-close:hover {
-            color: #f1f5f9;
-          }
-          .login-modal-body h4 {
-            color: #f1f5f9;
-          }
-          .login-modal-body p {
-            color: #94a3b8;
-          }
-          .login-modal-footer {
-            border-top-color: rgba(255, 255, 255, 0.08);
-          }
-        }
-      `}</style>
-
-      {/* Terms & Conditions Modal */}
-      {showTermsModal && (
-        <div className="login-modal-overlay" onClick={() => setShowTermsModal(false)}>
-          <div className="login-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="login-modal-header">
-              <h3>Terms of Service Agreement</h3>
-              <button className="login-modal-close" onClick={() => setShowTermsModal(false)}>✕</button>
-            </div>
-            <div className="login-modal-body">
-              <h4>1. Agreement of Service</h4>
-              <p>By registering an account with Walmart, you represent that you are at least 18 years of age and agree to comply with all operational terms, verification checks, and administrative bindings.</p>
-              
-              <h4>2. User Responsibilities</h4>
-              <p>Users are responsible for maintaining the confidentiality of their passwords and secure keys. Sharing accounts, transferring balances to other clients without approval, or registering multiple accounts under staff nodes is strictly prohibited.</p>
-
-              <h4>3. Limitation of Liability</h4>
-              <p>Walmart operates as a smart retail intermediary. Under no circumstances shall the platform, its admins, or operational staff nodes be liable for indirect, incidental, or consequential losses arising from network latency or client connectivity issues.</p>
-
-              <h4>4. Node Suspensions</h4>
-              <p>We reserve the right to suspend or lock accounts that violate system policies, manipulate transaction slips, or engage in suspicious activity. Suspended users must contact their affiliated support agent for audit resolution.</p>
-
-              <h4>5. Amendments to Terms</h4>
-              <p>Walmart reserves the right to modify or update these terms at any time. Continued use of the matching portal following adjustments constitutes acceptance of the new terms.</p>
-            </div>
-            <div className="login-modal-footer">
-              <button className="login-modal-btn" onClick={() => setShowTermsModal(false)}>Accept & Close</button>
-            </div>
-          </div>
+      {/* Modals */}
+      <Modal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} title="Terms of Service">
+        <div className="space-y-6 text-sm text-slate-400">
+          <p>By registering, you represent that you are at least 18 years of age and agree to all administrative bindings and verification checks.</p>
+          <Button onClick={() => setShowTermsModal(false)} className="w-full">Agree & Continue</Button>
         </div>
-      )}
+      </Modal>
 
-      {/* Rules & Policies Modal */}
-      {showPoliciesModal && (
-        <div className="login-modal-overlay" onClick={() => setShowPoliciesModal(false)}>
-          <div className="login-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="login-modal-header">
-              <h3>Rules & Operational Policies</h3>
-              <button className="login-modal-close" onClick={() => setShowPoliciesModal(false)}>✕</button>
-            </div>
-            <div className="login-modal-body">
-              <h4>1. Retail Matching Operational Model</h4>
-              <p>Walmart utilizes a real-time smart matching algorithm to connect merchants and retail nodes. Users must maintain a positive wallet balance to match and accept retail allocation worksheets.</p>
-              
-              <h4>2. Commission & Earnings Yields</h4>
-              <p>Commissions are credited immediately upon successful verification and submission of each matched order. The standard commission yield is calculated based on the assigned VIP tier level rates.</p>
-
-              <h4>3. Wallet Balance & Escrow Hold</h4>
-              <p>During the active matching progression, the cost of matched orders will be temporarily held in escrow. Once you submit the order, the held principal and the earned commission are returned immediately to your active wallet balance.</p>
-
-              <h4>4. Matching Daily Limits</h4>
-              <p>Each user account is allocated a maximum of 10 standard matches per calendar day. VIP upgrades can raise matching limits, speed up settlement rates, and increase profit margins.</p>
-
-              <h4>5. Financial Safety Policies</h4>
-              <p>To prevent multi-accounting, automated script exploits, or capital washing, active balances are audited prior to withdrawal approval. Withdrawal requests are processed within 1 to 24 hours.</p>
-            </div>
-            <div className="login-modal-footer">
-              <button className="login-modal-btn" onClick={() => setShowPoliciesModal(false)}>I Understand</button>
-            </div>
-          </div>
+      <Modal isOpen={showPoliciesModal} onClose={() => setShowPoliciesModal(false)} title="Operational Policies">
+        <div className="space-y-6 text-sm text-slate-400">
+          <p>Walmart Global Matching utilizes advanced retail node distribution. Users must maintain liquidity to accept worksheets.</p>
+          <Button onClick={() => setShowPoliciesModal(false)} className="w-full">Confirm Policy</Button>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

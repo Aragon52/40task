@@ -1,7 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Users, UserPlus, Search, Copy, Check, ShieldCheck, ExternalLink, AlertTriangle, Phone, Mail, Building } from 'lucide-react';
+import { 
+  Users, 
+  UserPlus, 
+  Search, 
+  Copy, 
+  Check, 
+  ShieldCheck, 
+  ExternalLink, 
+  AlertTriangle, 
+  Phone, 
+  Mail, 
+  Building2, 
+  Calendar,
+  ChevronRight,
+  Fingerprint,
+  Link,
+  Globe,
+  Loader2,
+  DollarSign
+} from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Button, Card, Input, Badge } from '@/src/shared/UI';
 
 export default function SLAStaff() {
   const [session, setSession] = useState<any>(null);
@@ -17,7 +37,6 @@ export default function SLAStaff() {
       const parsedSession = savedSession ? JSON.parse(savedSession) : { role: 'Owner', name: 'System Owner', email: 'owner@wallmark.com' };
       setSession(parsedSession);
 
-      // Staff
       const { data: staffData, error: staffError } = await supabase
         .from('cb_staff')
         .select('*')
@@ -39,7 +58,6 @@ export default function SLAStaff() {
         setStaff(mappedStaff);
       }
 
-      // Clients/Users
       const { data: usersData, error: usersError } = await supabase
         .from('cb_users')
         .select('*')
@@ -76,7 +94,6 @@ export default function SLAStaff() {
     return () => clearInterval(interval);
   }, []);
 
-  // Filter staff based on session role hierarchy
   const displayStaff = staff.filter(s => {
     if (!session) return false;
     if (session.role === 'Owner') return true;
@@ -113,15 +130,10 @@ export default function SLAStaff() {
     let userPortalUrl = import.meta.env.VITE_USER_PORTAL_URL;
     if (!userPortalUrl) {
       const hostname = window.location.hostname;
-      const port = window.location.port;
-      if (port === '5174') {
-        userPortalUrl = `${window.location.protocol}//${hostname}:5173`;
-      } else if (hostname.startsWith('admin.')) {
-        userPortalUrl = `${window.location.protocol}//${hostname.substring(6)}`;
-      } else if (hostname.startsWith('admin-')) {
-        userPortalUrl = `${window.location.protocol}//${hostname.substring(6)}`;
+      if (hostname.includes('ais-dev') || hostname.includes('ais-pre')) {
+         userPortalUrl = `${window.location.protocol}//${hostname}`;
       } else {
-        userPortalUrl = `${window.location.protocol}//${hostname}`;
+         userPortalUrl = `${window.location.protocol}//${hostname}`;
       }
     }
     return `${userPortalUrl}/#/register?ref=${referralCode}`;
@@ -130,7 +142,7 @@ export default function SLAStaff() {
   const handleCopyLink = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
-    toast.success("Referral code copied to clipboard!");
+    toast.success("Referral code copied!");
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -158,228 +170,246 @@ export default function SLAStaff() {
     : [];
 
   return (
-    <div className="admin-page-container space-y-6 scale-up">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">SLA Staff Members</h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Operational staff accounts, referral configurations, and client bindings.</p>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Header Card */}
+      <Card className="relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-1">
+            <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
+              <Users className="w-6 h-6 text-indigo-500" />
+              SLA Staff Management
+            </h3>
+            <p className="text-xs text-slate-500 font-medium">
+              Operational staff accounts, referral configurations, and client node bindings.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 bg-indigo-500/5 border border-indigo-500/10 px-4 py-2 rounded-2xl">
+             <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">{filteredStaff.length} Nodes Active</span>
+             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          </div>
         </div>
-      </div>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Staff Directory */}
-        <div className="lg:col-span-5 admin-card !p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Active Staff Nodes ({filteredStaff.length})</h3>
-            <span className="text-xs font-semibold font-mono text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded-md">
-              {displayStaff.length} Total
-            </span>
-          </div>
+        <div className="lg:col-span-5 space-y-6">
+          <Card className="p-0 overflow-hidden">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 space-y-4">
+              <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Operative Directory</h4>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input 
+                  type="text" 
+                  placeholder="Search by name, ID, or dept..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-[11px] font-bold outline-none focus:ring-2 focus:ring-indigo-600 transition-all"
+                />
+              </div>
+            </div>
 
-          <div className="relative">
-            <Search className="absolute left-3 top-3 text-slate-400 w-4 h-4 pointer-events-none" />
-            <input 
-              type="text" 
-              placeholder="Search staff by name, ID, or dept..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-xs font-medium focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-600 outline-none transition-all"
-            />
-          </div>
+            <div className="max-h-[600px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/50 custom-scrollbar">
+              {filteredStaff.length === 0 ? (
+                <div className="p-12 text-center text-slate-400 text-[10px] font-black uppercase tracking-widest italic opacity-50">No matching operatives</div>
+              ) : (
+                filteredStaff.map(s => {
+                  const isSelected = selectedStaff?.id === s.id;
+                  const myClientCount = clients.filter(c => c.referred_by_staff_id === s.staffId).length;
 
-          <div className="space-y-2.5 max-h-[620px] overflow-y-auto pr-1">
-            {filteredStaff.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-8">No staff accounts match search criteria.</p>
-            ) : (
-              filteredStaff.map(s => {
-                const isSelected = selectedStaff?.id === s.id;
-                const myClientCount = clients.filter(c => c.referred_by_staff_id === s.staffId).length;
-
-                return (
-                  <div 
-                    key={s.id} 
-                    onClick={() => setSelectedStaff(s)}
-                    className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                      isSelected 
-                        ? 'bg-indigo-50/90 dark:bg-indigo-950/50 border-indigo-300 dark:border-indigo-700 shadow-xs' 
-                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                        {s.name.split(' ').map((n: string) => n[0]).join('')}
-                      </div>
-                      <div className="min-w-0">
-                        <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white block truncate">{s.name}</span>
-                        <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 font-medium">
-                          <span className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">{s.staffId}</span>
-                          <span>•</span>
-                          <span>{s.department}</span>
+                  return (
+                    <button 
+                      key={s.id} 
+                      onClick={() => setSelectedStaff(s)}
+                      className={`w-full p-4 text-left transition-all flex items-center justify-between group ${isSelected ? 'bg-indigo-50/50 dark:bg-indigo-500/5' : 'hover:bg-slate-50 dark:hover:bg-slate-900/50'}`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs border shadow-sm shrink-0 transition-all ${isSelected ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
+                          {s.name.substring(0,2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <span className={`text-[11px] font-black uppercase tracking-tight truncate block ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-900 dark:text-white'}`}>{s.name}</span>
+                          <div className="flex items-center gap-2 mt-0.5 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                            <span className="font-mono text-indigo-500/70">{s.staffId}</span>
+                            <span>•</span>
+                            <span className="truncate">{s.department}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider block ${
-                        s.status === 'Active' 
-                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300' 
-                          : 'bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300'
-                      }`}>
-                        {s.status}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-medium block mt-1">{myClientCount} clients</span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+                      <div className="text-right shrink-0">
+                        <Badge 
+                          variant={s.status === 'Active' ? 'success' : 'error'} 
+                          className="text-[8px] font-black py-0 px-1.5 uppercase"
+                        >
+                          {s.status}
+                        </Badge>
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mt-1">{myClientCount} Users</span>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </Card>
         </div>
 
-        {/* Right Column: Staff Profile & Direct Client Accounts */}
-        <div className="lg:col-span-7 space-y-6">
+        {/* Right Column: Staff Profile */}
+        <div className="lg:col-span-7">
           {selectedStaff ? (
-            <div className="admin-card space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-base shadow-sm">
-                    {selectedStaff.name.split(' ').map((n: string) => n[0]).join('')}
-                  </div>
-                  <div>
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{selectedStaff.name}</h3>
-                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <span className="font-mono text-xs font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/40 px-2.5 py-0.5 rounded-md">{selectedStaff.staffId}</span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{selectedStaff.department}</span>
-                      <span className="text-xs text-slate-400">• Created: {selectedStaff.createdAt}</span>
+            <div className="space-y-6">
+              <Card className="space-y-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/5 rounded-full -mr-24 -mt-24 blur-3xl" />
+                
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10 pb-6 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black text-xl shadow-xl shadow-indigo-600/20">
+                      {selectedStaff.name.substring(0,2).toUpperCase()}
                     </div>
-                  </div>
-                </div>
-
-                {session && session.role !== 'Staff' && (
-                  <button 
-                    className={`px-3.5 py-2 rounded-xl font-bold text-xs border transition-all cursor-pointer self-start sm:self-auto ${
-                      selectedStaff.status === 'Active' 
-                        ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800/50 hover:bg-rose-100' 
-                        : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-100'
-                    }`}
-                    onClick={() => toggleStaffStatus(selectedStaff.id, selectedStaff.status)}
-                  >
-                    {selectedStaff.status === 'Active' ? 'Suspend Staff Node' : 'Activate Staff Node'}
-                  </button>
-                )}
-              </div>
-
-              {/* Staff Details Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <Mail size={16} className="text-slate-400 shrink-0" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Email Address</span>
-                    <span className="text-xs font-medium text-slate-800 dark:text-slate-200">{selectedStaff.email}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Phone size={16} className="text-slate-400 shrink-0" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Phone Number</span>
-                    <span className="text-xs font-medium font-mono text-slate-800 dark:text-slate-200">{selectedStaff.phone}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Building size={16} className="text-slate-400 shrink-0" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Department / Node</span>
-                    <span className="text-xs font-medium text-slate-800 dark:text-slate-200">{selectedStaff.department}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <ShieldCheck size={16} className="text-indigo-500 shrink-0" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Created By Admin</span>
-                    <span className="text-xs font-bold font-mono text-indigo-600 dark:text-indigo-400">{selectedStaff.createdByAdminId || 'SYSTEM'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Referral Configurations */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Referral Link Configuration</h4>
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-slate-500 font-medium">Staff Referral Code:</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-sm text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800/40">{selectedStaff.referralCode}</span>
-                      <button 
-                        onClick={() => handleCopyLink(selectedStaff.referralCode, selectedStaff.id)}
-                        className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
-                      >
-                        {copiedId === selectedStaff.id ? <Check size={14} /> : <Copy size={14} />}
-                        <span>{copiedId === selectedStaff.id ? 'Copied' : 'Copy Code'}</span>
-                      </button>
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">{selectedStaff.name}</h3>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className="text-[9px] font-black uppercase font-mono">{selectedStaff.staffId}</Badge>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{selectedStaff.department}</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <span className="text-[11px] text-slate-500 font-medium block">Direct Registration URL:</span>
-                    <input 
-                      type="text" 
-                      readOnly 
-                      value={getReferralLink(selectedStaff.referralCode)} 
-                      onClick={(e) => (e.target as HTMLInputElement).select()}
-                      className="w-full h-10 px-3 text-xs font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-700 dark:text-slate-300 outline-none"
-                    />
-                  </div>
+                  {session && session.role !== 'Staff' && (
+                    <Button 
+                      variant="secondary"
+                      size="sm"
+                      className={`h-9 text-[10px] font-black uppercase ${selectedStaff.status === 'Active' ? 'text-rose-600' : 'text-emerald-600'}`}
+                      onClick={() => toggleStaffStatus(selectedStaff.id, selectedStaff.status)}
+                    >
+                      {selectedStaff.status === 'Active' ? 'Suspend Node' : 'Activate Node'}
+                    </Button>
+                  )}
                 </div>
-              </div>
 
-              {/* Direct Clients Node */}
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Direct Client Accounts ({staffClients.length})</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
+                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 space-y-1">
+                      <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                        <Mail className="w-3 h-3" /> Email Identity
+                      </div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white">{selectedStaff.email}</div>
+                   </div>
+                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 space-y-1">
+                      <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                        <Phone className="w-3 h-3" /> Contact Phone
+                      </div>
+                      <div className="text-xs font-bold font-mono text-slate-900 dark:text-white">{selectedStaff.phone}</div>
+                   </div>
+                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 space-y-1">
+                      <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                        <Calendar className="w-3 h-3" /> Commissioned
+                      </div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white">{selectedStaff.createdAt}</div>
+                   </div>
+                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 space-y-1">
+                      <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                        <ShieldCheck className="w-3 h-3 text-indigo-500" /> Parent Admin
+                      </div>
+                      <div className="text-xs font-black text-indigo-600 dark:text-indigo-400 font-mono">{selectedStaff.createdByAdminId || 'ROOT'}</div>
+                   </div>
                 </div>
-                {staffClients.length === 0 ? (
-                  <div className="p-8 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center text-slate-400 text-xs font-medium">
-                    No client accounts currently registered under this staff node.
+
+                <div className="space-y-4 pt-4 relative z-10 border-t border-slate-100 dark:border-slate-800">
+                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Referral Governance</h4>
+                   <div className="p-5 rounded-3xl bg-indigo-600 shadow-xl shadow-indigo-600/20 text-white space-y-6">
+                      <div className="flex items-center justify-between">
+                         <div className="space-y-1">
+                            <span className="text-[9px] font-black uppercase tracking-widest opacity-70 text-white">Direct Referral Code</span>
+                            <div className="text-2xl font-black font-mono tracking-tighter">{selectedStaff.referralCode}</div>
+                         </div>
+                         <button 
+                           onClick={() => handleCopyLink(selectedStaff.referralCode, selectedStaff.id)}
+                           className="p-4 rounded-2xl bg-white/10 hover:bg-white/20 transition-all border border-white/10"
+                         >
+                           {copiedId === selectedStaff.id ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                         </button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest opacity-70">
+                          <Globe className="w-3 h-3" /> Onboarding URL
+                        </div>
+                        <div className="relative group">
+                          <input 
+                            readOnly 
+                            value={getReferralLink(selectedStaff.referralCode)} 
+                            className="w-full h-11 bg-black/20 border border-white/10 rounded-xl px-4 text-[10px] font-mono font-bold outline-none cursor-pointer group-hover:bg-black/30 transition-all"
+                            onClick={(e) => (e.target as HTMLInputElement).select()}
+                          />
+                          <ExternalLink className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="space-y-4 pt-6 relative z-10 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Assigned Client Accounts ({staffClients.length})</h4>
                   </div>
-                ) : (
-                  <div className="table-responsive-wrapper border border-slate-200 dark:border-slate-800 rounded-xl">
-                    <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th className="px-4 py-3">Client ID</th>
-                          <th className="px-4 py-3">Username</th>
-                          <th className="px-4 py-3">Balance</th>
-                          <th className="px-4 py-3">Reg. Date</th>
-                          <th className="px-4 py-3">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                        {staffClients.map(c => (
-                          <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                            <td className="px-4 py-3"><span className="font-mono text-xs font-semibold text-slate-600 dark:text-slate-400">{c.id.substring(0,8)}...</span></td>
-                            <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-900 dark:text-white">{c.username}</td>
-                            <td className="px-4 py-3"><span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">${c.balance.toFixed(2)}</span></td>
-                            <td className="px-4 py-3 text-xs text-slate-500 font-medium">{c.regTime}</td>
-                            <td className="px-4 py-3">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                                c.online === 'Online' 
-                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300' 
-                                  : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                              }`}>
-                                {c.online}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
+                  
+                  {staffClients.length === 0 ? (
+                    <div className="p-12 text-center rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
+                       <Fingerprint className="w-10 h-10 text-slate-200 dark:text-slate-800 mx-auto mb-3" />
+                       <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">No Client Bindings Detected</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50/50 dark:bg-slate-900/30 border-b border-slate-100 dark:border-slate-800 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                              <th className="px-5 py-4">Client Identity</th>
+                              <th className="px-5 py-4">Assets</th>
+                              <th className="px-5 py-4 text-center">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {staffClients.map(c => (
+                              <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+                                <td className="px-5 py-4">
+                                  <div className="space-y-0.5">
+                                    <div className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{c.username}</div>
+                                    <div className="text-[9px] font-bold text-slate-400 font-mono tracking-tighter">ID: {c.id.substring(0,8)}…</div>
+                                  </div>
+                                </td>
+                                <td className="px-5 py-4">
+                                  <div className="flex items-center gap-1 bg-emerald-500/5 border border-emerald-500/10 px-2 py-0.5 rounded-lg w-fit">
+                                    <DollarSign className="w-3 h-3 text-emerald-500" />
+                                    <span className="font-mono text-xs font-black text-emerald-600 dark:text-emerald-400">${c.balance.toFixed(2)}</span>
+                                  </div>
+                                </td>
+                                <td className="px-5 py-4 text-center">
+                                  <Badge 
+                                    variant={c.online === 'Online' ? 'success' : 'neutral'} 
+                                    className="text-[8px] font-black py-0 px-1.5 uppercase"
+                                  >
+                                    {c.online}
+                                  </Badge>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
             </div>
           ) : (
-            <div className="admin-card p-12 text-center text-slate-400 text-xs sm:text-sm font-medium">
-              Select a staff member from the directory list to view profile metadata, referral configurations, and registered client accounts.
-            </div>
+            <Card className="flex flex-col items-center justify-center p-20 text-center space-y-6">
+              <div className="w-20 h-20 rounded-[28px] bg-slate-50 dark:bg-slate-900 flex items-center justify-center border border-slate-100 dark:border-slate-800 shadow-xl">
+                 <Users className="w-8 h-8 text-slate-200 dark:text-slate-700" />
+              </div>
+              <div className="space-y-2 max-w-xs">
+                <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Staff Node Intelligence</h4>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">Select an operative from the directory to review node metadata, modify status, and audit assigned client bindings.</p>
+              </div>
+            </Card>
           )}
         </div>
       </div>

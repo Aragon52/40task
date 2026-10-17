@@ -1,24 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Search, DollarSign, Briefcase, Check, Info, AlertCircle, X, Eye } from 'lucide-react';
+import { 
+  Search, 
+  DollarSign, 
+  Briefcase, 
+  Check, 
+  Info, 
+  AlertCircle, 
+  X, 
+  Eye, 
+  Wallet, 
+  ArrowUpRight, 
+  ArrowDownLeft, 
+  Settings2,
+  QrCode,
+  ShieldAlert,
+  ChevronRight,
+  Maximize2,
+  Minimize2
+} from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Button, Modal, Card, Input, Badge } from '@/src/shared/UI';
+
 export default function FinancialCenter() {
   const [activeSubTab, setActiveSubTab] = useState('deposits');
-  const [deposits, setDeposits] = useState([]);
-  const [withdrawals, setWithdrawals] = useState([]);
+  const [deposits, setDeposits] = useState<any[]>([]);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [settings, setSettings] = useState({
     usdtAddress: 'TY3N9dSk8sHDKsi8s9DKks82kdJS9k1nsD',
     qrCodeUrl: ''
   });
   
-  const [session, setSession] = useState({ role: 'Owner', name: 'System Owner', email: 'owner@wallmark.com' });
+  const [session, setSession] = useState<any>({ role: 'Owner', name: 'System Owner', email: 'owner@wallmark.com' });
   
   // Search & Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   
   // Actions states
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
   const [actionType, setActionType] = useState(''); // 'view_slip', 'reject_deposit', 'reject_withdrawal'
   const [rejectRemark, setRejectRemark] = useState('');
   const [editAddress, setEditAddress] = useState('');
@@ -103,23 +123,20 @@ export default function FinancialCenter() {
   useEffect(() => {
     fetchFinancialData();
     const interval = setInterval(() => {
-      if (document.hidden) return; // Save bandwidth when tab is in background!
+      if (document.hidden) return; 
       fetchFinancialData();
-    }, 15000); // Poll every 15 seconds instead of 3
+    }, 15000); 
     return () => clearInterval(interval);
   }, []);
 
-  // Filter listings based on role hierarchy
   const getFilteredDeposits = () => {
     return deposits.filter(d => {
-      // 1. Role Filter
       if (session.role === 'Admin') {
-        if (d.member_of_admin_id !== (session as any).accountId) return false;
+        if (d.member_of_admin_id !== session.accountId) return false;
       } else if (session.role === 'Staff') {
-        if (d.referred_by_staff_id !== (session as any).accountId) return false;
+        if (d.referred_by_staff_id !== session.accountId) return false;
       }
       
-      // 2. Search query filter
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const matchesQuery = d.username.toLowerCase().includes(q) || 
@@ -128,7 +145,6 @@ export default function FinancialCenter() {
         if (!matchesQuery) return false;
       }
 
-      // 3. Status filter
       if (statusFilter !== 'All') {
         if (d.status !== statusFilter) return false;
       }
@@ -139,14 +155,12 @@ export default function FinancialCenter() {
 
   const getFilteredWithdrawals = () => {
     return withdrawals.filter(w => {
-      // 1. Role Filter
       if (session.role === 'Admin') {
-        if (w.member_of_admin_id !== (session as any).accountId) return false;
+        if (w.member_of_admin_id !== session.accountId) return false;
       } else if (session.role === 'Staff') {
-        if (w.referred_by_staff_id !== (session as any).accountId) return false;
+        if (w.referred_by_staff_id !== session.accountId) return false;
       }
       
-      // 2. Search query filter
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const matchesQuery = w.username.toLowerCase().includes(q) || 
@@ -155,7 +169,6 @@ export default function FinancialCenter() {
         if (!matchesQuery) return false;
       }
 
-      // 3. Status filter
       if (statusFilter !== 'All') {
         if (w.status !== statusFilter) return false;
       }
@@ -164,11 +177,9 @@ export default function FinancialCenter() {
     });
   };
 
-  /* ─── Actions ─── */
-  const handleApproveDeposit = async (dep) => {
+  const handleApproveDeposit = async (dep: any) => {
     if (window.confirm(`Are you sure you want to APPROVE deposit of $${dep.amount.toFixed(2)} for ${dep.username}?`)) {
       try {
-        // 1. Get user to update balance
         const { data: userData, error: userError } = await supabase
           .from('cb_users')
           .select('id, balance')
@@ -182,7 +193,6 @@ export default function FinancialCenter() {
 
         const newBalance = parseFloat((parseFloat(userData.balance || 0) + dep.amount).toFixed(2));
 
-        // 2. Update user balance
         const { error: updateBalanceError } = await supabase
           .from('cb_users')
           .update({ balance: newBalance })
@@ -193,7 +203,6 @@ export default function FinancialCenter() {
           return;
         }
 
-        // 3. Update deposit status
         const { error: updateDepError } = await supabase
           .from('cb_deposits')
           .update({ status: 'Approved' })
@@ -204,21 +213,15 @@ export default function FinancialCenter() {
           return;
         }
 
-        // Also sync local storage if it's currently active user (for development same-machine test convenience)
-        const activeUser = localStorage.getItem('cb_username');
-        if (activeUser && activeUser.toLowerCase() === dep.username.toLowerCase()) {
-          localStorage.setItem('cb_balance', newBalance.toString());
-        }
-
         toast.success('Deposit approved! User balance updated.');
         fetchFinancialData();
-      } catch (err) {
+      } catch (err: any) {
         toast.error("Operation failed: " + err.message);
       }
     }
   };
 
-  const handleOpenRejectDeposit = (dep) => {
+  const handleOpenRejectDeposit = (dep: any) => {
     setSelectedItem(dep);
     setActionType('reject_deposit');
     setRejectRemark('');
@@ -240,17 +243,16 @@ export default function FinancialCenter() {
 
       setSelectedItem(null);
       setActionType('');
-      toast('Deposit request rejected.');
+      toast.success('Deposit request rejected.');
       fetchFinancialData();
-    } catch (err) {
+    } catch (err: any) {
       toast.error("Failed to reject deposit: " + err.message);
     }
   };
 
-  const handleApproveWithdrawal = async (wth) => {
+  const handleApproveWithdrawal = async (wth: any) => {
     if (window.confirm(`Are you sure you want to APPROVE withdrawal of $${wth.amount.toFixed(2)} for ${wth.username}?`)) {
       try {
-        // 1. Get user to update withdrawals counter
         const { data: userData, error: userError } = await supabase
           .from('cb_users')
           .select('id, withdrawals')
@@ -264,7 +266,6 @@ export default function FinancialCenter() {
 
         const newWithdrawals = parseFloat((parseFloat(userData.withdrawals || 0) + wth.amount).toFixed(2));
 
-        // 2. Update user withdrawals
         const { error: updateUserError } = await supabase
           .from('cb_users')
           .update({ withdrawals: newWithdrawals })
@@ -275,7 +276,6 @@ export default function FinancialCenter() {
           return;
         }
 
-        // 3. Update withdrawal status
         const { error: updateWthError } = await supabase
           .from('cb_withdrawals')
           .update({ status: 'Approved' })
@@ -288,13 +288,13 @@ export default function FinancialCenter() {
 
         toast.success('Withdrawal approved!');
         fetchFinancialData();
-      } catch (err) {
+      } catch (err: any) {
         toast.error("Operation failed: " + err.message);
       }
     }
   };
 
-  const handleOpenRejectWithdrawal = (wth) => {
+  const handleOpenRejectWithdrawal = (wth: any) => {
     setSelectedItem(wth);
     setActionType('reject_withdrawal');
     setRejectRemark('');
@@ -304,10 +304,9 @@ export default function FinancialCenter() {
     if (!selectedItem) return;
 
     try {
-      // 1. Update status to Rejected
       const { error: updateWthError } = await supabase
         .from('cb_withdrawals')
-        .update({ status: 'Rejected' })
+        .update({ status: 'Rejected', remark: rejectRemark })
         .eq('id', selectedItem.id);
 
       if (updateWthError) {
@@ -315,7 +314,6 @@ export default function FinancialCenter() {
         return;
       }
 
-      // 2. Refund balance back to user
       const { data: userData, error: userError } = await supabase
         .from('cb_users')
         .select('id, balance')
@@ -328,26 +326,21 @@ export default function FinancialCenter() {
           .from('cb_users')
           .update({ balance: newBalance })
           .eq('id', userData.id);
-
-        const activeUser = localStorage.getItem('cb_username');
-        if (activeUser && activeUser.toLowerCase() === selectedItem.username.toLowerCase()) {
-          localStorage.setItem('cb_balance', newBalance.toString());
-        }
       }
 
       setSelectedItem(null);
       setActionType('');
-      toast('Withdrawal request rejected. Funds refunded to user.');
+      toast.success('Withdrawal request rejected. Funds refunded to user.');
       fetchFinancialData();
-    } catch (err) {
+    } catch (err: any) {
       toast.error("Failed to reject withdrawal: " + err.message);
     }
   };
 
-  const handleSaveSettings = async (e) => {
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editAddress) {
-      toast('Please provide a valid USDT Address.');
+      toast.error('Please provide a valid USDT Address.');
       return;
     }
 
@@ -365,12 +358,12 @@ export default function FinancialCenter() {
       setSettings({ usdtAddress: editAddress, qrCodeUrl: editQrCode });
       toast.success('Payment node settings saved successfully!');
       fetchFinancialData();
-    } catch (err) {
+    } catch (err: any) {
       toast.error("Failed to save settings: " + err.message);
     }
   };
 
-  const handleViewSlip = (dep) => {
+  const handleViewSlip = (dep: any) => {
     setSelectedItem(dep);
     setActionType('view_slip');
     setImageZoom(1);
@@ -380,161 +373,161 @@ export default function FinancialCenter() {
   const filteredWths = getFilteredWithdrawals();
 
   return (
-    <div className="w-full space-y-6">
-      
-      {/* Header and Subtabs */}
-      <div className="admin-card">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <h3 className="font-bold text-slate-900 dark:text-slate-50 text-xl tracking-tight flex items-center gap-2">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Header Card */}
+      <Card className="relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-1">
+            <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
               <DollarSign className="w-6 h-6 text-emerald-500" />
               Financial Center
             </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 font-medium">
               Manage deposits, approve payouts, and configure payment gateways.
             </p>
           </div>
           
-          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
             <button 
-              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${activeSubTab === 'deposits' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+              className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeSubTab === 'deposits' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               onClick={() => { setActiveSubTab('deposits'); setStatusFilter('All'); setSearchQuery(''); }}
             >
               Deposits ({filteredDeps.filter(d => d.status === 'Pending').length})
             </button>
             <button 
-              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${activeSubTab === 'withdrawals' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+              className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeSubTab === 'withdrawals' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               onClick={() => { setActiveSubTab('withdrawals'); setStatusFilter('All'); setSearchQuery(''); }}
             >
               Payouts ({filteredWths.filter(w => w.status === 'Pending').length})
             </button>
             <button 
-              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${activeSubTab === 'settings' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+              className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeSubTab === 'settings' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               onClick={() => { setActiveSubTab('settings'); }}
             >
-              Settings
+              Gateway Settings
             </button>
           </div>
         </div>
-      </div>
+      </Card>
 
       {activeSubTab !== 'settings' && (
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-4 shadow-sm">
-          <div className="relative w-full md:w-80">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <Search className="w-4 h-4" />
+        <Card className="p-4">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <input 
+                type="text" 
+                placeholder="Search username or request ID..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-xs font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-600 transition-all"
+              />
             </div>
-            <input 
-              type="text" 
-              placeholder="Search username or request ID..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all outline-none"
-            />
-          </div>
 
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:block">Status:</label>
-            <select 
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-10 pl-3 pr-8 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 text-sm font-semibold focus:ring-2 focus:ring-indigo-600 outline-none appearance-none w-full md:w-40"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 10px center',
-                backgroundSize: '16px'
-              }}
-            >
-              <option value="All">All Statuses</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-            </select>
+            <div className="relative min-w-[200px] w-full md:w-auto">
+              <select 
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full h-11 pl-4 pr-8 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-indigo-600 appearance-none transition-all"
+              >
+                <option value="All">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
           </div>
-        </div>
+        </Card>
       )}
 
       {activeSubTab === 'deposits' && (
-        <div className="admin-card !p-0 overflow-hidden">
-          <div className="overflow-x-auto" style={{ overflowX: 'auto' }}>
-            <table className="admin-table w-full whitespace-nowrap">
+        <Card className="p-0 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr>
-                  <th>Request ID</th>
-                  <th>Client User</th>
-                  <th>Staff Node</th>
-                  <th>Amount</th>
-                  <th>Network</th>
-                  <th>Status</th>
-                  <th>Submitted Date</th>
-                  <th className="text-right">Actions</th>
+                <tr className="bg-slate-50/50 dark:bg-slate-900/30 border-b border-slate-100 dark:border-slate-800">
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Reference</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Client</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Node</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Network</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Submitted</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredDeps.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                      No deposit requests match current filters.
+                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500 font-medium text-xs">
+                      No deposit requests found matching your filters.
                     </td>
                   </tr>
                 ) : (
                   filteredDeps.map(dep => (
-                    <tr key={dep.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors">
-                      <td>
-                        <span className="font-mono text-xs font-semibold text-slate-500">{dep.id.substring(0,8)}...</span>
+                    <tr key={dep.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+                      <td className="px-6 py-4">
+                        <span className="font-mono text-[10px] font-bold text-slate-400">#{dep.id.substring(0,8)}</span>
                       </td>
-                      <td className="font-semibold text-slate-900 dark:text-slate-50">
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 text-[10px] font-bold">
-                            {dep.username.substring(0,2).toUpperCase()}
+                          <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-[10px] font-black uppercase">
+                            {dep.username.substring(0,2)}
                           </div>
-                          {dep.username}
+                          <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{dep.username}</span>
                         </div>
                       </td>
-                      <td>
-                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded text-xs font-semibold">{dep.referred_by_staff_id}</span>
+                      <td className="px-6 py-4">
+                        <Badge variant="outline" className="text-[9px] font-black py-0.5 px-2">{dep.referred_by_staff_id}</Badge>
                       </td>
-                      <td>
-                        <span className="font-mono text-[13px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded border border-emerald-100 dark:border-emerald-800/50">
-                          ${dep.amount.toFixed(2)}
+                      <td className="px-6 py-4">
+                        <span className="font-mono text-xs font-black text-emerald-600 dark:text-emerald-400">
+                          ${dep.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </span>
                       </td>
-                      <td>
-                        <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded border border-indigo-100 dark:border-indigo-800 text-[10px] font-bold tracking-wider">{dep.currency}</span>
+                      <td className="px-6 py-4">
+                        <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{dep.currency}</span>
                       </td>
-                      <td>
-                        <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                          dep.status === 'Approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 
-                          dep.status === 'Rejected' ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400' : 
-                          'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
-                        }`}>
+                      <td className="px-6 py-4">
+                        <Badge 
+                          variant={dep.status === 'Approved' ? 'success' : dep.status === 'Rejected' ? 'error' : 'warning'}
+                          className="text-[9px] font-black py-0 px-2 uppercase"
+                        >
                           {dep.status}
-                        </span>
+                        </Badge>
                       </td>
-                      <td className="text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">{dep.createdAt}</td>
-                      <td className="text-right whitespace-nowrap space-x-2">
+                      <td className="px-6 py-4 text-[10px] font-bold text-slate-500 whitespace-nowrap">
+                        {dep.createdAt}
+                      </td>
+                      <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
-                          <button 
-                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5"
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            className="h-8 px-3 text-[10px] font-black"
                             onClick={() => handleViewSlip(dep)}
                           >
-                            <Eye className="w-3.5 h-3.5" /> Slip
-                          </button>
+                            <Eye className="w-3.5 h-3.5" /> SLIP
+                          </Button>
                           {dep.status === 'Pending' && (
                             <>
-                              <button 
-                                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5"
+                              <Button 
+                                variant="success" 
+                                size="sm" 
+                                className="h-8 px-3 text-[10px] font-black"
                                 onClick={() => handleApproveDeposit(dep)}
                               >
-                                <Check className="w-3.5 h-3.5" /> Approve
-                              </button>
-                              <button 
-                                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5"
+                                APPROVE
+                              </Button>
+                              <Button 
+                                variant="danger" 
+                                size="sm" 
+                                className="h-8 px-3 text-[10px] font-black"
                                 onClick={() => handleOpenRejectDeposit(dep)}
                               >
-                                <X className="w-3.5 h-3.5" /> Reject
-                              </button>
+                                REJECT
+                              </Button>
                             </>
                           )}
                         </div>
@@ -545,96 +538,97 @@ export default function FinancialCenter() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {activeSubTab === 'withdrawals' && (
-        <div className="admin-card !p-0 overflow-hidden">
-          <div className="overflow-x-auto" style={{ overflowX: 'auto' }}>
-            <table className="admin-table w-full whitespace-nowrap">
+        <Card className="p-0 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr>
-                  <th>Request ID</th>
-                  <th>Client User</th>
-                  <th>Staff Node</th>
-                  <th>Amount</th>
-                  <th>Method & Details</th>
-                  <th>Status</th>
-                  <th>Submitted Date</th>
-                  <th className="text-right">Actions</th>
+                <tr className="bg-slate-50/50 dark:bg-slate-900/30 border-b border-slate-100 dark:border-slate-800">
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Reference</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Client</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Node</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Method & Details</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Submitted</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredWths.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                      No payout requests match current filters.
+                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500 font-medium text-xs">
+                      No payout requests found matching your filters.
                     </td>
                   </tr>
                 ) : (
                   filteredWths.map(wth => (
-                    <tr key={wth.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors">
-                      <td>
-                        <span className="font-mono text-xs font-semibold text-slate-500">{wth.id.substring(0,8)}...</span>
+                    <tr key={wth.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+                      <td className="px-6 py-4">
+                        <span className="font-mono text-[10px] font-bold text-slate-400">#{wth.id.substring(0,8)}</span>
                       </td>
-                      <td className="font-semibold text-slate-900 dark:text-slate-50">
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 text-[10px] font-bold">
-                            {wth.username.substring(0,2).toUpperCase()}
+                          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-[10px] font-black uppercase">
+                            {wth.username.substring(0,2)}
                           </div>
-                          {wth.username}
+                          <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{wth.username}</span>
                         </div>
                       </td>
-                      <td>
-                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded text-xs font-semibold">{wth.referred_by_staff_id}</span>
+                      <td className="px-6 py-4">
+                        <Badge variant="outline" className="text-[9px] font-black py-0.5 px-2">{wth.referred_by_staff_id}</Badge>
                       </td>
-                      <td>
-                        <span className="font-mono text-[13px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded border border-amber-100 dark:border-amber-800/50">
-                          ${wth.amount.toFixed(2)}
+                      <td className="px-6 py-4">
+                        <span className="font-mono text-xs font-black text-amber-600 dark:text-amber-400">
+                          ${wth.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </span>
                       </td>
-                      <td className="space-y-1">
-                        <div className="text-xs font-bold text-slate-700 dark:text-slate-300">{wth.method}</div>
-                        <div className="font-mono text-[10px] text-slate-500 break-all max-w-[200px] whitespace-normal">{wth.account_info}</div>
-                      </td>
-                      <td>
-                        <div className="flex flex-col items-center gap-1">
-                          <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                            wth.status === 'Approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 
-                            wth.status === 'Rejected' ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400' : 
-                            'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
-                          }`}>
-                            {wth.status}
-                          </span>
-                          {wth.remark && (
-                            <span className="text-[9px] text-slate-400 max-w-[120px] text-center leading-tight whitespace-normal">
-                              * {wth.remark}
-                            </span>
-                          )}
+                      <td className="px-6 py-4">
+                        <div className="space-y-1 max-w-[200px]">
+                          <div className="text-[10px] font-black text-slate-900 dark:text-white uppercase">{wth.method}</div>
+                          <div className="text-[9px] font-mono text-slate-500 break-all leading-tight">{wth.account_info}</div>
                         </div>
                       </td>
-                      <td className="text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">{wth.createdAt}</td>
-                      <td className="text-right whitespace-nowrap space-x-2">
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex flex-col items-center gap-1">
+                          <Badge 
+                            variant={wth.status === 'Approved' ? 'success' : wth.status === 'Rejected' ? 'error' : 'warning'}
+                            className="text-[9px] font-black py-0 px-2 uppercase"
+                          >
+                            {wth.status}
+                          </Badge>
+                          {wth.remark && <span className="text-[8px] font-bold text-rose-500 uppercase tracking-tighter truncate max-w-[80px]">{wth.remark}</span>}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-[10px] font-bold text-slate-500 whitespace-nowrap">
+                        {wth.createdAt}
+                      </td>
+                      <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
                           {wth.status === 'Pending' ? (
                             <>
-                              <button 
-                                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5"
+                              <Button 
+                                variant="success" 
+                                size="sm" 
+                                className="h-8 px-3 text-[10px] font-black"
                                 onClick={() => handleApproveWithdrawal(wth)}
                               >
-                                <Check className="w-3.5 h-3.5" /> Approve
-                              </button>
-                              <button 
-                                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5"
+                                APPROVE
+                              </Button>
+                              <Button 
+                                variant="danger" 
+                                size="sm" 
+                                className="h-8 px-3 text-[10px] font-black"
                                 onClick={() => handleOpenRejectWithdrawal(wth)}
                               >
-                                <X className="w-3.5 h-3.5" /> Reject
-                              </button>
+                                REJECT
+                              </Button>
                             </>
                           ) : (
-                            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
-                              Locked
-                            </span>
+                            <Badge variant="outline" className="text-[9px] font-black py-1 px-3 grayscale opacity-50 uppercase tracking-widest">FINALIZED</Badge>
                           )}
                         </div>
                       </td>
@@ -644,189 +638,158 @@ export default function FinancialCenter() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {activeSubTab === 'settings' && (
-        <div className="admin-card max-w-2xl">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-              <Briefcase className="w-5 h-5" />
+        <Card className="max-w-2xl mx-auto">
+          <div className="space-y-6">
+            <div className="flex items-center gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <Settings2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">Gateway Infrastructure</h4>
+                <p className="text-xs text-slate-500 font-medium">Configure global payment nodes and secure receive addresses.</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-slate-900 dark:text-slate-50 text-lg">Payment Node Gateway Settings</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Configure system-wide payment receiving details</p>
-            </div>
-          </div>
-          
-          <form onSubmit={handleSaveSettings} className="space-y-5">
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">USDT Wallet Receive Address (TRC20)</label>
-              <input 
-                type="text" 
+            
+            <form onSubmit={handleSaveSettings} className="space-y-6">
+              <Input
+                label="USDT Wallet Receive Address (TRC20)"
                 value={editAddress}
                 onChange={(e) => setEditAddress(e.target.value)}
                 disabled={session.role === 'Staff'}
                 required
-                className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-600 outline-none transition-all disabled:opacity-60"
-                placeholder="e.g. TY3N9dSk8sHDKsi8s..."
+                icon={<Wallet className="w-4 h-4" />}
+                className="font-mono text-xs"
               />
-            </div>
-            
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">QR Code Image URL (Optional)</label>
-              <input 
-                type="text" 
+              
+              <Input
+                label="QR Code Image URL (Public Access)"
                 value={editQrCode}
                 onChange={(e) => setEditQrCode(e.target.value)}
                 disabled={session.role === 'Staff'}
-                className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-600 outline-none transition-all disabled:opacity-60"
-                placeholder="e.g. https://domain.com/receipt-qr.png"
+                icon={<QrCode className="w-4 h-4" />}
+                className="text-xs"
               />
-            </div>
 
-            {session.role !== 'Staff' ? (
-              <button 
-                type="submit" 
-                className="w-full sm:w-auto mt-4 px-6 h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-[0.98]"
-              >
-                <Check className="w-4 h-4" />
-                Save Payment Configuration
-              </button>
-            ) : (
-              <div className="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-start gap-3 text-slate-500 dark:text-slate-400 text-sm">
-                <Info className="w-5 h-5 text-indigo-400 flex-shrink-0" />
-                <p>Staff nodes are not authorized to modify payment gateway settings. Please contact the main administrator.</p>
-              </div>
-            )}
-          </form>
-        </div>
+              {session.role !== 'Staff' ? (
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 text-[11px] font-black uppercase tracking-widest"
+                  icon={<Check className="w-4 h-4" />}
+                >
+                  Save Payment Configuration
+                </Button>
+              ) : (
+                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl flex items-start gap-3">
+                  <ShieldAlert className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tight leading-relaxed">
+                    Staff nodes restricted: Payment gateway infrastructure can only be modified by root system administrators or owners.
+                  </p>
+                </div>
+              )}
+            </form>
+          </div>
+        </Card>
       )}
 
-      {/* Modal overlays */}
+      {/* View Slip Modal */}
       {actionType === 'view_slip' && selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-6 transition-all">
-          <div className="admin-card w-full max-w-2xl !p-0 overflow-hidden flex flex-col shadow-2xl rounded-2xl border border-slate-100 dark:border-slate-800">
-            <div className="p-5 md:p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100/50 dark:border-indigo-900/20 shadow-sm">
-                  <Eye className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white text-base">Receipt Preview</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Slip reference: <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-500 dark:text-slate-300">#{selectedItem.id.substring(0,8)}</span></p>
-                </div>
+        <Modal
+          isOpen={!!selectedItem}
+          onClose={() => { setSelectedItem(null); setActionType(''); }}
+          title="Digital Receipt Audit"
+          size="lg"
+        >
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <div className="space-y-1">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Transaction Reference</span>
+                <div className="font-mono text-xs font-bold text-slate-900 dark:text-white uppercase">{selectedItem.id}</div>
               </div>
-              <button 
-                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 transition-colors"
-                onClick={() => { setSelectedItem(null); setActionType(''); }}
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="space-y-1 text-right">
+                <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Verification Amount</span>
+                <div className="font-mono text-lg font-black text-emerald-600 tracking-tight">${selectedItem.amount.toFixed(2)}</div>
+              </div>
             </div>
-            
-            <div className="p-6 bg-slate-50/50 dark:bg-slate-950/30 flex flex-col items-center gap-5">
-              <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm text-xs">
-                <span className="text-slate-500 font-medium">Uploaded File:</span>
-                <span className="font-mono font-bold text-slate-700 dark:text-slate-300 truncate max-w-[280px]" title={selectedItem.screenshotName}>
-                  {selectedItem.screenshotName}
-                </span>
-              </div>
-              
-              <div className="w-full relative h-[380px] overflow-auto flex items-center justify-center bg-slate-100 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 transition-all">
-                {/* Visual grid checkerboard overlay for checking transparent image assets easily */}
-                <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #000 10%, transparent 11%)', backgroundSize: '16px 16px' }} />
-                
+
+            <div className="relative group overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-950">
+              <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+              <div className="p-4 flex items-center justify-center min-h-[400px]">
                 <img 
                   src={selectedItem.screenshotUrl} 
-                  alt="Receipt Slip" 
+                  alt="Receipt" 
                   style={{ 
                     transform: `scale(${imageZoom})`,
-                    transformOrigin: 'center center',
-                    transition: 'transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)'
+                    transition: 'transform 0.2s cubic-bezier(0.2, 0, 0, 1)'
                   }}
-                  className="max-h-full rounded-lg object-contain shadow-md transition-transform z-10"
+                  className="max-h-[500px] object-contain shadow-2xl relative z-10"
                 />
               </div>
               
-              <div className="w-full flex items-center justify-between gap-4 bg-white dark:bg-slate-900 px-5 py-3 rounded-xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Search className="w-4 h-4" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Zoom Control</span>
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 px-4 py-2 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-full z-20">
+                <button onClick={() => setImageZoom(prev => Math.max(1, prev - 0.5))} className="text-white hover:text-indigo-400 transition-colors">
+                  <Minimize2 className="w-4 h-4" />
+                </button>
+                <div className="w-24 h-1 bg-white/20 rounded-full overflow-hidden">
+                  <div className="h-full bg-indigo-500 transition-all" style={{ width: `${(imageZoom / 5) * 100}%` }} />
                 </div>
-                <div className="flex items-center gap-3">
-                  <input 
-                    type="range" 
-                    min="1" 
-                    max="5" 
-                    step="0.1" 
-                    value={imageZoom} 
-                    onChange={(e) => setImageZoom(parseFloat(e.target.value))} 
-                    className="w-32 sm:w-44 accent-indigo-500 cursor-pointer h-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none"
-                  />
-                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300 font-mono w-10 text-right">{imageZoom.toFixed(1)}x</span>
-                </div>
+                <button onClick={() => setImageZoom(prev => Math.min(5, prev + 0.5))} className="text-white hover:text-indigo-400 transition-colors">
+                  <Maximize2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
-            
-            <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex justify-end">
-              <button 
-                className="px-5 h-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm rounded-xl transition-colors shadow-sm"
-                onClick={() => { setSelectedItem(null); setActionType(''); }}
-              >
-                Close Preview
-              </button>
+
+            <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2">
+              <span>Origin: {selectedItem.username}</span>
+              <span>Network: {selectedItem.currency}</span>
             </div>
+            
+            <Button onClick={() => { setSelectedItem(null); setActionType(''); }} className="w-full">Close Audit View</Button>
           </div>
-        </div>
+        </Modal>
       )}
 
+      {/* Reject Modal */}
       {(actionType === 'reject_deposit' || actionType === 'reject_withdrawal') && selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="admin-card w-full max-w-lg !p-0 overflow-hidden flex flex-col shadow-2xl">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 dark:text-slate-50 text-lg flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-rose-500" />
-                Reject Request
-              </h3>
-              <button 
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 transition-colors"
-                onClick={() => { setSelectedItem(null); setActionType(''); }}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            
-            <div className="p-6">
-              <p className="text-sm text-slate-700 dark:text-slate-300 mb-4 leading-relaxed">
-                Provide a reason for rejecting the request of <b className="text-rose-600 dark:text-rose-400 font-mono">${selectedItem.amount.toFixed(2)}</b> for user <b className="font-semibold">{selectedItem.username}</b>:
+        <Modal
+          isOpen={!!selectedItem}
+          onClose={() => { setSelectedItem(null); setActionType(''); }}
+          title="Administrative Rejection"
+        >
+          <div className="space-y-6">
+            <div className="bg-rose-500/5 border border-rose-500/10 p-4 rounded-2xl flex items-start gap-3">
+              <ShieldAlert className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+              <p className="text-[11px] font-bold text-rose-700 dark:text-rose-400 leading-relaxed uppercase tracking-tight">
+                Rejected requests will notify the user immediately. For withdrawals, funds will be automatically refunded to the user's available balance.
               </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Rejection Reason / Remark</label>
               <textarea 
-                className="w-full h-24 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-rose-500 outline-none transition-all resize-none"
-                placeholder="e.g. Invalid transaction receipt, incorrect network..."
+                className="w-full h-32 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-xs font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 transition-all resize-none"
+                placeholder="Describe why this transaction is being rejected..."
                 value={rejectRemark}
                 onChange={(e) => setRejectRemark(e.target.value)}
               />
             </div>
-            
-            <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex justify-end gap-3">
-              <button 
-                className="px-5 h-10 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-sm rounded-xl transition-colors"
-                onClick={() => { setSelectedItem(null); setActionType(''); }}
-              >
-                Cancel
-              </button>
-              <button 
-                className="px-5 h-10 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-[0.98]"
+
+            <div className="flex justify-end gap-3 pt-6">
+              <Button variant="secondary" onClick={() => { setSelectedItem(null); setActionType(''); }}>Cancel</Button>
+              <Button 
+                variant="danger"
+                className="px-8 shadow-lg shadow-rose-500/20"
                 onClick={actionType === 'reject_deposit' ? handleConfirmRejectDeposit : handleConfirmRejectWithdrawal}
               >
                 Confirm Rejection
-              </button>
+              </Button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
-
     </div>
   );
 }
