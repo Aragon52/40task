@@ -337,11 +337,6 @@ input, select, textarea {
 }
 
 /* Match Animation Styles */
-@keyframes slotScroll {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-70%); }
-}
-
 .slot-container {
   height: 140px;
   overflow: hidden;
@@ -356,10 +351,8 @@ input, select, textarea {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.slot-track.spinning {
-  animation: slotScroll 1.8s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+  width: 100%;
+  will-change: transform;
 }
 
 .slot-item {
@@ -368,14 +361,16 @@ input, select, textarea {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: 12px 16px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .slot-item img {
   height: 60px;
+  max-width: 90px;
   object-fit: contain;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .slot-item span {
@@ -385,37 +380,78 @@ input, select, textarea {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  width: 85%;
+  width: 90%;
   color: var(--text-main);
 }
 
-/* Radar scanning grid */
+/* Product Pickup Podium & Representative Product Icon */
 @keyframes radarSweep {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-.radar-circle {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(211, 163, 76, 0.25);
+.product-pickup-podium {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle, rgba(211, 163, 76, 0.04) 0%, transparent 70%);
+  width: 84px;
+  height: 84px;
+}
+
+.podium-glow-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px dashed rgba(0, 113, 206, 0.45);
+  animation: radarSweep 10s linear infinite;
+  pointer-events: none;
+}
+
+.podium-core-circle {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #0071ce;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px -2px rgba(0, 113, 206, 0.3), 0 2px 6px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 2;
+}
+
+.dark .podium-core-circle {
+  background: #1e293b;
+  border-color: #38bdf8;
+  box-shadow: 0 4px 20px -2px rgba(56, 189, 248, 0.35);
+}
+
+.radar-circle {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 3px solid #0071ce;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  box-shadow: 0 4px 20px -2px rgba(0, 113, 206, 0.3);
+}
+
+.dark .radar-circle {
+  background: #1e293b;
+  border-color: #38bdf8;
 }
 
 .radar-sweep-line {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: -3px;
   border-radius: 50%;
-  background: conic-gradient(from 0deg, rgba(211, 163, 76, 0.15) 0deg, transparent 90deg);
-  animation: radarSweep 2s linear infinite;
+  border: 2px dashed rgba(0, 113, 206, 0.4);
+  animation: radarSweep 8s linear infinite;
   pointer-events: none;
 }
 

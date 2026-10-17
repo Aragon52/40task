@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLoading } from '../components/GlobalLoader';
+import { supabase } from '../supabase';
+import { TrendingUp, Sparkles, Calendar, Wallet } from 'lucide-react';
 
 const BANNERS = [
   {
@@ -29,10 +31,143 @@ const BANNERS = [
   },
 ];
 
-export default function Home({ currentTheme, balance, username }) {
+export default function Home({ currentTheme, balance, username, orders }: any) {
   const navigate = useNavigate();
   const [slide, setSlide] = useState(0);
 
+  const [profitStats, setProfitStats] = useState(() => {
+    try {
+      const activeUser = username || localStorage.getItem('cb_username') || '';
+      const saved = localStorage.getItem(`cb_profit_stats_${activeUser}`);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { totalProfits: 0, todayProfit: 0, yesterdayEarn: 0 };
+  });
+
+  const [liveBalance, setLiveBalance] = useState(() => {
+    const val = Number.parseFloat(String(balance ?? 0));
+    return isNaN(val) ? 0 : val;
+  });
+
+  useEffect(() => {
+    const val = Number.parseFloat(String(balance ?? 0));
+    if (!isNaN(val)) setLiveBalance(val);
+  }, [balance]);
+
+  // Compute live profit stats and sync with Supabase cb_orders and cb_users
+  useEffect(() => {
+    const activeUser = username || localStorage.getItem('cb_username') || '';
+    if (!activeUser) return;
+
+    let isMounted = true;
+
+    const computeAndSetStats = (ordersList: any[], userRecord?: any) => {
+      const today = new Date();
+      const todayStr = today.toDateString();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toDateString();
+
+      let orderTotal = 0;
+      let orderToday = 0;
+      let orderYesterday = 0;
+
+      ordersList.forEach((o: any) => {
+        const isSuccess = String(o.status || '').toLowerCase() === 'success';
+        if (!isSuccess) return;
+
+        const p = Number.parseFloat(String(o.profit ?? '0').replace(/[$,\s]/g, '')) || 0;
+        orderTotal += p;
+
+        const dateVal = o.timestamp || o.created_at;
+        const d = dateVal ? new Date(dateVal) : new Date();
+        const dStr = d.toDateString();
+
+        if (dStr === todayStr) {
+          orderToday += p;
+        } else if (dStr === yesterdayStr) {
+          orderYesterday += p;
+        }
+      });
+
+      const dbEarnings = Number.parseFloat(String(userRecord?.earnings || 0)) || 0;
+      const dbCommissions = Number.parseFloat(String(userRecord?.commissions || 0)) || 0;
+      const totalProfits = Math.max(orderTotal, dbEarnings, dbCommissions);
+
+      const finalToday = orderToday > 0 ? orderToday : (orderTotal > 0 ? orderTotal : 0);
+      const finalYesterday = orderYesterday;
+
+      const newStats = {
+        totalProfits: Number(totalProfits.toFixed(2)),
+        todayProfit: Number(finalToday.toFixed(2)),
+        yesterdayEarn: Number(finalYesterday.toFixed(2))
+      };
+
+      if (isMounted) {
+        setProfitStats(newStats);
+        try {
+          localStorage.setItem(`cb_profit_stats_${activeUser}`, JSON.stringify(newStats));
+        } catch {}
+      }
+    };
+
+    if (Array.isArray(orders) && orders.length > 0) {
+      computeAndSetStats(orders);
+    }
+
+    const fetchFreshData = async () => {
+      try {
+        const rawUser = activeUser.trim();
+        const cleanUser = rawUser.replace(/^[+]/, '');
+
+        const [ordersRes, userRes] = await Promise.all([
+          supabase
+            .from('cb_orders')
+            .select('*')
+            .or(`username.eq.${rawUser},phone.eq.${rawUser},username.eq.+${cleanUser},phone.eq.+${cleanUser}`)
+            .eq('status', 'Success'),
+          supabase
+            .from('cb_users')
+            .select('balance, earnings, commissions')
+            .or(`username.eq.${rawUser},phone.eq.${rawUser},username.eq.+${cleanUser},phone.eq.+${cleanUser}`)
+        ]);
+
+        const userRow = userRes.data && userRes.data[0];
+        if (userRow && typeof userRow.balance !== 'undefined') {
+          const b = Number.parseFloat(String(userRow.balance));
+          if (!isNaN(b) && isMounted) {
+            setLiveBalance(b);
+          }
+        }
+
+        const freshOrders = ordersRes.data || [];
+        computeAndSetStats(freshOrders, userRow);
+      } catch (err) {
+        console.warn("Could not fetch fresh profit stats:", err);
+      }
+    };
+
+    fetchFreshData();
+
+    const channel = supabase
+      .channel(`home_stats_${activeUser}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cb_orders', filter: `username=eq.${activeUser}` }, () => {
+        fetchFreshData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cb_users', filter: `username=eq.${activeUser}` }, (payload: any) => {
+        if (payload?.new && typeof payload.new.balance !== 'undefined') {
+          const b = Number.parseFloat(String(payload.new.balance));
+          if (!isNaN(b) && isMounted) setLiveBalance(b);
+        }
+        fetchFreshData();
+      })
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [username, orders]);
 
   // Auto-advance every 4 seconds
   useEffect(() => {
@@ -41,7 +176,7 @@ export default function Home({ currentTheme, balance, username }) {
   }, []);
 
   // Format balance
-  const formattedBalance = Number.parseFloat(String(balance ?? 0)) ? Number.parseFloat(String(balance ?? 0)).toFixed(2) : '0.00';
+  const formattedBalance = liveBalance.toFixed(2);
 
   return (
     <>
@@ -174,23 +309,54 @@ export default function Home({ currentTheme, balance, username }) {
               </div>
             </div>
 
-            {/* Total Profits / Earnings */}
+            {/* Total Profits & Yesterday Earn Display Box */}
             <div className="earnings-section">
               <div className="section-title-row">
                 <span className="title-indicator"></span>
                 <h3 className="section-title">
-                  {currentTheme === 'orange' ? 'Total Earnings' : 'Total Profits'}
+                  {currentTheme === 'orange' ? 'Total Earnings & Yesterday Earn' : 'Total Profits & Yesterday Earn'}
                 </h3>
               </div>
 
               <div className="earnings-grid">
-                <div className="earnings-card">
-                  <span className="earning-value">$ 0.00</span>
-                  <span className="earning-label">Today's Profit</span>
+                <div className="earnings-card" id="card-total-profits">
+                  <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 mb-0.5">
+                    <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                    <span className="earning-label">Total Profits</span>
+                  </div>
+                  <span className="earning-value font-mono text-emerald-600 dark:text-emerald-400" id="lbl-total-profits">
+                    $ {profitStats.totalProfits.toFixed(2)}
+                  </span>
                 </div>
-                <div className="earnings-card">
-                  <span className="earning-value">$ 0.00</span>
-                  <span className="earning-label">Yesterday's Profit</span>
+
+                <div className="earnings-card" id="card-yesterday-earn">
+                  <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 mb-0.5">
+                    <Calendar className="w-3.5 h-3.5 shrink-0" />
+                    <span className="earning-label">Yesterday Earn</span>
+                  </div>
+                  <span className="earning-value font-mono" id="lbl-yesterday-earn" style={{ color: '#f59e0b' }}>
+                    $ {profitStats.yesterdayEarn.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="earnings-card" id="card-today-profit">
+                  <div className="flex items-center gap-1.5 text-sky-600 dark:text-sky-400 mb-0.5">
+                    <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                    <span className="earning-label">Today's Profit</span>
+                  </div>
+                  <span className="earning-value font-mono" id="lbl-today-profit" style={{ color: '#0284c7' }}>
+                    $ {profitStats.todayProfit.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="earnings-card" id="card-balance-display">
+                  <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 mb-0.5">
+                    <Wallet className="w-3.5 h-3.5 shrink-0" />
+                    <span className="earning-label">Account Balance</span>
+                  </div>
+                  <span className="earning-value font-mono text-indigo-600 dark:text-indigo-400" id="lbl-home-balance">
+                    $ {formattedBalance}
+                  </span>
                 </div>
               </div>
             </div>
@@ -614,18 +780,19 @@ export default function Home({ currentTheme, balance, username }) {
         .earnings-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 16px;
+          gap: 12px;
         }
 
         .earnings-card {
           background-color: var(--bg-card);
           border-radius: 14px;
-          padding: 16px;
+          padding: 14px 12px;
           box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
-          border: 1px solid rgba(0, 0, 0, 0.03);
+          border: 1px solid rgba(0, 0, 0, 0.04);
           display: flex;
           flex-direction: column;
           align-items: center;
+          justify-content: center;
           gap: 4px;
           transition: all 0.2s;
         }
@@ -633,13 +800,13 @@ export default function Home({ currentTheme, balance, username }) {
         .earnings-card:hover {
           transform: translateY(-2px);
           box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
-          border-color: rgba(16, 185, 129, 0.1);
+          border-color: rgba(16, 185, 129, 0.15);
         }
 
         .earning-value {
-          font-size: 18px;
+          font-size: 16px;
           font-weight: 700;
-          color: #10b981; /* Green earnings color */
+          letter-spacing: -0.3px;
         }
 
         .earning-label {
@@ -648,6 +815,7 @@ export default function Home({ currentTheme, balance, username }) {
           color: var(--text-light);
           text-transform: uppercase;
           letter-spacing: 0.3px;
+          text-align: center;
         }
 
         /* Live Feed */

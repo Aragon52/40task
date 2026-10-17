@@ -3,6 +3,7 @@ import OrderDetailsModal from '../components/OrderDetailsModal';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
 import { useLoading } from '../components/GlobalLoader';
+import { Package, ShoppingBag } from 'lucide-react';
 
 import toast from 'react-hot-toast';
 
@@ -180,21 +181,12 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
                 </div>
 
                 <div className="order-item-body">
-                  <div className="product-image-container" style={{ border: 'var(--border-luxury)', borderRadius: 6, backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  <div className="product-image-container" style={{ border: 'var(--border-luxury)', borderRadius: 10, backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                     {order.image ? (
-                      <img src={order.image} alt={order.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={order.image} alt={order.title} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     ) : (
                       <div className="prod-img-placeholder" style={{ color: 'var(--primary-color)', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {order.type === 'food' ? (
-                          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                          </svg>
-                        ) : (
-                          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6L18 2H6z"/>
-                            <path d="M16 10a4 4 0 0 1-8 0"/>
-                          </svg>
-                        )}
+                        <Package className="w-6 h-6 text-sky-600 dark:text-sky-400" />
                       </div>
                     )}
                   </div>

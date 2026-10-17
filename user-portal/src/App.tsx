@@ -546,7 +546,7 @@ function AppContent() {
                       <Route path="" element={<Navigate to="/home" replace />} />
                       <Route 
                         path="home" 
-                        element={<Home currentTheme={theme} balance={balance} username={username} />} 
+                        element={<Home currentTheme={theme} balance={balance} username={username} orders={orders} />} 
                       />
                       <Route 
                         path="orders" 
