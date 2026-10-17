@@ -201,7 +201,7 @@ export default function Support() {
       </div>
 
       {/* Docked Modern Input Bar */}
-      <div className="fixed bottom-20 inset-x-0 mx-auto w-full max-w-md bg-white border-t border-slate-200 px-3 py-3 z-[100001] shadow-lg">
+      <div className="fixed bottom-14 inset-x-0 mx-auto w-full max-w-md bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-3 py-2.5 z-40 shadow-lg">
         <form 
           onSubmit={(e) => {
             e.preventDefault();

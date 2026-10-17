@@ -432,7 +432,7 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
 
   return (
     <>
-      <div className="shop-order-page scale-up">
+      <div className="shop-order-page scale-up pb-8">
         {/* Header bar */}
         <div className="shop-header">
           <button 
@@ -756,7 +756,7 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
         }
 
         .shop-content {
-          padding: 24px 20px;
+          padding: 24px 20px 48px;
         }
 
         .shop-grid-layout {

@@ -19,42 +19,24 @@
   --shadow-luxury: 0 20px 40px -12px rgba(0, 0, 0, 0.1);
 }
 
-:root {
-  --primary-color: #0071ce;
-  --secondary-color: #FFC220;
-  --success-color: #10b981;
-  --error-color: #ef4444;
-  --warning-color: #f59e0b;
-  --bg-app: #fcfbf9;
-  --bg-card: #ffffff;
-  --text-main: #181d28;
-  --text-muted: #5e6b7c;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-app: #0c101a;
-    --bg-card: #141b2b;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
+@layer base {
+  html, body {
+    background-color: var(--bg-app);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
   }
-}
 
-html, body {
-  @apply bg-slate-50 text-slate-900 antialiased;
-  font-family: var(--font-sans);
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-  min-height: 100vh;
-  margin: 0;
-  padding: 0;
-  line-height: 1.5;
-  -webkit-text-size-adjust: 100%;
-}
-
-#root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  #root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 @layer utilities {
