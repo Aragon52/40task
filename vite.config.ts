@@ -8,6 +8,7 @@ const BUILD_ID = Date.now().toString();
 
 export default defineConfig(() => {
   return {
+    base: '/',
     define: {
       __APP_BUILD_ID__: JSON.stringify(BUILD_ID),
       __APP_BUILD_TIME__: JSON.stringify(new Date().toISOString()),

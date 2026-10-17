@@ -19,10 +19,6 @@
   --shadow-luxury: 0 20px 40px -12px rgba(0, 0, 0, 0.1);
 }
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root {
   --primary-color: #0071ce;
   --secondary-color: #FFC220;

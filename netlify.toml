@@ -40,17 +40,22 @@
   status = 200
   force = true
 
+# Direct static assets pass-through for all domains
 [[redirects]]
-  from = "/admin/*"
-  to = "/admin.html"
+  from = "/assets/*"
+  to = "/assets/:splat"
   status = 200
-  force = true
 
+# Admin path rewrites
 [[redirects]]
   from = "/admin"
   to = "/admin.html"
   status = 200
-  force = true
+
+[[redirects]]
+  from = "/admin/*"
+  to = "/admin.html"
+  status = 200
 
 [[redirects]]
   from = "/*"

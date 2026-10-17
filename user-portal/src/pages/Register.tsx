@@ -126,14 +126,28 @@ export default function Register() {
   const [countrySearchQuery, setCountrySearchQuery] = useState('');
   const countryDropdownRef = useRef<HTMLDivElement>(null);
 
+  const filteredCountries = COUNTRIES.filter(c => 
+    c.name.toLowerCase().includes(countrySearchQuery.toLowerCase().trim()) || 
+    c.code.includes(countrySearchQuery.trim())
+  );
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target as Node)) {
         setCountryDropdownOpen(false);
       }
     }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setCountryDropdownOpen(false);
+      }
+    }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   useEffect(() => {
@@ -338,92 +352,100 @@ export default function Register() {
             </div>
 
             {/* Phone */}
-            <div className="space-y-2">
+            <div className={`space-y-2 relative ${countryDropdownOpen ? 'z-50' : 'z-10'}`}>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-2">
                 <Phone className="w-3 h-3" />
                 Mobile Connection
               </label>
-              <div className="flex items-center gap-2.5">
-                {/* Country Selector Trigger */}
-                <div className="relative shrink-0" ref={countryDropdownRef}>
+              <div className="flex h-14 bg-white/5 border border-white/10 rounded-2xl relative focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/50 transition-all">
+                <div className="relative shrink-0 h-full" ref={countryDropdownRef}>
                   <button 
                     type="button"
-                    onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
-                    className="h-14 px-3.5 sm:px-4 flex items-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 rounded-2xl transition-all cursor-pointer text-white shadow-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 outline-none"
+                    onClick={() => setCountryDropdownOpen(prev => !prev)}
                     aria-expanded={countryDropdownOpen}
-                    aria-haspopup="listbox"
-                    title="Select country dial code"
+                    className="h-full px-3.5 flex items-center gap-2 bg-white/5 border-r border-white/10 hover:bg-white/10 active:bg-white/15 transition-colors rounded-l-2xl cursor-pointer"
                   >
                     <img 
                       src={`https://flagcdn.com/w40/${selectedCountry.flagCode}.png`} 
-                      className="w-5 h-3.5 object-cover rounded-xs shadow-xs shrink-0" 
-                      alt={selectedCountry.name} 
+                      className="w-5 h-3.5 object-cover rounded-sm shadow-sm shrink-0" 
+                      alt="" 
+                      referrerPolicy="no-referrer"
                     />
-                    <span className="text-sm font-black text-white tracking-tight">{selectedCountry.code}</span>
-                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${countryDropdownOpen ? 'rotate-180' : ''}`} />
+                    <span className="text-sm font-black text-white">{selectedCountry.code}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${countryDropdownOpen ? 'rotate-180 text-blue-400' : ''}`} />
                   </button>
 
-                  {/* Dropdown Menu (Guaranteed NOT clipped) */}
                   {countryDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-slate-900 border border-white/15 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="absolute top-full left-0 mt-2 w-72 sm:w-80 bg-slate-900/98 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl overflow-hidden z-[100] ring-1 ring-black/50 animate-in fade-in zoom-in-95 duration-150">
                       <div className="p-2.5 border-b border-white/10 flex items-center gap-2 bg-white/5">
                         <Search className="w-4 h-4 text-slate-400 shrink-0" />
                         <input 
                           type="text" 
-                          placeholder="Search country or code..." 
-                          className="bg-transparent border-none text-xs sm:text-sm text-white placeholder:text-slate-500 w-full outline-none py-1 font-medium"
+                          autoFocus
+                          placeholder="Search countries or code..." 
+                          className="bg-transparent border-none text-sm text-white placeholder-slate-400 w-full outline-none py-1"
                           value={countrySearchQuery}
                           onChange={e => setCountrySearchQuery(e.target.value)}
-                          autoFocus
                         />
                         {countrySearchQuery && (
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={() => setCountrySearchQuery('')}
-                            className="text-xs font-bold text-slate-400 hover:text-white px-1 cursor-pointer"
+                            className="text-xs text-slate-400 hover:text-white px-1.5 py-0.5 rounded cursor-pointer"
                           >
                             ✕
                           </button>
                         )}
                       </div>
-                      <div className="max-h-60 overflow-y-auto p-1.5 custom-scrollbar">
-                        {COUNTRIES.filter(c => c.name.toLowerCase().includes(countrySearchQuery.toLowerCase()) || c.code.includes(countrySearchQuery)).map(c => {
-                          const isSelected = c.code === selectedCountry.code && c.flagCode === selectedCountry.flagCode;
-                          return (
-                            <button
-                              key={`${c.flagCode}-${c.code}`}
-                              type="button"
-                              onClick={() => { 
-                                setSelectedCountry(c); 
-                                setCountryDropdownOpen(false); 
-                                setCountrySearchQuery('');
-                              }}
-                              className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left cursor-pointer ${
-                                isSelected ? 'bg-blue-600/20 text-blue-400 font-bold' : 'hover:bg-white/10 text-slate-300'
-                              }`}
-                            >
-                              <img src={`https://flagcdn.com/w40/${c.flagCode}.png`} className="w-5 h-3.5 object-cover rounded-xs shadow-xs shrink-0" alt="" />
-                              <span className="flex-1 text-xs font-semibold truncate">{c.name}</span>
-                              <span className="text-xs font-black text-blue-400 shrink-0">{c.code}</span>
-                            </button>
-                          );
-                        })}
+                      <div className="max-h-64 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar overscroll-contain">
+                        {filteredCountries.length > 0 ? (
+                          filteredCountries.map(c => {
+                            const isSelected = selectedCountry.code === c.code && selectedCountry.flagCode === c.flagCode;
+                            return (
+                              <button
+                                key={`${c.flagCode}-${c.code}`}
+                                type="button"
+                                onClick={() => { 
+                                  setSelectedCountry(c); 
+                                  setCountryDropdownOpen(false); 
+                                  setCountrySearchQuery('');
+                                }}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-left cursor-pointer ${
+                                  isSelected 
+                                    ? 'bg-blue-600/30 text-white border border-blue-500/40 font-bold' 
+                                    : 'hover:bg-white/10 text-slate-300'
+                                }`}
+                              >
+                                <img 
+                                  src={`https://flagcdn.com/w40/${c.flagCode}.png`} 
+                                  className="w-5 h-3.5 object-cover rounded-sm shadow-sm shrink-0" 
+                                  alt="" 
+                                  referrerPolicy="no-referrer"
+                                />
+                                <span className="flex-1 text-xs font-semibold truncate">{c.name}</span>
+                                <span className={`text-xs font-mono font-bold shrink-0 ${isSelected ? 'text-blue-300' : 'text-blue-400'}`}>
+                                  {c.code}
+                                </span>
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <div className="py-6 px-3 text-center text-xs text-slate-400">
+                            No countries found matching "{countrySearchQuery}"
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
                 </div>
-
-                {/* Phone Input */}
-                <div className="relative flex-1">
-                  <input 
-                    type="tel" 
-                    placeholder="Phone number" 
-                    className="w-full h-14 bg-white/5 border border-white/10 focus:border-blue-500/50 rounded-2xl px-4 text-sm font-semibold text-white placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    required
-                  />
-                </div>
+                <input 
+                  type="tel" 
+                  placeholder="Phone number" 
+                  className="flex-1 bg-transparent px-4 text-sm font-bold text-white outline-none rounded-r-2xl min-w-0"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  required
+                />
               </div>
             </div>
 

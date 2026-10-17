@@ -8,14 +8,12 @@ import {
   Lock, 
   ChevronDown, 
   Search, 
+  CheckCircle2, 
   ArrowRight,
   ShieldCheck,
-  Globe,
-  Eye,
-  EyeOff,
-  Check
+  Globe
 } from 'lucide-react';
-import { Button, Modal } from '@/src/shared/UI';
+import { Button, Modal, Input } from '@/src/shared/UI';
 import toast from 'react-hot-toast';
 
 const COUNTRIES = [
@@ -107,7 +105,6 @@ export default function Login() {
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(true);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPoliciesModal, setShowPoliciesModal] = useState(false);
@@ -119,14 +116,28 @@ export default function Login() {
   const [countrySearchQuery, setCountrySearchQuery] = useState('');
   const countryDropdownRef = useRef<HTMLDivElement>(null);
 
+  const filteredCountries = COUNTRIES.filter(c => 
+    c.name.toLowerCase().includes(countrySearchQuery.toLowerCase().trim()) || 
+    c.code.includes(countrySearchQuery.trim())
+  );
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target as Node)) {
         setCountryDropdownOpen(false);
       }
     }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setCountryDropdownOpen(false);
+      }
+    }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -181,112 +192,95 @@ export default function Login() {
     }
   };
 
-  const filteredCountries = COUNTRIES.filter(c => 
-    c.name.toLowerCase().includes(countrySearchQuery.toLowerCase()) || 
-    c.code.includes(countrySearchQuery)
-  );
-
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-4 sm:p-6 overflow-x-hidden bg-slate-100 font-sans text-slate-800">
-      {/* Crisp Light Background with subtle gradient & ambient lighting */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <img 
-          src={loginBg} 
-          alt="background" 
-          className="w-full h-full object-cover opacity-15 scale-105 blur-sm" 
-        />
-        <div className="absolute inset-0 bg-gradient-to-tr from-slate-100/90 via-blue-50/70 to-sky-100/80" />
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-300/25 rounded-full blur-3xl" />
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-300/20 rounded-full blur-3xl" />
+    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden bg-slate-950">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 z-0">
+        <img src={loginBg} alt="bg" className="w-full h-full object-cover opacity-40 scale-110 blur-sm" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-900/90 to-blue-900/30" />
       </div>
 
+      {/* Floating Orbs */}
+      <div className="absolute top-1/4 left-10 w-64 h-64 bg-blue-600/20 rounded-full blur-[100px] animate-pulse-slow" />
+      <div className="absolute bottom-1/4 right-10 w-64 h-64 bg-indigo-600/20 rounded-full blur-[100px] animate-pulse-slow delay-1000" />
+
       {/* Language Corner */}
-      <div className="fixed top-5 right-5 z-50">
-        <div className="bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-sm border border-slate-200/90 flex items-center gap-2">
-          <Globe className="w-4 h-4 text-slate-500" />
+      <div className="fixed top-6 right-6 z-50">
+        <div className="glass px-4 py-2 rounded-2xl flex items-center gap-2">
+          <Globe className="w-4 h-4 text-white" />
           <LanguageSwitcher />
         </div>
       </div>
 
-      <div className="relative z-10 w-full max-w-md animate-in fade-in zoom-in-95 duration-500">
+      <div className="relative z-10 w-full max-w-md animate-in fade-in zoom-in-95 duration-700">
         {/* Brand Header */}
-        <div className="text-center mb-7 space-y-3">
-          <div className="inline-flex items-center gap-3 px-6 py-3 bg-[#0071ce] rounded-2xl shadow-xl shadow-blue-500/20 border border-blue-400/40">
+        <div className="text-center mb-10 space-y-4">
+          <div className="inline-flex items-center gap-3 px-6 py-3 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/20 border border-blue-400/30">
             <span className="text-2xl font-black text-white tracking-tighter italic">Walmart</span>
-            <div className="w-px h-6 bg-white/30" />
-            <ShieldCheck className="w-6 h-6 text-[#FFC220]" />
+            <div className="w-px h-6 bg-white/20" />
+            <ShieldCheck className="w-6 h-6 text-amber-400" />
           </div>
-          <p className="text-[11px] font-extrabold text-[#0071ce] uppercase tracking-[0.25em]">
-            Financial Enhancement Portal
-          </p>
+          <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] pl-1">Financial Enhancement Portal</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white border border-slate-200/90 rounded-[32px] p-7 sm:p-9 shadow-2xl shadow-slate-300/60">
+        <div className="glass-dark border border-white/10 rounded-[32px] p-8 shadow-2xl backdrop-blur-2xl">
           <form onSubmit={handleLogin} className="space-y-6">
-            <div className="text-center space-y-1.5 mb-7">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Merchant Access</h2>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sign in to your matching node</p>
+            <div className="text-center space-y-1 mb-8">
+              <h2 className="text-xl font-black text-white tracking-tight">Merchant Access</h2>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Sign in to your matching node</p>
             </div>
 
-            {/* Mobile Connection (Phone + Country Selector) */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                <Phone className="w-3.5 h-3.5 text-[#0071ce]" />
+            {/* Phone Input */}
+            <div className={`space-y-2 relative ${countryDropdownOpen ? 'z-50' : 'z-10'}`}>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                <Phone className="w-3 h-3" />
                 Mobile Connection
               </label>
-              
-              <div className="flex items-center gap-2.5">
-                {/* Country Selector Trigger */}
-                <div className="relative shrink-0" ref={countryDropdownRef}>
+              <div className="flex h-14 bg-white/5 border border-white/10 rounded-2xl relative focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/50 transition-all">
+                <div className="relative shrink-0 h-full" ref={countryDropdownRef}>
                   <button 
                     type="button"
-                    onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
-                    className="h-14 px-3.5 sm:px-4 flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-300 hover:border-slate-400 rounded-2xl transition-all cursor-pointer text-slate-800 shadow-xs focus:ring-4 focus:ring-blue-100 focus:border-[#0071ce] outline-none"
+                    onClick={() => setCountryDropdownOpen(prev => !prev)}
                     aria-expanded={countryDropdownOpen}
-                    aria-haspopup="listbox"
-                    title="Select country dial code"
+                    className="h-full px-3.5 flex items-center gap-2 bg-white/5 border-r border-white/10 hover:bg-white/10 active:bg-white/15 transition-colors rounded-l-2xl cursor-pointer"
                   >
                     <img 
                       src={`https://flagcdn.com/w40/${selectedCountry.flagCode}.png`} 
-                      className="w-5 h-3.5 object-cover rounded-xs shadow-xs shrink-0" 
-                      alt={selectedCountry.name} 
+                      className="w-5 h-3.5 object-cover rounded-sm shadow-sm shrink-0" 
+                      alt="" 
+                      referrerPolicy="no-referrer"
                     />
-                    <span className="text-sm font-extrabold text-slate-900 tracking-tight">{selectedCountry.code}</span>
-                    <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 shrink-0 ${countryDropdownOpen ? 'rotate-180' : ''}`} />
+                    <span className="text-sm font-black text-white">{selectedCountry.code}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${countryDropdownOpen ? 'rotate-180 text-blue-400' : ''}`} />
                   </button>
 
-                  {/* Dropdown Menu (Guaranteed NOT clipped) */}
                   {countryDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
-                      <div className="p-2.5 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+                    <div className="absolute top-full left-0 mt-2 w-72 sm:w-80 bg-slate-900/98 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl overflow-hidden z-[100] ring-1 ring-black/50 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="p-2.5 border-b border-white/10 flex items-center gap-2 bg-white/5">
                         <Search className="w-4 h-4 text-slate-400 shrink-0" />
                         <input 
                           type="text" 
-                          placeholder="Search country or code (+1, +44...)" 
-                          className="bg-transparent border-none text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 w-full outline-none py-1 font-medium"
+                          autoFocus
+                          placeholder="Search countries or code..." 
+                          className="bg-transparent border-none text-sm text-white placeholder-slate-400 w-full outline-none py-1"
                           value={countrySearchQuery}
                           onChange={e => setCountrySearchQuery(e.target.value)}
-                          autoFocus
                         />
                         {countrySearchQuery && (
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={() => setCountrySearchQuery('')}
-                            className="text-xs font-bold text-slate-400 hover:text-slate-600 px-1 cursor-pointer"
+                            className="text-xs text-slate-400 hover:text-white px-1.5 py-0.5 rounded cursor-pointer"
                           >
                             ✕
                           </button>
                         )}
                       </div>
-                      <div className="max-h-60 overflow-y-auto p-1.5 divide-y divide-slate-50">
-                        {filteredCountries.length === 0 ? (
-                          <div className="p-4 text-center text-xs font-medium text-slate-400">
-                            No matching country found
-                          </div>
-                        ) : (
+                      <div className="max-h-64 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar overscroll-contain">
+                        {filteredCountries.length > 0 ? (
                           filteredCountries.map(c => {
-                            const isSelected = c.code === selectedCountry.code && c.flagCode === selectedCountry.flagCode;
+                            const isSelected = selectedCountry.code === c.code && selectedCountry.flagCode === c.flagCode;
                             return (
                               <button
                                 key={`${c.flagCode}-${c.code}`}
@@ -297,125 +291,112 @@ export default function Login() {
                                   setCountrySearchQuery('');
                                 }}
                                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-left cursor-pointer ${
-                                  isSelected ? 'bg-blue-50 text-[#0071ce] font-bold' : 'hover:bg-slate-100/80 text-slate-700'
+                                  isSelected 
+                                    ? 'bg-blue-600/30 text-white border border-blue-500/40 font-bold' 
+                                    : 'hover:bg-white/10 text-slate-300'
                                 }`}
                               >
                                 <img 
                                   src={`https://flagcdn.com/w40/${c.flagCode}.png`} 
-                                  className="w-5 h-3.5 object-cover rounded-xs shadow-xs shrink-0" 
+                                  className="w-5 h-3.5 object-cover rounded-sm shadow-sm shrink-0" 
                                   alt="" 
+                                  referrerPolicy="no-referrer"
                                 />
                                 <span className="flex-1 text-xs font-semibold truncate">{c.name}</span>
-                                <span className="text-xs font-extrabold text-[#0071ce] shrink-0">{c.code}</span>
-                                {isSelected && <Check className="w-3.5 h-3.5 text-[#0071ce] shrink-0" />}
+                                <span className={`text-xs font-mono font-bold shrink-0 ${isSelected ? 'text-blue-300' : 'text-blue-400'}`}>
+                                  {c.code}
+                                </span>
                               </button>
                             );
                           })
+                        ) : (
+                          <div className="py-6 px-3 text-center text-xs text-slate-400">
+                            No countries found matching "{countrySearchQuery}"
+                          </div>
                         )}
                       </div>
                     </div>
                   )}
                 </div>
-
-                {/* Phone Input */}
-                <div className="relative flex-1">
-                  <input 
-                    type="tel" 
-                    placeholder="Phone number" 
-                    className="w-full h-14 bg-slate-50 hover:bg-slate-100/50 focus:bg-white border border-slate-300 focus:border-[#0071ce] rounded-2xl px-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:ring-4 focus:ring-blue-100 transition-all shadow-xs"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    required
-                  />
-                </div>
+                <input 
+                  type="tel" 
+                  placeholder="Phone number" 
+                  className="flex-1 bg-transparent px-4 text-sm font-bold text-white outline-none rounded-r-2xl min-w-0"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  required
+                />
               </div>
             </div>
 
             {/* Password Input */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                <Lock className="w-3.5 h-3.5 text-[#0071ce]" />
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                <Lock className="w-3 h-3" />
                 Secure Key
               </label>
-              <div className="relative">
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  placeholder="••••••••" 
-                  className="w-full h-14 bg-slate-50 hover:bg-slate-100/50 focus:bg-white border border-slate-300 focus:border-[#0071ce] rounded-2xl px-4 pr-12 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:ring-4 focus:ring-blue-100 transition-all shadow-xs"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                />
-                <button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"
-                  tabIndex={-1}
-                  title={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
+              <input 
+                type="password" 
+                placeholder="••••••••" 
+                className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+              />
             </div>
 
             {/* Terms Checkbox */}
             <div className="flex items-start gap-3 p-1">
-              <input 
-                type="checkbox" 
-                id="agreeTerms"
-                checked={agreeTerms} 
-                onChange={e => setAgreeTerms(e.target.checked)}
-                className="mt-0.5 w-5 h-5 rounded-lg border-2 border-slate-300 text-[#0071ce] focus:ring-2 focus:ring-blue-500/20 cursor-pointer accent-[#0071ce]"
-              />
-              <label htmlFor="agreeTerms" className="text-xs text-slate-600 leading-relaxed font-medium select-none">
-                I accept the <button type="button" onClick={() => setShowTermsModal(true)} className="text-[#0071ce] hover:text-[#005fa7] font-bold underline underline-offset-2 cursor-pointer">Service Terms</button> and <button type="button" onClick={() => setShowPoliciesModal(true)} className="text-[#0071ce] hover:text-[#005fa7] font-bold underline underline-offset-2 cursor-pointer">Merchant Policies</button>.
+              <div className="relative flex items-center">
+                <input 
+                  type="checkbox" 
+                  id="agreeTerms"
+                  checked={agreeTerms} 
+                  onChange={e => setAgreeTerms(e.target.checked)}
+                  className="w-5 h-5 rounded-lg border-2 border-white/10 bg-white/5 checked:bg-blue-600 checked:border-blue-600 transition-all cursor-pointer appearance-none"
+                />
+                <CheckCircle2 className={`absolute w-3 h-3 text-white pointer-events-none left-1 transition-opacity ${agreeTerms ? 'opacity-100' : 'opacity-0'}`} />
+              </div>
+              <label htmlFor="agreeTerms" className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                I accept the <button type="button" onClick={() => setShowTermsModal(true)} className="text-blue-500 font-black underline">Service Terms</button> and <button type="button" onClick={() => setShowPoliciesModal(true)} className="text-blue-500 font-black underline">Merchant Policies</button>.
               </label>
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full h-14 text-base font-bold bg-[#0071ce] hover:bg-[#005fa7] active:bg-[#004f8b] text-white shadow-xl shadow-blue-500/25 rounded-2xl group transition-all cursor-pointer" 
-              isLoading={isLoading}
-            >
+            <Button type="submit" className="w-full h-14 text-base group" isLoading={isLoading}>
               <span>Initialize Session</span>
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
 
-            <p className="text-center text-xs font-semibold text-slate-500 tracking-wide pt-2">
-              New Merchant? <button type="button" onClick={() => navigate('/register')} className="text-[#0071ce] hover:text-[#005fa7] font-bold hover:underline cursor-pointer ml-1">Create Account</button>
+            <p className="text-center text-xs font-bold text-slate-600 uppercase tracking-widest pt-4">
+              New Merchant? <button type="button" onClick={() => navigate('/register')} className="text-blue-500 hover:underline">Create Account</button>
             </p>
           </form>
         </div>
 
-        {/* Security Trust Badge */}
-        <div className="mt-8 flex items-center justify-center gap-3">
-          <div className="w-8 h-px bg-slate-300" />
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.25em] flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            256-Bit SSL Encrypted Session
-          </p>
-          <div className="w-8 h-px bg-slate-300" />
+        {/* Trust Badge */}
+        <div className="mt-12 flex items-center justify-center gap-8 opacity-40 grayscale group hover:grayscale-0 transition-all">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-px bg-slate-800" />
+            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.4em]">Military Grade Encryption</p>
+            <div className="w-8 h-px bg-slate-800" />
+          </div>
         </div>
       </div>
 
       {/* Modals */}
       <Modal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} title="Terms of Service">
-        <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
+        <div className="space-y-6 text-sm text-slate-400">
           <p>By registering an account with Walmart, you represent that you are at least 18 years of age and agree to comply with all operational terms.</p>
-          <p>Users are responsible for maintaining the confidentiality of their passwords and secure keys. Sharing accounts or manipulating slips is strictly prohibited.</p>
-          <div className="pt-2">
-            <Button onClick={() => setShowTermsModal(false)} className="w-full bg-[#0071ce] hover:bg-[#005fa7] text-white">Agree & Close</Button>
-          </div>
+          <p>Users are responsible for maintaining the confidentiality of their passwords and secure keys. Sharing accounts or manipulaing slips is strictly prohibited.</p>
+          <Button onClick={() => setShowTermsModal(false)} className="w-full">Agree & Close</Button>
         </div>
       </Modal>
 
       <Modal isOpen={showPoliciesModal} onClose={() => setShowPoliciesModal(false)} title="Operational Policies">
-        <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
+        <div className="space-y-6 text-sm text-slate-400">
           <p>Walmart utilizes a real-time smart matching algorithm. Users must maintain a positive wallet balance to match and accept retail allocation worksheets.</p>
           <p>Commissions are credited immediately upon successful verification. Standard daily limits apply based on VIP tier.</p>
-          <div className="pt-2">
-            <Button onClick={() => setShowPoliciesModal(false)} className="w-full bg-[#0071ce] hover:bg-[#005fa7] text-white">I Understand</Button>
-          </div>
+          <Button onClick={() => setShowPoliciesModal(false)} className="w-full">I Understand</Button>
         </div>
       </Modal>
     </div>
