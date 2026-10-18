@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLoading } from '../components/GlobalLoader';
 import { supabase } from '../supabase';
-import { TrendingUp, Sparkles, Calendar, Wallet } from 'lucide-react';
+import { TrendingUp, Sparkles, Calendar, Wallet, ShieldCheck, Lock, Headphones, Zap } from 'lucide-react';
 
 const BANNERS = [
   {
@@ -177,6 +177,25 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
     };
   }, [username, orders]);
 
+  const LIVE_COMMISSIONS = [
+    { user: 'yoo***', amount: '194.33', profit: '0.97', task: 'Matching Task' },
+    { user: 'mya***', amount: '320.00', profit: '1.60', task: 'Order Tasking' },
+    { user: 'kok***', amount: '580.50', profit: '2.90', task: 'VIP Order' },
+    { user: 'san***', amount: '1,250.00', profit: '6.25', task: 'Premium Matching' },
+    { user: 'lin***', amount: '890.20', profit: '4.45', task: 'Matching Task' },
+    { user: 'aung***', amount: '410.00', profit: '2.05', task: 'Order Tasking' },
+    { user: 'thuz***', amount: '730.80', profit: '3.65', task: 'Matching Task' }
+  ];
+
+  const [tickerIndex, setTickerIndex] = useState(0);
+
+  useEffect(() => {
+    const tickerTimer = setInterval(() => {
+      setTickerIndex(prev => (prev + 1) % LIVE_COMMISSIONS.length);
+    }, 2800);
+    return () => clearInterval(tickerTimer);
+  }, [LIVE_COMMISSIONS.length]);
+
   // Auto-advance every 4 seconds
   useEffect(() => {
     const t = setInterval(() => setSlide(s => (s + 1) % BANNERS.length), 4000);
@@ -188,7 +207,7 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
 
   return (
     <>
-      <div className="flex flex-col space-y-5 px-4 pt-4 pb-32 w-full scale-up">
+      <div className="flex flex-col space-y-3.5 px-3 pt-2 pb-24 w-full scale-up">
         {/* ── 1. Top E-Commerce Banner Carousel ── */}
         <div className="ec-banner-carousel">
           {BANNERS.map((b, i) => (
@@ -248,29 +267,29 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
 
         {/* ── 3. Interactive Earn Banner Strip ── */}
         <div 
-          className="flex items-center justify-between p-3.5 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-transparent border border-blue-100/60 rounded-2xl cursor-pointer hover:bg-blue-50/50 transition-colors shadow-xs"
+          className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-transparent border border-blue-100/60 rounded-xl cursor-pointer hover:bg-blue-50/50 transition-colors shadow-xs"
           onClick={() => navigate('/match')}
           id="btn-start-earning"
         >
-          <div className="flex items-center gap-2.5">
-            <span className="flex items-center justify-center w-7 h-7 rounded-xl bg-blue-600 text-white text-xs font-bold shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-blue-600 text-white text-[10px] font-bold shadow-xs">
               ⚡
             </span>
             <div>
               <p className="text-xs font-bold text-slate-800 dark:text-slate-100">Earn Daily Commissions</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Match orders to boost daily yield</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400">Match orders to boost daily yield</p>
             </div>
           </div>
-          <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-blue-100 dark:border-blue-900/50 shadow-2xs">
+          <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/50 shadow-2xs">
             Active
           </span>
         </div>
 
         {/* ── 4. 4-Icon Quick Actions Grid ── */}
-        <div className="grid grid-cols-4 gap-2 my-2">
+        <div className="grid grid-cols-4 gap-2 my-1">
           <div className="grid-item-container" onClick={() => navigate('/support')} id="btn-quick-notification">
             <div className="icon-circle">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 <path d="M8 10h8" />
                 <path d="M8 14h6" />
@@ -283,7 +302,7 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
 
           <div className="grid-item-container" onClick={() => navigate('/deposit')} id="btn-quick-deposit">
             <div className="icon-circle">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="16" rx="2" />
                 <path d="M7 10h4a2 2 0 0 1 0 4H7z" />
                 <path d="M7 14h4a2 2 0 0 1 0 4H7z" />
@@ -295,7 +314,7 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
 
           <div className="grid-item-container" onClick={() => navigate('/withdraw')} id="btn-quick-withdraw">
             <div className="icon-circle">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v3" />
                 <path d="M14 10V5a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v5" />
                 <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8.5a4 4 0 0 0 4 4h2a5 5 0 0 0 5-5" />
@@ -306,7 +325,7 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
 
           <div className="grid-item-container" onClick={() => navigate('/affiliate')} id="btn-quick-invite">
             <div className="icon-circle">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 12 20 22 4 22 4 12" />
                 <rect x="2" y="7" width="20" height="5" />
                 <line x1="12" y1="22" x2="12" y2="7" />
@@ -331,8 +350,8 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
 
           <div className="earnings-grid">
             <div className="earnings-card" id="card-total-profits">
-              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 mb-0.5">
-                <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+              <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 mb-0.5">
+                <TrendingUp className="w-3 h-3 shrink-0" />
                 <span className="earning-label">Total Profits</span>
               </div>
               <span className="earning-value font-mono text-emerald-600 dark:text-emerald-400" id="lbl-total-profits">
@@ -341,8 +360,8 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
             </div>
 
             <div className="earnings-card" id="card-yesterday-earn">
-              <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 mb-0.5">
-                <Calendar className="w-3.5 h-3.5 shrink-0" />
+              <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 mb-0.5">
+                <Calendar className="w-3 h-3 shrink-0" />
                 <span className="earning-label">Yesterday Earn</span>
               </div>
               <span className="earning-value font-mono" id="lbl-yesterday-earn" style={{ color: '#f59e0b' }}>
@@ -351,8 +370,8 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
             </div>
 
             <div className="earnings-card" id="card-today-profit">
-              <div className="flex items-center gap-1.5 text-sky-600 dark:text-sky-400 mb-0.5">
-                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <div className="flex items-center gap-1 text-sky-600 dark:text-sky-400 mb-0.5">
+                <Sparkles className="w-3 h-3 shrink-0" />
                 <span className="earning-label">Today's Profit</span>
               </div>
               <span className="earning-value font-mono" id="lbl-today-profit" style={{ color: '#0284c7' }}>
@@ -361,8 +380,8 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
             </div>
 
             <div className="earnings-card" id="card-balance-display">
-              <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 mb-0.5">
-                <Wallet className="w-3.5 h-3.5 shrink-0" />
+              <div className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 mb-0.5">
+                <Wallet className="w-3 h-3 shrink-0" />
                 <span className="earning-label">Account Balance</span>
               </div>
               <span className="earning-value font-mono text-indigo-600 dark:text-indigo-400" id="lbl-home-balance">
@@ -373,9 +392,9 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
         </div>
 
         {/* ── 6. Recent Commission Allocations & Super Intelligent System Agent Banner ── */}
-        <div className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-3">
           {/* AI Agent Commission Banner */}
-          <div className="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-slate-950 text-white border border-purple-500/40 shadow-lg shadow-purple-950/20 group">
+          <div className="relative overflow-hidden rounded-xl p-3 bg-slate-950 text-white border border-purple-500/30 shadow-md shadow-purple-950/10 group">
             {/* Visual Graphic Image Background */}
             <img 
               src="/super_agent_bg.svg" 
@@ -385,36 +404,90 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
             />
             {/* Readability Vignette & Gradient Overlays */}
             <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-purple-950/75 to-indigo-950/60 pointer-events-none" />
-            <div className="absolute -right-12 -bottom-12 w-44 h-44 bg-purple-500/25 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -right-12 -bottom-12 w-36 h-36 bg-purple-500/20 rounded-full blur-2xl pointer-events-none" />
             
-            <div className="relative z-10 flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-purple-500/30 mt-0.5">
-                <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
+            <div className="relative z-10 flex items-start gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-purple-500/30 mt-0.5">
+                <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-purple-500/30 text-purple-200 border border-purple-400/30 uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                  <span className="px-2 py-0.5 rounded text-[9px] font-extrabold bg-purple-500/30 text-purple-200 border border-purple-400/30 uppercase tracking-wider">
                     Super Intelligent System Agent
                   </span>
-                  <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
+                  <span className="text-[10px] font-semibold text-emerald-400 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                     Active Optimization
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm font-semibold text-purple-100 leading-snug">
-                  Orders have been assigned by the newly integrated Super Intelligent system agent to maximize the user's profitability
+                <p className="text-xs font-medium text-purple-100 leading-snug">
+                  Orders have been assigned by the newly integrated Super Intelligent system agent to maximize profitability.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="live-feed-card">
-            <div className="feed-header">
-              <span className="pulse-indicator"></span>
-              <span className="feed-title">Recent Commission Allocations</span>
+          {/* ── Sliding Commission Collection Announcement Banner (Downward to Upward) ── */}
+          <div className="live-feed-card overflow-hidden p-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-xs">
+            <div className="feed-header flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <span className="pulse-indicator"></span>
+                <span className="feed-title text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Recent Commission Allocations</span>
+              </div>
+              <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md border border-emerald-100 dark:border-emerald-900/40">
+                Live Feed
+              </span>
             </div>
-            <div className="feed-content">
-              <div className="feed-item">User yoo*** just completed matching task for <b>$194.33</b> (+$0.97 profit)</div>
+
+            {/* Downward to Upward Sliding Ticket Reel */}
+            <div className="relative h-9 overflow-hidden bg-slate-50/80 dark:bg-slate-950/60 rounded-lg px-2.5 border border-slate-100 dark:border-slate-800/80 flex items-center">
+              <div 
+                className="w-full transition-transform duration-500 ease-in-out flex flex-col justify-center"
+                style={{ transform: `translateY(-${tickerIndex * 36}px)` }}
+              >
+                {LIVE_COMMISSIONS.map((item, idx) => (
+                  <div key={idx} className="h-9 flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-200 shrink-0">
+                    <span className="flex items-center gap-1.5 truncate text-[11px]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                      <span>User <strong className="text-slate-900 dark:text-slate-100 font-bold">{item.user}</strong> matched {item.task} for <strong className="text-sky-600 dark:text-sky-400 font-bold">${item.amount}</strong></span>
+                    </span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-extrabold ml-1.5 shrink-0 bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]">
+                      +${item.profit}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── 7. Platform Trust & Guarantee Footer Card (Verified System green box removed) ── */}
+          <div className="mt-0.5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 shadow-2xs space-y-2">
+            <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Official Platform Guarantee</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-1.5 text-center pt-0.5">
+              <div className="p-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/80 flex flex-col items-center justify-center gap-0.5">
+                <Lock className="w-3 h-3 text-sky-600 dark:text-sky-400" />
+                <span className="text-[9px] font-bold text-slate-600 dark:text-slate-300">256-Bit SSL</span>
+              </div>
+              <div className="p-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/80 flex flex-col items-center justify-center gap-0.5">
+                <Headphones className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                <span className="text-[9px] font-bold text-slate-600 dark:text-slate-300">24/7 Support</span>
+              </div>
+              <div className="p-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/80 flex flex-col items-center justify-center gap-0.5">
+                <Zap className="w-3 h-3 text-amber-500" />
+                <span className="text-[9px] font-bold text-slate-600 dark:text-slate-300">Fast Settlement</span>
+              </div>
+            </div>
+
+            <div className="text-center pt-0.5">
+              <p className="text-[9px] text-slate-400 font-medium">
+                Walmart Marketplace © 2026 • All Rights Reserved
+              </p>
             </div>
           </div>
         </div>

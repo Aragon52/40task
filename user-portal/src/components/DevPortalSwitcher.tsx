@@ -16,7 +16,9 @@ export default function DevPortalSwitcher({ currentPortal }: { currentPortal: 'u
   const isProduction = import.meta.env.PROD || !import.meta.env.DEV;
   const isAisDev = typeof window !== 'undefined' && (
     window.location.hostname.includes('ais-dev') ||
-    window.location.hostname.includes('europe-west2.run.app')
+    window.location.hostname.includes('ais-pre') ||
+    window.location.hostname.includes('europe-west2.run.app') ||
+    window.location.hostname.includes('run.app')
   );
   const isLocalhost = typeof window !== 'undefined' && (
     window.location.hostname === 'localhost' ||
@@ -62,7 +64,6 @@ export default function DevPortalSwitcher({ currentPortal }: { currentPortal: 'u
   const containerRef = useRef<HTMLDivElement>(null);
 
   const targetPortalName = currentPortal === 'user' ? 'Admin Portal' : 'User Portal';
-  const targetHref = currentPortal === 'user' ? '/admin' : '/';
 
   // Handle window resizing to keep button on screen
   useEffect(() => {
@@ -148,13 +149,15 @@ export default function DevPortalSwitcher({ currentPortal }: { currentPortal: 'u
   };
 
   const handleSwitchClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (dragRef.current.hasMoved || isDragging) {
-      e.preventDefault();
-      e.stopPropagation();
       return;
     }
-    // Navigate smoothly
-    window.location.href = targetHref;
+    const targetUrl = currentPortal === 'user' 
+      ? window.location.origin + '/admin.html' 
+      : window.location.origin + '/#/';
+    window.location.href = targetUrl;
   };
 
   return (

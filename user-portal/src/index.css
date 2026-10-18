@@ -353,7 +353,8 @@ body.theme-red {
 
   /* Match Animation Styles */
   .slot-container {
-    height: 140px;
+    height: 165px;
+    min-height: 165px;
     overflow: hidden;
     position: relative;
     border-radius: var(--border-radius-md);
@@ -371,7 +372,7 @@ body.theme-red {
   }
 
   .slot-item {
-    height: 140px;
+    height: 165px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -382,8 +383,8 @@ body.theme-red {
   }
 
   .slot-item img {
-    height: 60px;
-    max-width: 90px;
+    height: 70px;
+    max-width: 100px;
     object-fit: contain;
     margin-bottom: 6px;
   }

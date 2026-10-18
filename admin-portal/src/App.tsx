@@ -54,34 +54,40 @@ export default function App() {
   const loadSession = async () => {
     const saved = localStorage.getItem('cb_admin_session');
     if (saved) {
-      const parsed: AdminSession = JSON.parse(saved);
-      if (parsed.role === 'Staff') {
-        const { data, error } = await supabase
-          .from('cb_staff')
-          .select('profile_photo')
-          .eq('staff_id', parsed.accountId)
-          .single();
-        if (!error && data) {
-          let perms = {
-            userManagement: true,
-            ordersInProgress: true,
-            orderTasking: false,
-            financialCenter: false,
-            supportChat: false
-          };
-          if (data.profile_photo) {
-            try {
-              const parsedPerms = JSON.parse(data.profile_photo);
-              if (parsedPerms && typeof parsedPerms === 'object') {
-                perms = { ...perms, ...parsedPerms };
-              }
-            } catch (e) {}
+      try {
+        const parsed: AdminSession = JSON.parse(saved);
+        if (parsed.role === 'Staff') {
+          const { data, error } = await supabase
+            .from('cb_staff')
+            .select('profile_photo')
+            .eq('staff_id', parsed.accountId)
+            .single();
+          if (!error && data) {
+            let perms = {
+              userManagement: true,
+              ordersInProgress: true,
+              orderTasking: false,
+              financialCenter: false,
+              supportChat: false
+            };
+            if (data.profile_photo) {
+              try {
+                const parsedPerms = JSON.parse(data.profile_photo);
+                if (parsedPerms && typeof parsedPerms === 'object') {
+                  perms = { ...perms, ...parsedPerms };
+                }
+              } catch (e) {}
+            }
+            parsed.permissions = perms;
+            localStorage.setItem('cb_admin_session', JSON.stringify(parsed));
           }
-          parsed.permissions = perms;
-          localStorage.setItem('cb_admin_session', JSON.stringify(parsed));
         }
+        setSession(parsed);
+      } catch (err) {
+        console.error("Invalid session JSON stored, clearing:", err);
+        localStorage.removeItem('cb_admin_session');
+        setSession(null);
       }
-      setSession(parsed);
     } else {
       setSession(null);
     }
@@ -443,7 +449,7 @@ export default function App() {
           session={session}
           onLogout={handleLogout}
         />
-        <main className="flex-1 overflow-hidden">
+        <main className={`flex-1 ${activeTab === 'support-chat' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
           <div className={activeTab === 'support-chat' ? "h-full w-full" : "p-8 lg:p-10 max-w-7xl mx-auto space-y-8"}>
             {renderContent()}
           </div>

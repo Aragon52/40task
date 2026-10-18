@@ -205,22 +205,32 @@ export default function Login() {
       <div className="absolute bottom-1/4 right-10 w-64 h-64 bg-indigo-600/20 rounded-full blur-[100px] animate-pulse-slow delay-1000" />
 
       {/* Language Corner */}
-      <div className="fixed top-6 right-6 z-50">
-        <div className="glass px-4 py-2 rounded-2xl flex items-center gap-2">
-          <Globe className="w-4 h-4 text-white" />
-          <LanguageSwitcher />
-        </div>
+      <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50 flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 shadow-xl text-white">
+        <Globe className="w-4 h-4 text-sky-400 shrink-0" />
+        <LanguageSwitcher />
       </div>
 
-      <div className="relative z-10 w-full max-w-md animate-in fade-in zoom-in-95 duration-700">
+      <div className="relative z-10 w-full max-w-md my-8 animate-in fade-in zoom-in-95 duration-700">
         {/* Brand Header */}
-        <div className="text-center mb-10 space-y-4">
-          <div className="inline-flex items-center gap-3 px-6 py-3 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/20 border border-blue-400/30">
-            <span className="text-2xl font-black text-white tracking-tighter italic">Walmart</span>
-            <div className="w-px h-6 bg-white/20" />
-            <ShieldCheck className="w-6 h-6 text-amber-400" />
+        <div className="text-center mb-8 space-y-3 pt-8 sm:pt-2">
+          <div className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/15">
+            <span className="font-extrabold text-2xl text-sky-400 tracking-tight italic">Walmart</span>
+            <span className="flex items-center">
+              <svg viewBox="0 0 100 100" width="20" height="20" className="shrink-0">
+                <g transform="translate(50,50)" stroke="#FFC220" strokeWidth="15" strokeLinecap="round">
+                  <line x1="0" y1="-10" x2="0" y2="-38" />
+                  <line x1="0" y1="-10" x2="0" y2="-38" transform="rotate(60)" />
+                  <line x1="0" y1="-10" x2="0" y2="-38" transform="rotate(120)" />
+                  <line x1="0" y1="-10" x2="0" y2="-38" transform="rotate(180)" />
+                  <line x1="0" y1="-10" x2="0" y2="-38" transform="rotate(240)" />
+                  <line x1="0" y1="-10" x2="0" y2="-38" transform="rotate(300)" />
+                </g>
+              </svg>
+            </span>
+            <div className="w-px h-5 bg-white/20 ml-1" />
+            <ShieldCheck className="w-5 h-5 text-amber-400" />
           </div>
-          <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] pl-1">Financial Enhancement Portal</p>
+          <p className="text-[10px] font-black text-sky-400 uppercase tracking-[0.3em]">Financial Enhancement Portal</p>
         </div>
 
         {/* Login Card */}

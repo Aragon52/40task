@@ -581,10 +581,10 @@ function AppContent() {
               <ProtectedRoute>
                 <div className="min-h-screen bg-slate-200/60 flex justify-center w-full">
                   <div className="w-full max-w-md min-h-screen bg-slate-50 shadow-2xl relative flex flex-col overflow-x-hidden">
-                    {/* Show brand Header only on Home path */}
+                    {/* Show brand Header on all pages */}
                     <ConditionalHeader theme={theme} onThemeChange={handleThemeChange} />
                     
-                    <div className="flex-1 px-4 pt-20 pb-28 space-y-6 overflow-y-auto">
+                    <div className="flex-1 px-3.5 pt-1 pb-16 space-y-3.5 overflow-y-auto">
                     <Routes>
                       <Route path="" element={<Navigate to="/home" replace />} />
                       <Route 
@@ -672,9 +672,7 @@ function AppContent() {
 }
 
 // Subcomponents to handle conditional headers and footers based on route
-function ConditionalHeader({ theme, onThemeChange }) {
-  const showHeader = window.location.hash.includes('/home');
-  if (!showHeader) return null;
+function ConditionalHeader({ theme, onThemeChange }: { theme: string; onThemeChange: (t: string) => void }) {
   return <Header currentTheme={theme} onThemeChange={onThemeChange} />;
 }
 

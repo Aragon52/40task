@@ -524,366 +524,383 @@ export default function FinancialCenter() {
                   <th>Network</th>
                   <th>Status</th>
                   <th>Submitted Date</th>
-                  <th className="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filteredDeps.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                      No deposit requests match current filters.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredDeps.map(dep => (
-                    <tr key={dep.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors">
-                      <td>
-                        <span className="font-mono text-xs font-semibold text-slate-500">{dep.id.substring(0,8)}...</span>
-                      </td>
-                      <td className="font-semibold text-slate-900 dark:text-slate-50">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 text-[10px] font-bold">
-                            {dep.username.substring(0,2).toUpperCase()}
-                          </div>
-                          {dep.username}
-                        </div>
-                      </td>
-                      <td>
-                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded text-xs font-semibold">{dep.referred_by_staff_id}</span>
-                      </td>
-                      <td>
-                        <span className="font-mono text-[13px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded border border-emerald-100 dark:border-emerald-800/50">
-                          ${dep.amount.toFixed(2)}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded border border-indigo-100 dark:border-indigo-800 text-[10px] font-bold tracking-wider">{dep.currency}</span>
-                      </td>
-                      <td>
-                        <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                          dep.status === 'Approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 
-                          dep.status === 'Rejected' ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400' : 
-                          'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
-                        }`}>
-                          {dep.status}
-                        </span>
-                      </td>
-                      <td className="text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">{dep.createdAt}</td>
-                      <td className="text-right whitespace-nowrap space-x-2">
-                        <div className="flex justify-end gap-2">
-                          <button 
-                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5"
-                            onClick={() => handleViewSlip(dep)}
-                          >
-                            <Eye className="w-3.5 h-3.5" /> Slip
-                          </button>
-                          {dep.status === 'Pending' && (
-                            <>
-                              <button 
-                                disabled={approvingId === dep.id}
-                                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95 relative z-10"
-                                onClick={() => handleApproveDeposit(dep)}
-                              >
-                                <Check className="w-3.5 h-3.5" />
-                                {approvingId === dep.id ? 'Approving...' : 'Approve'}
-                              </button>
-                              <button 
-                                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95 relative z-10"
-                                onClick={() => handleOpenRejectDeposit(dep)}
-                              >
-                                <X className="w-3.5 h-3.5" /> Reject
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
+                      <th className="text-right sticky right-0 z-20 bg-slate-50 dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 px-4 py-3">Actions</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {activeSubTab === 'withdrawals' && (
-        <div className="admin-card !p-0 overflow-hidden">
-          <div className="overflow-x-auto" style={{ overflowX: 'auto' }}>
-            <table className="admin-table w-full whitespace-nowrap">
-              <thead>
-                <tr>
-                  <th>Request ID</th>
-                  <th>Client User</th>
-                  <th>Staff Node</th>
-                  <th>Amount</th>
-                  <th>Method & Details</th>
-                  <th>Status</th>
-                  <th>Submitted Date</th>
-                  <th className="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filteredWths.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                      No payout requests match current filters.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredWths.map(wth => (
-                    <tr key={wth.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors">
-                      <td>
-                        <span className="font-mono text-xs font-semibold text-slate-500">{wth.id.substring(0,8)}...</span>
-                      </td>
-                      <td className="font-semibold text-slate-900 dark:text-slate-50">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 text-[10px] font-bold">
-                            {wth.username.substring(0,2).toUpperCase()}
-                          </div>
-                          {wth.username}
-                        </div>
-                      </td>
-                      <td>
-                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded text-xs font-semibold">{wth.referred_by_staff_id}</span>
-                      </td>
-                      <td>
-                        <span className="font-mono text-[13px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded border border-amber-100 dark:border-amber-800/50">
-                          ${wth.amount.toFixed(2)}
-                        </span>
-                      </td>
-                      <td className="space-y-1">
-                        <div className="text-xs font-bold text-slate-700 dark:text-slate-300">{wth.method}</div>
-                        <div className="font-mono text-[10px] text-slate-500 break-all max-w-[200px] whitespace-normal">{wth.account_info}</div>
-                      </td>
-                      <td>
-                        <div className="flex flex-col items-center gap-1">
-                          <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                            wth.status === 'Approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 
-                            wth.status === 'Rejected' ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400' : 
-                            'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
-                          }`}>
-                            {wth.status}
-                          </span>
-                          {wth.remark && (
-                            <span className="text-[9px] text-slate-400 max-w-[120px] text-center leading-tight whitespace-normal">
-                              * {wth.remark}
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {filteredDeps.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                          No deposit requests match current filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredDeps.map(dep => (
+                        <tr key={dep.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors">
+                          <td>
+                            <span className="font-mono text-xs font-semibold text-slate-500">{dep.id.substring(0,8)}...</span>
+                          </td>
+                          <td className="font-semibold text-slate-900 dark:text-slate-50">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 text-[10px] font-bold">
+                                {dep.username.substring(0,2).toUpperCase()}
+                              </div>
+                              {dep.username}
+                            </div>
+                          </td>
+                          <td>
+                            <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded text-xs font-semibold">{dep.referred_by_staff_id}</span>
+                          </td>
+                          <td>
+                            <span className="font-mono text-[13px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded border border-emerald-100 dark:border-emerald-800/50">
+                              ${dep.amount.toFixed(2)}
                             </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">{wth.createdAt}</td>
-                      <td className="text-right whitespace-nowrap space-x-2">
-                        <div className="flex justify-end gap-2">
-                          {wth.status === 'Pending' ? (
-                            <>
-                              <button 
-                                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95 relative z-10"
-                                onClick={() => handleApproveWithdrawal(wth)}
-                              >
-                                <Check className="w-3.5 h-3.5" /> Approve
-                              </button>
-                              <button 
-                                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95 relative z-10"
-                                onClick={() => handleOpenRejectWithdrawal(wth)}
-                              >
-                                <X className="w-3.5 h-3.5" /> Reject
-                              </button>
-                            </>
-                          ) : (
-                            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
-                              Locked
+                          </td>
+                          <td>
+                            <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded border border-indigo-100 dark:border-indigo-800 text-[10px] font-bold tracking-wider">{dep.currency}</span>
+                          </td>
+                          <td>
+                            <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                              dep.status === 'Approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 
+                              dep.status === 'Rejected' ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400' : 
+                              'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
+                            }`}>
+                              {dep.status}
                             </span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {activeSubTab === 'settings' && (
-        <div className="admin-card max-w-2xl">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-              <Briefcase className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 dark:text-slate-50 text-lg">Payment Node Gateway Settings</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Configure system-wide payment receiving details</p>
-            </div>
-          </div>
-          
-          <form onSubmit={handleSaveSettings} className="space-y-5">
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">USDT Wallet Receive Address (TRC20)</label>
-              <input 
-                type="text" 
-                value={editAddress}
-                onChange={(e) => setEditAddress(e.target.value)}
-                disabled={session.role === 'Staff'}
-                required
-                className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-600 outline-none transition-all disabled:opacity-60"
-                placeholder="e.g. TY3N9dSk8sHDKsi8s..."
-              />
-            </div>
-            
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">QR Code Image URL (Optional)</label>
-              <input 
-                type="text" 
-                value={editQrCode}
-                onChange={(e) => setEditQrCode(e.target.value)}
-                disabled={session.role === 'Staff'}
-                className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-600 outline-none transition-all disabled:opacity-60"
-                placeholder="e.g. https://domain.com/receipt-qr.png"
-              />
-            </div>
-
-            {session.role !== 'Staff' ? (
-              <button 
-                type="submit" 
-                className="w-full sm:w-auto mt-4 px-6 h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-[0.98]"
-              >
-                <Check className="w-4 h-4" />
-                Save Payment Configuration
-              </button>
-            ) : (
-              <div className="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-start gap-3 text-slate-500 dark:text-slate-400 text-sm">
-                <Info className="w-5 h-5 text-indigo-400 flex-shrink-0" />
-                <p>Staff nodes are not authorized to modify payment gateway settings. Please contact the main administrator.</p>
+                          </td>
+                          <td className="text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">{dep.createdAt}</td>
+                          <td className="text-right whitespace-nowrap space-x-2 sticky right-0 z-10 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 px-4 py-3 shadow-xs">
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+                                onClick={() => handleViewSlip(dep)}
+                              >
+                                <Eye className="w-3.5 h-3.5" /> Slip
+                              </button>
+                              {dep.status === 'Pending' && (
+                                <>
+                                  <button 
+                                    disabled={approvingId === dep.id}
+                                    className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95 relative z-10"
+                                    onClick={() => handleApproveDeposit(dep)}
+                                  >
+                                    <Check className="w-3.5 h-3.5" />
+                                    {approvingId === dep.id ? 'Approving...' : 'Approve'}
+                                  </button>
+                                  <button 
+                                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95 relative z-10"
+                                    onClick={() => handleOpenRejectDeposit(dep)}
+                                  >
+                                    <X className="w-3.5 h-3.5" /> Reject
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
-            )}
-          </form>
-        </div>
-      )}
+            </div>
+          )}
 
-      {/* Modal overlays */}
-      {actionType === 'view_slip' && selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-6 transition-all">
-          <div className="admin-card w-full max-w-2xl !p-0 overflow-hidden flex flex-col shadow-2xl rounded-2xl border border-slate-100 dark:border-slate-800">
-            <div className="p-5 md:p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100/50 dark:border-indigo-900/20 shadow-sm">
-                  <Eye className="w-5 h-5" />
+          {activeSubTab === 'withdrawals' && (
+            <div className="admin-card !p-0 overflow-hidden">
+              <div className="overflow-x-auto" style={{ overflowX: 'auto' }}>
+                <table className="admin-table w-full whitespace-nowrap">
+                  <thead>
+                    <tr>
+                      <th>Request ID</th>
+                      <th>Client User</th>
+                      <th>Staff Node</th>
+                      <th>Amount</th>
+                      <th>Method & Details</th>
+                      <th>Status</th>
+                      <th>Submitted Date</th>
+                      <th className="text-right sticky right-0 z-20 bg-slate-50 dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 px-4 py-3">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {filteredWths.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                          No payout requests match current filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredWths.map(wth => (
+                        <tr key={wth.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors">
+                          <td>
+                            <span className="font-mono text-xs font-semibold text-slate-500">{wth.id.substring(0,8)}...</span>
+                          </td>
+                          <td className="font-semibold text-slate-900 dark:text-slate-50">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 text-[10px] font-bold">
+                                {wth.username.substring(0,2).toUpperCase()}
+                              </div>
+                              {wth.username}
+                            </div>
+                          </td>
+                          <td>
+                            <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded text-xs font-semibold">{wth.referred_by_staff_id}</span>
+                          </td>
+                          <td>
+                            <span className="font-mono text-[13px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded border border-amber-100 dark:border-amber-800/50">
+                              ${wth.amount.toFixed(2)}
+                            </span>
+                          </td>
+                          <td className="space-y-1">
+                            <div className="text-xs font-bold text-slate-700 dark:text-slate-300">{wth.method}</div>
+                            <div className="font-mono text-[10px] text-slate-500 break-all max-w-[200px] whitespace-normal">{wth.account_info}</div>
+                          </td>
+                          <td>
+                            <div className="flex flex-col items-center gap-1">
+                              <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                                wth.status === 'Approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 
+                                wth.status === 'Rejected' ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400' : 
+                                'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
+                              }`}>
+                                {wth.status}
+                              </span>
+                              {wth.remark && (
+                                <span className="text-[9px] text-slate-400 max-w-[120px] text-center leading-tight whitespace-normal">
+                                  * {wth.remark}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">{wth.createdAt}</td>
+                          <td className="text-right whitespace-nowrap space-x-2 sticky right-0 z-10 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 px-4 py-3 shadow-xs">
+                            <div className="flex justify-end gap-2">
+                              {wth.status === 'Pending' ? (
+                                <>
+                                  <button 
+                                    className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95 relative z-10"
+                                    onClick={() => handleApproveWithdrawal(wth)}
+                                  >
+                                    <Check className="w-3.5 h-3.5" /> Approve
+                                  </button>
+                                  <button 
+                                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95 relative z-10"
+                                    onClick={() => handleOpenRejectWithdrawal(wth)}
+                                  >
+                                    <X className="w-3.5 h-3.5" /> Reject
+                                  </button>
+                                </>
+                              ) : (
+                                <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                                  Locked
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeSubTab === 'settings' && (
+            <div className="admin-card max-w-2xl">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  <Briefcase className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white text-base">Receipt Preview</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Slip reference: <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-500 dark:text-slate-300">#{selectedItem.id.substring(0,8)}</span></p>
+                  <h3 className="font-bold text-slate-900 dark:text-slate-50 text-lg">Payment Node Gateway Settings</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Configure system-wide payment receiving details</p>
                 </div>
               </div>
-              <button 
-                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 transition-colors"
-                onClick={() => { setSelectedItem(null); setActionType(''); }}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-6 bg-slate-50/50 dark:bg-slate-950/30 flex flex-col items-center gap-5">
-              <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm text-xs">
-                <span className="text-slate-500 font-medium">Uploaded File:</span>
-                <span className="font-mono font-bold text-slate-700 dark:text-slate-300 truncate max-w-[280px]" title={selectedItem.screenshotName}>
-                  {selectedItem.screenshotName}
-                </span>
-              </div>
               
-              <div className="w-full relative h-[380px] overflow-auto flex items-center justify-center bg-slate-100 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 transition-all">
-                {/* Visual grid checkerboard overlay for checking transparent image assets easily */}
-                <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #000 10%, transparent 11%)', backgroundSize: '16px 16px' }} />
-                
-                <img 
-                  src={selectedItem.screenshotUrl} 
-                  alt="Receipt Slip" 
-                  style={{ 
-                    transform: `scale(${imageZoom})`,
-                    transformOrigin: 'center center',
-                    transition: 'transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)'
-                  }}
-                  className="max-h-full rounded-lg object-contain shadow-md transition-transform z-10"
-                />
-              </div>
-              
-              <div className="w-full flex items-center justify-between gap-4 bg-white dark:bg-slate-900 px-5 py-3 rounded-xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Search className="w-4 h-4" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Zoom Control</span>
-                </div>
-                <div className="flex items-center gap-3">
+              <form onSubmit={handleSaveSettings} className="space-y-5">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">USDT Wallet Receive Address (TRC20)</label>
                   <input 
-                    type="range" 
-                    min="1" 
-                    max="5" 
-                    step="0.1" 
-                    value={imageZoom} 
-                    onChange={(e) => setImageZoom(parseFloat(e.target.value))} 
-                    className="w-32 sm:w-44 accent-indigo-500 cursor-pointer h-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none"
+                    type="text" 
+                    value={editAddress}
+                    onChange={(e) => setEditAddress(e.target.value)}
+                    disabled={session.role === 'Staff'}
+                    required
+                    className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-600 outline-none transition-all disabled:opacity-60"
+                    placeholder="e.g. TY3N9dSk8sHDKsi8s..."
                   />
-                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300 font-mono w-10 text-right">{imageZoom.toFixed(1)}x</span>
+                </div>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">QR Code Image URL (Optional)</label>
+                  <input 
+                    type="text" 
+                    value={editQrCode}
+                    onChange={(e) => setEditQrCode(e.target.value)}
+                    disabled={session.role === 'Staff'}
+                    className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-600 outline-none transition-all disabled:opacity-60"
+                    placeholder="e.g. https://domain.com/receipt-qr.png"
+                  />
+                </div>
+
+                {session.role !== 'Staff' ? (
+                  <button 
+                    type="submit" 
+                    className="w-full sm:w-auto mt-4 px-6 h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-[0.98]"
+                  >
+                    <Check className="w-4 h-4" />
+                    Save Payment Configuration
+                  </button>
+                ) : (
+                  <div className="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-start gap-3 text-slate-500 dark:text-slate-400 text-sm">
+                    <Info className="w-5 h-5 text-indigo-400 flex-shrink-0" />
+                    <p>Staff nodes are not authorized to modify payment gateway settings. Please contact the main administrator.</p>
+                  </div>
+                )}
+              </form>
+            </div>
+          )}
+
+          {/* Slide-over sheet overlays */}
+          {actionType === 'view_slip' && selectedItem && (
+            <div className="fixed inset-0 z-[100] flex justify-end bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
+              <div className="w-full max-w-xl h-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col border-l border-slate-200 dark:border-slate-800 animate-in slide-in-from-right duration-300 overflow-y-auto">
+                <div className="p-5 md:p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100/50 dark:border-indigo-900/20 shadow-xs">
+                      <Eye className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900 dark:text-white text-base">Receipt Slip Details</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Reference ID: <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-600 dark:text-slate-300">#{selectedItem.id.substring(0,8)}</span></p>
+                    </div>
+                  </div>
+                  <button 
+                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 transition-colors cursor-pointer"
+                    onClick={() => { setSelectedItem(null); setActionType(''); }}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="p-6 bg-slate-50/50 dark:bg-slate-950/30 flex-1 flex flex-col items-center gap-5 overflow-y-auto">
+                  <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs text-xs">
+                    <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Uploaded Slip File:</span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate max-w-[280px]" title={selectedItem.screenshotName}>
+                      {selectedItem.screenshotName || 'receipt_slip.png'}
+                    </span>
+                  </div>
+                  
+                  <div className="w-full relative min-h-[360px] max-h-[500px] overflow-auto flex items-center justify-center bg-slate-100 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-inner">
+                    <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #000 10%, transparent 11%)', backgroundSize: '16px 16px' }} />
+                    
+                    <img 
+                      src={selectedItem.screenshotUrl} 
+                      alt="Receipt Slip" 
+                      style={{ 
+                        transform: `scale(${imageZoom})`,
+                        transformOrigin: 'center center',
+                        transition: 'transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)'
+                      }}
+                      className="max-h-full max-w-full rounded-lg object-contain shadow-lg transition-transform z-10"
+                    />
+                  </div>
+                  
+                  <div className="w-full flex items-center justify-between gap-4 bg-white dark:bg-slate-900 px-5 py-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <Search className="w-4 h-4 text-indigo-500" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Zoom Control</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="range" 
+                        min="1" 
+                        max="5" 
+                        step="0.1" 
+                        value={imageZoom} 
+                        onChange={(e) => setImageZoom(parseFloat(e.target.value))} 
+                        className="w-32 sm:w-44 accent-indigo-600 cursor-pointer h-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none"
+                      />
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 font-mono w-10 text-right">{imageZoom.toFixed(1)}x</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-end sticky bottom-0 z-10">
+                  <button 
+                    className="px-6 h-11 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm rounded-xl transition-colors shadow-xs cursor-pointer"
+                    onClick={() => { setSelectedItem(null); setActionType(''); }}
+                  >
+                    Close Preview
+                  </button>
                 </div>
               </div>
             </div>
-            
-            <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex justify-end">
-              <button 
-                className="px-5 h-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm rounded-xl transition-colors shadow-sm"
-                onClick={() => { setSelectedItem(null); setActionType(''); }}
-              >
-                Close Preview
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {(actionType === 'reject_deposit' || actionType === 'reject_withdrawal') && selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="admin-card w-full max-w-lg !p-0 overflow-hidden flex flex-col shadow-2xl">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 dark:text-slate-50 text-lg flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-rose-500" />
-                Reject Request
-              </h3>
-              <button 
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 transition-colors"
-                onClick={() => { setSelectedItem(null); setActionType(''); }}
-              >
-                <X className="w-4 h-4" />
-              </button>
+          {(actionType === 'reject_deposit' || actionType === 'reject_withdrawal') && selectedItem && (
+            <div className="fixed inset-0 z-[100] flex justify-end bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
+              <div className="w-full max-w-lg h-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col border-l border-slate-200 dark:border-slate-800 animate-in slide-in-from-right duration-300 overflow-y-auto">
+                <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10">
+                  <h3 className="font-bold text-slate-900 dark:text-slate-50 text-lg flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-rose-500" />
+                    Reject {actionType === 'reject_deposit' ? 'Deposit' : 'Withdrawal'} Request
+                  </h3>
+                  <button 
+                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 transition-colors cursor-pointer"
+                    onClick={() => { setSelectedItem(null); setActionType(''); }}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="p-6 flex-1 flex flex-col justify-between space-y-6">
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-2xl bg-rose-50/80 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/40 text-rose-900 dark:text-rose-200 text-sm">
+                      <p className="font-semibold mb-1">Confirm Request Rejection</p>
+                      <p className="text-xs text-rose-700 dark:text-rose-300 leading-relaxed">
+                        You are about to reject the {actionType === 'reject_deposit' ? 'deposit' : 'payout'} request of <b className="font-mono text-rose-600 dark:text-rose-400">${selectedItem.amount.toFixed(2)}</b> submitted by user <b className="font-bold">{selectedItem.username}</b>.
+                      </p>
+                      {actionType === 'reject_withdrawal' && (
+                        <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-2 font-medium">
+                          * Rejecting this withdrawal will automatically refund ${selectedItem.amount.toFixed(2)} back to the client's balance.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Rejection Remark / Reason</label>
+                      <textarea 
+                        className="w-full h-32 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-rose-500 outline-none transition-all resize-none shadow-xs"
+                        placeholder="e.g. Invalid receipt slip, unverified transaction reference, or incorrect network details..."
+                        value={rejectRemark}
+                        onChange={(e) => setRejectRemark(e.target.value)}
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3 sticky bottom-0 bg-white dark:bg-slate-900 pb-2">
+                    <button 
+                      type="button"
+                      className="px-5 h-11 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-sm rounded-xl transition-colors cursor-pointer"
+                      onClick={() => { setSelectedItem(null); setActionType(''); }}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="button"
+                      className="px-6 h-11 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-[0.98] cursor-pointer flex items-center gap-2"
+                      onClick={actionType === 'reject_deposit' ? handleConfirmRejectDeposit : handleConfirmRejectWithdrawal}
+                    >
+                      <X className="w-4 h-4" />
+                      Confirm Rejection
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-            
-            <div className="p-6">
-              <p className="text-sm text-slate-700 dark:text-slate-300 mb-4 leading-relaxed">
-                Provide a reason for rejecting the request of <b className="text-rose-600 dark:text-rose-400 font-mono">${selectedItem.amount.toFixed(2)}</b> for user <b className="font-semibold">{selectedItem.username}</b>:
-              </p>
-              <textarea 
-                className="w-full h-24 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-rose-500 outline-none transition-all resize-none"
-                placeholder="e.g. Invalid transaction receipt, incorrect network..."
-                value={rejectRemark}
-                onChange={(e) => setRejectRemark(e.target.value)}
-              />
-            </div>
-            
-            <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex justify-end gap-3">
-              <button 
-                className="px-5 h-10 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-sm rounded-xl transition-colors"
-                onClick={() => { setSelectedItem(null); setActionType(''); }}
-              >
-                Cancel
-              </button>
-              <button 
-                className="px-5 h-10 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-[0.98]"
-                onClick={actionType === 'reject_deposit' ? handleConfirmRejectDeposit : handleConfirmRejectWithdrawal}
-              >
-                Confirm Rejection
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
 
     </div>
   );

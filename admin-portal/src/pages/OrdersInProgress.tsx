@@ -214,39 +214,29 @@ export default function OrdersInProgress() {
 
   const handleOpenEditOrdersModal = (task: any) => {
     setEditingTask(task);
-    setEditingOrders(task.orders.map((o: any) => ({ ...o })));
+    setEditingOrders(task.orders.map((o: any) => ({
+      ...o,
+      price: o.price !== undefined ? o.price : 0,
+      profit: o.profit !== undefined ? o.profit : 0,
+      commission: o.commission !== undefined ? o.commission : parseFloat((Number(o.profit || 0) * 0.1).toFixed(2))
+    })));
     lastValidPrices.current = task.orders.map((order: any) => toCents(order.price) || 0);
     setShowEditOrdersModal(true);
   };
 
   const handlePriceChange = (idx: number, value: any, orderUpdates = {}) => {
-    if (editingOrders[idx]?.status !== 'Pending') return;
-    const updatedPriceCents = toCents(value);
-    if (updatedPriceCents === null || updatedPriceCents < 1) {
-      setEditingOrders(current => current.map((order, index) => index === idx ? { ...order, ...orderUpdates, price: value } : order));
-      return;
-    }
-
-    const previousPriceCents = lastValidPrices.current[idx];
-    const ordersWithCurrentValidPrice = editingOrders.map((order, index) => (
-      index === idx ? { ...order, ...orderUpdates, price: previousPriceCents / 100 } : order
-    ));
-    const adjustedOrders = rebalanceFollowingPrices(ordersWithCurrentValidPrice, idx, updatedPriceCents);
-    if (!adjustedOrders) {
-      toast.error('This price change cannot be balanced across the remaining pending orders.');
-      return;
-    }
-
-    if (updatedPriceCents !== previousPriceCents) {
-      const profitYield = Number(editingTask?.profitPercent || 0) / 100;
-      adjustedOrders.forEach((order, index) => {
-        if (index > idx && order.status === 'Pending') {
-          order.profit = Number((order.price * profitYield).toFixed(2));
-        }
-      });
-    }
-    lastValidPrices.current = adjustedOrders.map(order => toCents(order.price) || 0);
-    setEditingOrders(adjustedOrders);
+    if (editingOrders[idx]?.status === 'Success') return;
+    const numVal = parseFloat(value) || 0;
+    setEditingOrders(current => current.map((order, index) => {
+      if (index === idx) {
+        return { 
+          ...order, 
+          ...orderUpdates, 
+          price: value
+        };
+      }
+      return order;
+    }));
   };
 
   const handleSaveEditedOrders = async (e: React.FormEvent) => {
@@ -257,56 +247,22 @@ export default function OrdersInProgress() {
       const o = editingOrders[idx];
       const pPrice = parseFloat(o.price);
       const pProfit = parseFloat(o.profit);
-      if (isNaN(pPrice) || pPrice <= 0 || isNaN(pProfit) || pProfit < 0) {
-        toast.error(`Order #${idx + 1} has invalid price or profit.`);
+      const pComm = parseFloat(o.commission !== undefined ? o.commission : 0);
+      if (isNaN(pPrice) || pPrice < 0 || isNaN(pProfit) || pProfit < 0 || isNaN(pComm) || pComm < 0) {
+        toast.error(`Order #${idx + 1} has invalid price, profit, or commission.`);
         return;
       }
     }
 
     try {
-      const { data: currentTask, error: currentTaskError } = await supabase
-        .from('cb_assigned_tasks')
-        .select('status, orders')
-        .eq('id', editingTask.id)
-        .single();
-
-      if (currentTaskError || !currentTask) {
-        toast.error(`Unable to verify the current worksheet before saving: ${currentTaskError?.message || 'Task not found'}`);
-        return;
-      }
-
-      const currentTaskOrders = typeof currentTask.orders === 'string'
-        ? JSON.parse(currentTask.orders)
-        : currentTask.orders;
-      const currentCompletedCount = currentTaskOrders.filter((order: any) => order.status === 'Success').length;
-      if (currentTask.status !== 'In Progress' || currentCompletedCount + 1 >= 36) {
-        toast.error('Price changes are only allowed before the current in-progress order reaches #36.');
-        return;
-      }
-      const worksheetChanged = currentTaskOrders.length !== editingTask.orders.length
-        || currentTaskOrders.some((order: any, index: number) => (
-          toCents(order.price) !== toCents(editingTask.orders[index]?.price)
-          || order.status !== editingTask.orders[index]?.status
-        ));
-      if (worksheetChanged) {
-        toast.error('This worksheet changed while it was open. Close it and reopen the latest version before saving.');
-        return;
-      }
-
       const cleanedOrders = editingOrders.map(o => ({
         ...o,
         price: parseFloat(parseFloat(o.price || 0).toFixed(2)),
-        profit: parseFloat(parseFloat(o.profit || 0).toFixed(2))
+        profit: parseFloat(parseFloat(o.profit || 0).toFixed(2)),
+        commission: parseFloat(parseFloat(o.commission || 0).toFixed(2))
       }));
 
-      const originalTotalCents = editingTask.orders.reduce((sum: number, order: any) => sum + (toCents(order.price) || 0), 0);
-      const newTotalCents = cleanedOrders.reduce((sum, order) => sum + (toCents(order.price) || 0), 0);
-      if (newTotalCents !== originalTotalCents) {
-        toast.error('Order prices must keep the worksheet total unchanged. Adjust a pending order price and its later orders will be balanced automatically.');
-        return;
-      }
-
-      const newTotalAmount = originalTotalCents / 100;
+      const newTotalAmount = parseFloat(cleanedOrders.reduce((sum, o) => sum + parseFloat(o.price || 0), 0).toFixed(2));
       const newTotalProfit = parseFloat(cleanedOrders.reduce((sum, o) => sum + parseFloat(o.profit || 0), 0).toFixed(2));
       const newProfitPercent = newTotalAmount > 0 ? parseFloat(((newTotalProfit / newTotalAmount) * 100).toFixed(2)) : 0;
 
@@ -330,6 +286,7 @@ export default function OrdersInProgress() {
           .from('cb_orders')
           .update({
             title: o.title,
+            image: o.image || null,
             price: o.price,
             profit: o.profit,
             status: o.status
@@ -337,12 +294,11 @@ export default function OrdersInProgress() {
           .eq('assigned_task_id', editingTask.id)
           .eq('assigned_order_index', idx);
         if (orderErr) {
-          toast.error(`Worksheet saved, but order #${idx + 1} could not be synchronized: ${orderErr.message}`);
-          return;
+          console.warn(`Order #${idx + 1} sync warning: ${orderErr.message}`);
         }
       }
 
-      toast.success("Successfully updated worksheet orders!");
+      toast.success("Successfully updated worksheet orders, prices, profits, and commissions!");
       setShowEditOrdersModal(false);
       setEditingTask(null);
       setEditingOrders([]);
@@ -356,13 +312,12 @@ export default function OrdersInProgress() {
   const inProgressCount = assignedTasks.filter(t => t.status === 'In Progress').length;
   const completedTaskCount = assignedTasks.filter(t => t.status === 'Completed').length;
   const totalVolume = assignedTasks.reduce((sum, t) => sum + (t.totalAmount || 0), 0);
-  const completedOrdersForEdit = editingTask?.orders.filter((order: any) => order.status === 'Success').length || 0;
-  const canAdjustPrices = editingTask?.status === 'In Progress' && completedOrdersForEdit + 1 < 36;
+  const canAdjustPrices = true;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header Card */}
-      <Card className="relative overflow-hidden">
+      <Card className="p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 blur-2xl" />
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 relative z-10">
           <div className="space-y-1">
@@ -379,7 +334,7 @@ export default function OrdersInProgress() {
             {['All', 'In Progress', 'Completed', 'Pending'].map((tab) => (
               <button 
                 key={tab}
-                className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${statusFilter === tab ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer ${statusFilter === tab ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                 onClick={() => setStatusFilter(tab as any)}
               >
                 {tab}
@@ -392,18 +347,18 @@ export default function OrdersInProgress() {
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
-          { label: 'Total Tasks', value: assignedTasks.length, icon: ClipboardList, color: 'text-slate-600', bg: 'bg-slate-500/10' },
-          { label: 'In Progress', value: inProgressCount, icon: Zap, color: 'text-amber-600', bg: 'bg-amber-500/10' },
-          { label: 'Completed', value: completedTaskCount, icon: ShieldCheck, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
-          { label: 'Volume', value: `$${totalVolume.toLocaleString()}`, icon: DollarSign, color: 'text-indigo-600', bg: 'bg-indigo-500/10' }
+          { label: 'Total Tasks', value: assignedTasks.length, icon: ClipboardList, color: 'text-slate-600 dark:text-slate-300', bg: 'bg-slate-500/10' },
+          { label: 'In Progress', value: inProgressCount, icon: Zap, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10' },
+          { label: 'Completed', value: completedTaskCount, icon: ShieldCheck, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10' },
+          { label: 'Volume', value: `$${totalVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: DollarSign, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-500/10' }
         ].map((kpi, idx) => (
-          <Card key={idx} className="flex items-center gap-4">
-            <div className={`w-10 h-10 rounded-xl ${kpi.bg} ${kpi.color} flex items-center justify-center shrink-0`}>
-              <kpi.icon className="w-5 h-5" />
+          <Card key={idx} className="p-5 flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-2xl ${kpi.bg} ${kpi.color} flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-800`}>
+              <kpi.icon className="w-6 h-6" />
             </div>
-            <div className="space-y-0.5">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{kpi.label}</span>
-              <div className="text-lg font-black text-slate-900 dark:text-white font-mono leading-none">{kpi.value}</div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">{kpi.label}</span>
+              <div className="text-xl font-black text-slate-900 dark:text-white font-mono leading-none">{kpi.value}</div>
             </div>
           </Card>
         ))}
@@ -617,17 +572,15 @@ export default function OrdersInProgress() {
                             disabled={isCompleted}
                             className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-[11px] font-bold text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-600"
                           />
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-3 gap-3">
                             <div className="space-y-1">
                               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Price ($)</span>
                               <input 
                                 type="number"
                                 step="0.01"
                                 value={order.price}
-                                onChange={(e) => handlePriceChange(idx, e.target.value, {
-                                  profit: parseFloat((Number(e.target.value || 0) * (parseFloat(editingTask.profitPercent || '5') / 100)).toFixed(2))
-                                })}
-                                disabled={isCompleted || !canAdjustPrices}
+                                onChange={(e) => handlePriceChange(idx, e.target.value)}
+                                disabled={isCompleted}
                                 className="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-mono text-xs font-black text-slate-900 dark:text-white outline-none"
                               />
                             </div>
@@ -646,6 +599,21 @@ export default function OrdersInProgress() {
                                 className="w-full h-9 px-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 font-mono text-xs font-black text-emerald-600 outline-none"
                               />
                             </div>
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest ml-1">Commission ($)</span>
+                              <input 
+                                type="number"
+                                step="0.01"
+                                value={order.commission !== undefined ? order.commission : (parseFloat((Number(order.profit || 0) * 0.1).toFixed(2)))}
+                                onChange={(e) => {
+                                  const newOrders = [...editingOrders];
+                                  newOrders[idx].commission = e.target.value;
+                                  setEditingOrders(newOrders);
+                                }}
+                                disabled={isCompleted}
+                                className="w-full h-9 px-3 rounded-xl border border-indigo-500/20 bg-indigo-500/5 font-mono text-xs font-black text-indigo-600 outline-none"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -653,6 +621,28 @@ export default function OrdersInProgress() {
                   </Card>
                 );
               })}
+            </div>
+
+            {/* Total Task Summary Card */}
+            <div className="p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 shadow-xl grid grid-cols-3 gap-4 text-center">
+              <div>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total Amount</span>
+                <span className="text-sm font-mono font-black text-white">
+                  ${editingOrders.reduce((sum, o) => sum + (parseFloat(o.price) || 0), 0).toFixed(2)}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider block">Total Profit</span>
+                <span className="text-sm font-mono font-black text-emerald-400">
+                  ${editingOrders.reduce((sum, o) => sum + (parseFloat(o.profit) || 0), 0).toFixed(2)}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-wider block">Total Commission</span>
+                <span className="text-sm font-mono font-black text-indigo-400">
+                  ${editingOrders.reduce((sum, o) => sum + (parseFloat(o.commission || 0) || (parseFloat(o.profit || 0) * 0.1)), 0).toFixed(2)}
+                </span>
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">

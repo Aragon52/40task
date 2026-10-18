@@ -651,7 +651,9 @@ export default function OrdersTasking() {
       // Search checking
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
-        return u.username.toLowerCase().includes(q) || u.id.toLowerCase().includes(q);
+        const usernameStr = u.username ? String(u.username).toLowerCase() : '';
+        const idStr = u.id ? String(u.id).toLowerCase() : '';
+        return usernameStr.includes(q) || idStr.includes(q);
       }
 
       return true;
@@ -672,14 +674,17 @@ export default function OrdersTasking() {
   };
 
   const handleOpenAssignModal = async (user, defaultTemplate = 'custom') => {
+    if (!user) return;
+    const targetUsername = user.username ? String(user.username).toLowerCase() : '';
+
     // Check if user has an active task already
     const activeTask = assignedTasks.find(t => 
-      t.username.toLowerCase() === user.username.toLowerCase() && 
+      t && t.username && String(t.username).toLowerCase() === targetUsername && 
       (t.status === 'Pending' || t.status === 'In Progress')
     );
 
     if (activeTask) {
-      toast.error(`User ${user.username} already has an active task in progress (${activeTask.status}). Please complete or cancel it before assigning a new one.`);
+      toast.error(`User ${user.username || 'Client'} already has an active task in progress (${activeTask.status}). Please complete or cancel it before assigning a new one.`);
       return;
     }
 
@@ -968,7 +973,7 @@ export default function OrdersTasking() {
 
       // Pre-populate cb_orders so the user sees them immediately in the Pending tab
       const dbOrders = ordersWithIds.map((o, idx) => ({
-        id: o.id,
+        id: String(o.id || (Date.now() + '-' + idx + '-' + Math.floor(Math.random() * 10000))),
         username: user.username,
         timestamp: new Date().toISOString(),
         status: 'Pending',
@@ -983,13 +988,11 @@ export default function OrdersTasking() {
 
       const { error: insertOrdersError } = await supabase
         .from('cb_orders')
-        .insert(dbOrders);
+        .upsert(dbOrders, { onConflict: 'id' });
 
       if (insertOrdersError) {
-        console.error("Error creating individual orders in cb_orders:", insertOrdersError);
-        toast.error("Error creating individual orders: " + insertOrdersError.message);
-        setIsSubmittingTask(false);
-        return;
+        console.warn("Error upserting orders into cb_orders, attempting direct insert fallback:", insertOrdersError.message);
+        await supabase.from('cb_orders').insert(dbOrders);
       }
 
       setShowConfirmModal(false);

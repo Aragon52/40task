@@ -22,7 +22,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 
-const ITEM_HEIGHT = 140; // Pixel height of each item in the slot reel
+const ITEM_HEIGHT = 165; // Pixel height of each item in the slot reel
 
 const toMoneyAmount = (value: any) => {
   const parsed = Number.parseFloat(String(value ?? '').replace(/[$,\s]/g, ''));
