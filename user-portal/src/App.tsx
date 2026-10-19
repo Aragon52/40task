@@ -579,12 +579,12 @@ function AppContent() {
             path="/*"
             element={
               <ProtectedRoute>
-                <div className="min-h-screen bg-slate-200/60 flex justify-center w-full">
-                  <div className="w-full max-w-md min-h-screen bg-slate-50 shadow-2xl relative flex flex-col overflow-x-hidden">
+                <div className="min-h-screen bg-slate-200/60 dark:bg-slate-950 flex justify-center items-start w-full sm:py-6">
+                  <div className="w-full max-w-md min-h-screen sm:min-h-[calc(100vh-3rem)] bg-slate-50 dark:bg-slate-900 shadow-2xl sm:rounded-2xl relative flex flex-col overflow-x-hidden border border-slate-200/60 dark:border-slate-800/80">
                     {/* Show brand Header on all pages */}
                     <ConditionalHeader theme={theme} onThemeChange={handleThemeChange} />
                     
-                    <div className="flex-1 px-3.5 pt-1 pb-16 space-y-3.5 overflow-y-auto">
+                    <div className="flex-1 px-3.5 pt-2 pb-16 space-y-3.5 overflow-y-auto">
                     <Routes>
                       <Route path="" element={<Navigate to="/home" replace />} />
                       <Route 

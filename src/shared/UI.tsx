@@ -63,9 +63,11 @@ export const Button: React.FC<ButtonProps> = ({
 
 // --- Card ---
 export const Card: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ children, className = '', ...props }) => {
+  const hasExplicitPadding = className.includes('p-') || className.includes('px-') || className.includes('py-');
+  const basePadding = hasExplicitPadding ? '' : 'p-6';
   return (
     <div 
-      className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden ${className}`} 
+      className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs overflow-hidden ${basePadding} ${className}`} 
       {...props}
     >
       {children}
@@ -92,7 +94,7 @@ export const Badge: React.FC<BadgeProps> = ({ children, variant = 'neutral', cla
   };
 
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${variants[variant as keyof typeof variants] || variants.neutral} ${className}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${variants[variant as keyof typeof variants] || variants.neutral} ${className}`}>
       {children}
     </span>
   );
@@ -112,12 +114,12 @@ export const Input: React.FC<InputProps> = ({ label, error, icon, helperText, cl
       {label && <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{label}</label>}
       <div className="relative group">
         {icon && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
             {icon}
           </div>
         )}
         <input 
-          className={`h-12 w-full ${icon ? 'pl-11' : 'px-4'} pr-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${error ? 'border-rose-500' : ''} ${className}`}
+          className={`h-12 w-full ${icon ? 'pl-11' : 'px-4'} pr-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm outline-none ${error ? 'border-rose-500' : ''} ${className}`}
           {...props}
         />
       </div>
@@ -148,7 +150,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative w-full ${sizes[size]} bg-white dark:bg-slate-950 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200`}>
+      <div className={`relative w-full ${sizes[size]} bg-white dark:bg-slate-950 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 fade-in duration-200`}>
         {title && (
           <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <h3 className="font-bold text-lg text-slate-900 dark:text-white">{title}</h3>

@@ -281,22 +281,20 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
           display: flex;
           flex-direction: column;
           background-color: var(--bg-app);
-          min-height: 100vh;
-          padding-bottom: 80px;
+          width: 100%;
+          padding-bottom: 24px;
         }
 
         .orders-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          height: 60px;
-          padding: 0 16px;
+          height: 48px;
+          padding: 0 12px;
           background-color: var(--bg-nav);
           border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-          position: sticky;
-          top: 0;
-          z-index: 40;
-          backdrop-filter: blur(12px);
+          border-radius: 12px;
+          margin-bottom: 12px;
         }
 
         .header-back-btn, .orders-chat-btn {

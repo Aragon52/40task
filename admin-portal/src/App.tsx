@@ -428,7 +428,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex overflow-hidden font-sans antialiased text-slate-900 dark:text-slate-100">
+    <div className="h-screen h-dvh w-screen w-full bg-slate-100 dark:bg-slate-950 flex overflow-hidden font-sans antialiased text-slate-900 dark:text-slate-100">
       <DevPortalSwitcher currentPortal="admin" />
       <Toaster position="top-center" reverseOrder={false} />
       <Sidebar 
@@ -441,7 +441,7 @@ export default function App() {
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
       
-      <div className="admin-main flex-1 flex flex-col overflow-hidden min-w-0">
+      <div className="admin-main flex-1 flex flex-col h-full min-w-0 min-h-0 overflow-hidden">
         <Navbar 
           activeLabel={getActiveTabLabel()} 
           onToggleSidebar={toggleSidebar}
@@ -449,8 +449,8 @@ export default function App() {
           session={session}
           onLogout={handleLogout}
         />
-        <main className={`flex-1 ${activeTab === 'support-chat' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-          <div className={activeTab === 'support-chat' ? "h-full w-full" : "p-8 lg:p-10 max-w-7xl mx-auto space-y-8"}>
+        <main className={`flex-1 min-h-0 ${activeTab === 'support-chat' ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'}`}>
+          <div className={activeTab === 'support-chat' ? "h-full w-full" : "p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6"}>
             {renderContent()}
           </div>
         </main>

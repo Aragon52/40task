@@ -23,7 +23,7 @@ import {
   Globe,
   Info
 } from 'lucide-react';
-import { Button, Card, Input, Badge } from '@/src/shared/UI';
+import { Button, Card, Input, Badge } from '../shared/UI';
 
 export default function Settings() {
   const [session, setSession] = useState<any>(null);
@@ -214,7 +214,7 @@ export default function Settings() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Profile Card */}
-        <Card className="space-y-6">
+        <Card className="p-6 space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
             <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center">
               <Camera className="w-5 h-5" />
@@ -256,7 +256,7 @@ export default function Settings() {
         </Card>
 
         {/* Security Card */}
-        <Card className="space-y-6">
+        <Card className="p-6 space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
               <Lock className="w-5 h-5" />
@@ -307,7 +307,7 @@ export default function Settings() {
 
         {/* Global Wallet Settings (Owner Only) */}
         {session.role === 'Owner' && (
-          <Card className="lg:col-span-2 space-y-6">
+          <Card className="p-6 lg:col-span-2 space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import LanguageSwitcher from './LanguageSwitcher.tsx';
 
 interface HeaderProps {
@@ -9,8 +10,8 @@ interface HeaderProps {
 export default function Header({ currentTheme, onThemeChange }: HeaderProps) {
   return (
     <header className="w-full h-12 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-3 flex items-center justify-between shadow-2xs shrink-0 z-50">
-      <div className="flex items-center">
-        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50/50 dark:bg-indigo-950/40 border border-indigo-100/80 dark:border-indigo-900/40 rounded-lg">
+      <div className="flex items-center gap-2">
+        <Link to="/home" className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50/50 dark:bg-indigo-950/40 border border-indigo-100/80 dark:border-indigo-900/40 rounded-lg hover:bg-indigo-100/50 transition-colors">
           <span className="font-extrabold text-xs text-sky-600 dark:text-sky-400 tracking-tight">Walmart</span>
           <span className="flex items-center">
             <svg viewBox="0 0 100 100" width="12" height="12">
@@ -24,13 +25,13 @@ export default function Header({ currentTheme, onThemeChange }: HeaderProps) {
               </g>
             </svg>
           </span>
-        </div>
+        </Link>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <button 
           onClick={() => onThemeChange(currentTheme === 'orange' ? 'red' : 'orange')}
-          className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-[11px] font-semibold rounded-lg transition-all cursor-pointer"
+          className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-[11px] font-semibold rounded-lg transition-all cursor-pointer"
           title="Toggle theme Classic / Modern"
         >
           <span className={`w-1.5 h-1.5 rounded-full ${currentTheme === 'orange' ? 'bg-amber-500 shadow-[0_0_8px_#f59e0b]' : 'bg-sky-500 shadow-[0_0_8px_#0284c7]'}`} />

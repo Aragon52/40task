@@ -22,7 +22,7 @@ import {
   ChevronRight,
   Fingerprint
 } from 'lucide-react';
-import { Button, Modal, Card, Input, Badge } from '@/src/shared/UI';
+import { Button, Modal, Card, Input, Badge } from '../shared/UI';
 
 const adminAuthClient = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -330,7 +330,7 @@ export default function SLAAdmins() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header Card */}
-      <Card className="relative overflow-hidden">
+      <Card className="p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 blur-2xl" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-1">
@@ -359,7 +359,7 @@ export default function SLAAdmins() {
           const isActive = admin.status === 'Active';
 
           return (
-            <Card key={admin.id} className="flex flex-col h-full group hover:border-indigo-500/30 transition-all duration-300">
+            <Card key={admin.id} className="p-6 flex flex-col h-full group hover:border-indigo-500/30 transition-all duration-300">
               <div className="flex items-start justify-between mb-6">
                 <div className="space-y-1.5">
                   <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest px-2 font-mono">{admin.accountId}</Badge>

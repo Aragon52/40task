@@ -21,7 +21,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Button, Card, Input, Badge } from '@/src/shared/UI';
+import { Button, Card, Input, Badge } from '../shared/UI';
 
 export default function SLAStaff() {
   const [session, setSession] = useState<any>(null);
@@ -172,7 +172,7 @@ export default function SLAStaff() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header Card */}
-      <Card className="relative overflow-hidden">
+      <Card className="p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 blur-2xl" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-1">

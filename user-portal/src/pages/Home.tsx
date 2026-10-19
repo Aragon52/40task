@@ -178,13 +178,21 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
   }, [username, orders]);
 
   const LIVE_COMMISSIONS = [
-    { user: 'yoo***', amount: '194.33', profit: '0.97', task: 'Matching Task' },
-    { user: 'mya***', amount: '320.00', profit: '1.60', task: 'Order Tasking' },
-    { user: 'kok***', amount: '580.50', profit: '2.90', task: 'VIP Order' },
-    { user: 'san***', amount: '1,250.00', profit: '6.25', task: 'Premium Matching' },
-    { user: 'lin***', amount: '890.20', profit: '4.45', task: 'Matching Task' },
-    { user: 'aung***', amount: '410.00', profit: '2.05', task: 'Order Tasking' },
-    { user: 'thuz***', amount: '730.80', profit: '3.65', task: 'Matching Task' }
+    { user: 'mateo***', amount: '120.00', profit: '3.00', task: 'Order Tasking' },
+    { user: 'sofi***', amount: '340.50', profit: '8.50', task: 'Matching Task' },
+    { user: 'luis***', amount: '680.00', profit: '17.00', task: 'VIP Order' },
+    { user: 'valen***', amount: '1,450.00', profit: '36.25', task: 'Premium Matching' },
+    { user: 'diego***', amount: '2,900.00', profit: '72.50', task: 'Matching Task' },
+    { user: 'cam***', amount: '4,850.00', profit: '121.25', task: 'Order Tasking' },
+    { user: 'thiag***', amount: '8,200.00', profit: '205.00', task: 'VIP Order' },
+    { user: 'isab***', amount: '12,400.00', profit: '310.00', task: 'Premium Matching' },
+    { user: 'gabr***', amount: '18,600.00', profit: '465.00', task: 'Matching Task' },
+    { user: 'fern***', amount: '26,500.00', profit: '662.50', task: 'Order Tasking' },
+    { user: 'pablo***', amount: '35,800.00', profit: '895.00', task: 'VIP Order' },
+    { user: 'santi***', amount: '42,100.00', profit: '1,052.50', task: 'Premium Matching' },
+    { user: 'mari***', amount: '51,440.00', profit: '1,286.00', task: 'Special VIP Task' },
+    { user: 'luc***', amount: '250.00', profit: '6.25', task: 'Order Tasking' },
+    { user: 'jav***', amount: '920.00', profit: '23.00', task: 'Matching Task' }
   ];
 
   const [tickerIndex, setTickerIndex] = useState(0);
@@ -207,14 +215,17 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
 
   return (
     <>
-      <div className="flex flex-col space-y-3.5 px-3 pt-2 pb-24 w-full scale-up">
+      <div className="flex flex-col space-y-3.5 px-3 pt-2 pb-4 w-full scale-up">
         {/* ── 1. Top E-Commerce Banner Carousel ── */}
         <div className="ec-banner-carousel">
           {BANNERS.map((b, i) => (
             <div
               key={b.id}
               className={`ec-slide ${i === slide ? 'ec-slide-active' : ''}`}
-              style={{ backgroundImage: `url(${b.img})` }}
+              style={{ 
+                backgroundImage: `url(${b.img}), linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)`,
+                backgroundColor: '#0f172a'
+              }}
             >
               {/* Dark gradient overlay */}
               <div className="ec-slide-overlay" style={{ '--accent': b.accent } as React.CSSProperties} />

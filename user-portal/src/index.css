@@ -1,6 +1,10 @@
 /* Premium Light Luxury (Ivory & Gold / Slate-Platinum) Design System */
 
 @import "tailwindcss";
+@source "../../src/shared";
+@source "./shared";
+@source "../src";
+
 
 html {
   min-height: 100%;

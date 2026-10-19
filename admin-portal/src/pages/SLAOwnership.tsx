@@ -21,7 +21,7 @@ import {
   Globe
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Button, Modal, Card, Input, Badge } from '@/src/shared/UI';
+import { Button, Modal, Card, Input, Badge } from '../shared/UI';
 
 const adminAuthClient = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -189,7 +189,7 @@ export default function SLAOwnership() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header Card */}
-      <Card className="relative overflow-hidden">
+      <Card className="p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -mr-16 -mt-16 blur-2xl" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-1">
@@ -212,7 +212,7 @@ export default function SLAOwnership() {
       </Card>
 
       {/* Root Authority Section */}
-      <Card className="bg-[#0a0c10] border-amber-500/20 relative overflow-hidden group">
+      <Card className="p-6 bg-[#0a0c10] border-amber-500/20 relative overflow-hidden group">
          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-transparent opacity-50" />
          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
             <ShieldCheck className="w-48 h-48 text-amber-500" />

@@ -34,7 +34,7 @@ import {
   ChevronRight,
   ArrowRight
 } from 'lucide-react';
-import { Button, Modal, Card, Input, Badge } from '@/src/shared/UI';
+import { Button, Modal, Card, Input, Badge } from '../shared/UI';
 
 export default function UserManagement() {
   const [users, setUsers] = useState<any[]>([]);
@@ -439,7 +439,7 @@ export default function UserManagement() {
             bg: 'bg-amber-500/10'
           }
         ].map((item, idx) => (
-          <Card key={idx} className="relative overflow-hidden group">
+          <Card key={idx} className="p-5 relative overflow-hidden group">
             <div className={`absolute top-0 right-0 w-24 h-24 ${item.bg} rounded-full -mr-8 -mt-8 blur-2xl group-hover:scale-125 transition-transform duration-500`} />
             <div className="flex items-center justify-between relative z-10">
               <div className="space-y-1">
