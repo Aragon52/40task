@@ -1048,28 +1048,51 @@ export default function OrdersTasking() {
     try {
       const updatedOrders = editingOrders.map(o => ({
         ...o,
-        price: parseFloat(o.price),
-        profit: parseFloat(o.profit)
+        price: parseFloat(o.price || 0),
+        profit: parseFloat(o.profit || 0),
+        commission: parseFloat(o.commission || 0)
       }));
       
+      const newTotalAmount = parseFloat(updatedOrders.reduce((sum, o) => sum + (o.price || 0), 0).toFixed(2));
+      const newTotalProfit = parseFloat(updatedOrders.reduce((sum, o) => sum + (o.profit || 0), 0).toFixed(2));
+      const newProfitPercent = newTotalAmount > 0 ? parseFloat(((newTotalProfit / newTotalAmount) * 100).toFixed(2)) : 0;
+
       const { error: taskError } = await supabase
         .from('cb_assigned_tasks')
-        .update({ orders: updatedOrders })
+        .update({ 
+          orders: updatedOrders,
+          total_amount: newTotalAmount,
+          profit_percent: newProfitPercent
+        })
         .eq('id', editingTask.id);
         
       if (taskError) throw taskError;
       
       // Update individual orders in cb_orders
-      for (const order of updatedOrders) {
-        await supabase
-          .from('cb_orders')
-          .update({
-            title: order.title,
-            image: order.image,
-            price: order.price,
-            profit: order.profit
-          })
-          .eq('id', order.id);
+      for (let idx = 0; idx < updatedOrders.length; idx++) {
+        const order = updatedOrders[idx];
+        if (order.id) {
+          await supabase
+            .from('cb_orders')
+            .update({
+              title: order.title,
+              image: order.image,
+              price: order.price,
+              profit: order.profit
+            })
+            .eq('id', order.id);
+        } else {
+          await supabase
+            .from('cb_orders')
+            .update({
+              title: order.title,
+              image: order.image,
+              price: order.price,
+              profit: order.profit
+            })
+            .eq('assigned_task_id', editingTask.id)
+            .eq('assigned_order_index', idx);
+        }
       }
       
       toast.success("Worksheet orders updated successfully!");
@@ -1081,17 +1104,19 @@ export default function OrdersTasking() {
     }
   };
 
-  const getActiveTaskDisplay = (username) => {
+  const getActiveTaskDisplay = (username: any) => {
+    if (!username) return <span className="text-slate-400 text-sm font-medium">None</span>;
+    const target = String(username).toLowerCase();
     const task = assignedTasks.find(t => 
-      t.username.toLowerCase() === username.toLowerCase() && 
+      t && t.username && String(t.username).toLowerCase() === target && 
       (t.status === 'Pending' || t.status === 'In Progress')
     );
     if (!task) return <span className="text-slate-400 text-sm font-medium">None</span>;
-    const completed = task.orders.filter(o => o.status === 'Success').length;
+    const completed = Array.isArray(task.orders) ? task.orders.filter((o: any) => o.status === 'Success').length : 0;
     return (
       <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-semibold border ${task.status === 'In Progress' ? 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:border-amber-800' : 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800'}`}>
         <span>{task.status}</span>
-        <span className="opacity-75">({completed}/{task.orderCount})</span>
+        <span className="opacity-75">({completed}/{task.orderCount || (task.orders ? task.orders.length : 0)})</span>
       </span>
     );
   };
@@ -1298,10 +1323,11 @@ export default function OrdersTasking() {
                           className="px-3.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer ml-auto"
                           onClick={() => {
                             setEditingTask(t);
-                            setEditingOrders(t.orders.map(o => ({
+                            setEditingOrders((t.orders || []).map(o => ({
                               ...o,
-                              price: String(o.price),
-                              profit: String(o.profit)
+                              price: String(o.price ?? 0),
+                              profit: String(o.profit ?? 0),
+                              commission: String(o.commission !== undefined ? o.commission : (parseFloat((Number(o.profit || 0) * 0.1).toFixed(2))))
                             })));
                             setShowEditOrdersModal(true);
                           }}
@@ -2375,8 +2401,8 @@ export default function OrdersTasking() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-6">
-                        <div className="flex-1 flex flex-col gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="flex flex-col gap-2">
                           <label className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Price ($)</label>
                           <div className="relative">
                             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-xs text-slate-400 font-bold">$</span>
@@ -2394,7 +2420,7 @@ export default function OrdersTasking() {
                             />
                           </div>
                         </div>
-                        <div className="flex-1 flex flex-col gap-2">
+                        <div className="flex flex-col gap-2">
                           <label className="text-[11px] font-bold text-emerald-600 dark:text-emerald-500 uppercase tracking-wider block">Profit ($)</label>
                           <div className="relative">
                             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-xs text-emerald-500 font-bold">$</span>
@@ -2409,6 +2435,24 @@ export default function OrdersTasking() {
                               }}
                               disabled={order.status === 'Success'}
                               className="w-full h-12 pl-8 pr-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-colors disabled:opacity-50"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">Commission ($)</label>
+                          <div className="relative">
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-xs text-indigo-500 font-bold">$</span>
+                            <input 
+                              type="number"
+                              step="0.01"
+                              value={order.commission !== undefined ? order.commission : (parseFloat((Number(order.profit || 0) * 0.1).toFixed(2)))}
+                              onChange={(e) => {
+                                const updated = [...editingOrders];
+                                updated[idx].commission = e.target.value;
+                                setEditingOrders(updated);
+                              }}
+                              disabled={order.status === 'Success'}
+                              className="w-full h-12 pl-8 pr-4 rounded-xl border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/30 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-colors disabled:opacity-50"
                             />
                           </div>
                         </div>
