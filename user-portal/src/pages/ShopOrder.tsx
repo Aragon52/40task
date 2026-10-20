@@ -55,50 +55,49 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
   const [totalCommission, setTotalCommission] = useState('0.00');
   const [activeTaskState, setActiveTaskState] = useState<any>(null);
 
-  useEffect(() => {
+  const fetchActiveTaskAndStats = async () => {
     const activeUser = localStorage.getItem('cb_username') || '';
     if (!activeUser) return;
+    if (document.hidden) return;
+    try {
+      const { data: tasks, error: taskError } = await supabase
+        .from('cb_assigned_tasks')
+        .select('*')
+        .ilike('username', activeUser)
+        .order('created_at', { ascending: false });
 
-    const fetchActiveTaskAndStats = async () => {
-      if (document.hidden) return; // Save bandwidth when tab is in background
-      try {
-        const { data: tasks, error: taskError } = await supabase
-          .from('cb_assigned_tasks')
-          .select('*')
-          .ilike('username', activeUser)
-          .order('created_at', { ascending: false });
+      if (!taskError && tasks && tasks.length > 0) {
+        const activeTask = tasks[0];
+        const parsedOrders = Array.isArray(activeTask.orders)
+          ? activeTask.orders
+          : (typeof activeTask.orders === 'string' ? JSON.parse(activeTask.orders) : []);
+        activeTask.orders = parsedOrders;
+        setActiveTaskState(activeTask);
+        setTotalTasks(activeTask.order_count || parsedOrders.length || 40);
 
-        if (!taskError && tasks && tasks.length > 0) {
-          const activeTask = tasks[0];
-          const parsedOrders = Array.isArray(activeTask.orders)
-            ? activeTask.orders
-            : (typeof activeTask.orders === 'string' ? JSON.parse(activeTask.orders) : []);
-          activeTask.orders = parsedOrders;
-          setActiveTaskState(activeTask);
-          setTotalTasks(activeTask.order_count || parsedOrders.length || 40);
+        const completed = parsedOrders.filter((o: any) => o.status === 'Success').length;
+        setOrderCompleteCount(completed);
 
-          const completed = parsedOrders.filter((o: any) => o.status === 'Success').length;
-          setOrderCompleteCount(completed);
+        const pending = orders.filter((o: any) => o.status === 'Pending' && o.assignedTaskId === activeTask.id).length;
+        setUndoneCount(pending);
 
-          const pending = orders.filter((o: any) => o.status === 'Pending' && o.assignedTaskId === activeTask.id).length;
-          setUndoneCount(pending);
-
-          const comm = parsedOrders
-            .filter((o: any) => o.status === 'Success')
-            .reduce((acc: number, curr: any) => acc + toMoneyAmount(curr.profit), 0);
-          setTotalCommission(comm.toFixed(2));
-        } else {
-          setActiveTaskState(null);
-          setTotalTasks(40);
-          setOrderCompleteCount(0);
-          setUndoneCount(0);
-          setTotalCommission('0.00');
-        }
-      } catch (err) {
-        console.error("Error syncing stats with database:", err);
+        const comm = parsedOrders
+          .filter((o: any) => o.status === 'Success')
+          .reduce((acc: number, curr: any) => acc + toMoneyAmount(curr.profit), 0);
+        setTotalCommission(comm.toFixed(2));
+      } else {
+        setActiveTaskState(null);
+        setTotalTasks(40);
+        setOrderCompleteCount(0);
+        setUndoneCount(0);
+        setTotalCommission('0.00');
       }
-    };
+    } catch (err) {
+      console.error("Error syncing stats with database:", err);
+    }
+  };
 
+  useEffect(() => {
     fetchActiveTaskAndStats();
     const interval = setInterval(() => {
       if (document.hidden) return;
@@ -273,6 +272,23 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
               const newTotalProfit = parseFloat(taskOrders.reduce((sum: number, o: any) => sum + toMoneyAmount(o.profit), 0).toFixed(2));
               const newProfitPercent = newTotalAmount > 0 ? parseFloat(((newTotalProfit / newTotalAmount) * 100).toFixed(2)) : 0;
 
+              // Immediately update local React active task state to sync 0ms UI transition
+              setActiveTaskState((prev: any) => prev ? { 
+                ...prev, 
+                orders: [...taskOrders], 
+                status: nextStatus,
+                total_amount: newTotalAmount,
+                profit_percent: newProfitPercent
+              } : null);
+
+              const completedCount = taskOrders.filter((o: any) => o.status === 'Success').length;
+              setOrderCompleteCount(completedCount);
+
+              const comm = taskOrders
+                .filter((o: any) => o.status === 'Success')
+                .reduce((acc: number, curr: any) => acc + toMoneyAmount(curr.profit), 0);
+              setTotalCommission(comm.toFixed(2));
+
               await supabase
                 .from('cb_assigned_tasks')
                 .update({ 
@@ -288,6 +304,7 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
       })();
 
       await Promise.all([orderUpdatePromise, affiliatePromise, taskUpdatePromise]);
+      await fetchActiveTaskAndStats();
     } catch (err) {
       console.error("Background task sync error:", err);
     }

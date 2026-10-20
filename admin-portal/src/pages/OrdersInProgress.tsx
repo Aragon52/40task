@@ -497,7 +497,7 @@ export default function OrdersInProgress() {
           isOpen={showEditOrdersModal}
           onClose={() => { setShowEditOrdersModal(false); setEditingTask(null); }}
           title="Worksheet Sequence Manager"
-          size="lg"
+          size="xl"
         >
           <div className="space-y-6">
             <div className="bg-indigo-500/5 border border-indigo-500/10 p-4 rounded-2xl flex items-start gap-3">

@@ -188,6 +188,20 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
       })();
 
       await Promise.all([orderPromise, affiliatePromise, taskPromise]);
+
+      // Refetch fresh orders & task state
+      const activeUser = localStorage.getItem('cb_username') || '';
+      if (activeUser) {
+        const { data: freshOrders } = await supabase
+          .from('cb_orders')
+          .select('*')
+          .ilike('username', activeUser.trim())
+          .order('timestamp', { ascending: false });
+
+        if (freshOrders && freshOrders.length > 0) {
+          setOrders(freshOrders);
+        }
+      }
     } catch (err) {
       console.error("Background sync error:", err);
     }
