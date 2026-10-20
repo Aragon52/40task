@@ -540,6 +540,12 @@ function AppContent() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cb_orders', filter: `username=eq.${username}` }, () => {
         syncWithDatabase();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cb_assigned_tasks', filter: `username=eq.${username}` }, () => {
+        syncWithDatabase();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cb_deposits', filter: `username=eq.${username}` }, () => {
+        syncWithDatabase();
+      })
       .subscribe();
 
     syncWithDatabase();

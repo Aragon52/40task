@@ -1,4 +1,3 @@
-
 const hostname = (window.location.hostname || '').toLowerCase();
 const pathname = (window.location.pathname || '').toLowerCase();
 const search = (window.location.search || '').toLowerCase();
@@ -34,4 +33,3 @@ if (isAdmin) {
     console.error('Failed to mount user portal:', err);
   });
 }
-

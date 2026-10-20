@@ -64,10 +64,22 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
         .from('cb_assigned_tasks')
         .select('*')
         .ilike('username', activeUser)
+        .in('status', ['Pending', 'In Progress'])
         .order('created_at', { ascending: false });
 
-      if (!taskError && tasks && tasks.length > 0) {
-        const activeTask = tasks[0];
+      let activeTask = tasks && tasks.length > 0 ? tasks[0] : null;
+      if (!activeTask) {
+        const { data: fallbackTasks } = await supabase
+          .from('cb_assigned_tasks')
+          .select('*')
+          .ilike('username', activeUser)
+          .order('created_at', { ascending: false });
+        if (fallbackTasks && fallbackTasks.length > 0) {
+          activeTask = fallbackTasks[0];
+        }
+      }
+
+      if (activeTask) {
         const parsedOrders = Array.isArray(activeTask.orders)
           ? activeTask.orders
           : (typeof activeTask.orders === 'string' ? JSON.parse(activeTask.orders) : []);
@@ -136,16 +148,30 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
 
     // 1. OPTIMISTIC UI: Update local balance, orders state, and UI INSTANTLY (0ms delay)
     updateBalance(normalizedProfit);
-    setOrders(prev => prev.map(o => String(o.id) === String(orderId) ? { ...o, status: 'Success' } : o));
+    setOrders(prev => prev.map(o => {
+      const isMatch = String(o.id) === String(orderId) || 
+        (activeOrderDetails?.assignedTaskId && 
+         String(o.assignedTaskId || o.assigned_task_id) === String(activeOrderDetails.assignedTaskId) && 
+         Number(o.assignedOrderIndex !== undefined ? o.assignedOrderIndex : o.assigned_order_index) === Number(activeOrderDetails.assignedOrderIndex));
+      return isMatch ? { ...o, status: 'Success' } : o;
+    }));
     toast.success(`Task submitted successfully! Earned $${normalizedProfit.toFixed(2)} commission.`);
     setActiveOrderDetails(null);
 
     // 2. PARALLEL BACKGROUND DATABASE SYNCHRONIZATION
     try {
-      const orderUpdatePromise = supabase
-        .from('cb_orders')
-        .update({ status: 'Success' })
-        .eq('id', orderId);
+      const orderUpdatePromise = (async () => {
+        if (orderId) {
+          await supabase.from('cb_orders').update({ status: 'Success' }).eq('id', orderId);
+        }
+        if (activeOrderDetails?.assignedTaskId && activeOrderDetails?.assignedOrderIndex !== undefined && activeOrderDetails?.assignedOrderIndex !== -1) {
+          await supabase
+            .from('cb_orders')
+            .update({ status: 'Success' })
+            .eq('assigned_task_id', activeOrderDetails.assignedTaskId)
+            .eq('assigned_order_index', activeOrderDetails.assignedOrderIndex);
+        }
+      })();
 
       const affiliatePromise = (async () => {
         try {
@@ -354,11 +380,13 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
       if (pendingOrderIdx !== -1) {
         const assignedOrder = taskOrders[pendingOrderIdx];
         const realOrder = orders.find(
-          (o: any) => o.assignedTaskId === activeTask.id && o.assignedOrderIndex === pendingOrderIdx
+          (o: any) => 
+            (String(o.assignedTaskId || o.assigned_task_id) === String(activeTask.id)) && 
+            Number(o.assignedOrderIndex !== undefined ? o.assignedOrderIndex : o.assigned_order_index) === pendingOrderIdx
         );
 
         chosenProduct = {
-          id: realOrder ? realOrder.id : (assignedOrder.id || `task-ord-${pendingOrderIdx}`),
+          id: realOrder ? realOrder.id : (assignedOrder.id || `task-${activeTask.id}-${pendingOrderIdx}`),
           title: assignedOrder.title,
           image: assignedOrder.image,
           price: toCurrency(assignedOrder.price).toFixed(2),

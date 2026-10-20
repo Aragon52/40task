@@ -239,6 +239,41 @@ export default function OrdersInProgress() {
     }));
   };
 
+  const handleRecalculateSubsequentAiOrders = (fromIndex: number) => {
+    if (!editingOrders || editingOrders.length <= fromIndex + 1) return;
+    const updated = editingOrders.map(o => ({ ...o }));
+
+    // Estimate running balance after order at fromIndex
+    const startPrice = parseFloat(updated[fromIndex].price || 0);
+    const startProfit = parseFloat(updated[fromIndex].profit || 0);
+
+    // Calculate cumulative profit up to fromIndex
+    const priorProfits = updated.slice(0, fromIndex + 1).reduce((sum, o) => sum + (parseFloat(o.profit) || 0), 0);
+    
+    // User starting balance estimated from task initial amount or current balance
+    const userInitialBal = parseFloat(editingTask?.totalAmount || '100');
+    let runningBal = userInitialBal + priorProfits;
+
+    for (let i = fromIndex + 1; i < updated.length; i++) {
+      if (updated[i].status === 'Pending') {
+        const reduction = Math.random() * (37 - 18) + 18; // $18 to $37
+        const newPrice = Math.max(10, parseFloat((runningBal - reduction).toFixed(2)));
+        const profitRate = 0.002 + Math.random() * (0.003 - 0.002); // 0.2% to 0.3%
+        const newProfit = parseFloat((newPrice * profitRate).toFixed(2));
+        const newComm = parseFloat((newProfit * 0.1).toFixed(2));
+
+        updated[i].price = newPrice.toFixed(2);
+        updated[i].profit = newProfit.toFixed(2);
+        updated[i].commission = newComm.toFixed(2);
+
+        runningBal = parseFloat((runningBal + newProfit).toFixed(2));
+      }
+    }
+
+    setEditingOrders(updated);
+    toast.success(`Recalculated AI Edge sequence for rows #${fromIndex + 2} to #${updated.length}`);
+  };
+
   const handleSaveEditedOrders = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTask) return;
@@ -298,13 +333,12 @@ export default function OrdersInProgress() {
         }
       }
 
-      toast.success("Successfully updated worksheet orders, prices, profits, and commissions!");
+      toast.success("Worksheet sequence changes committed successfully!");
       setShowEditOrdersModal(false);
       setEditingTask(null);
-      setEditingOrders([]);
       fetchTasks();
     } catch (err: any) {
-      toast.error("Failed to save changes: " + err.message);
+      toast.error("Failed to commit sequence changes: " + err.message);
     }
   };
 
@@ -493,164 +527,210 @@ export default function OrdersInProgress() {
 
       {/* Edit Sequence Modal */}
       {showEditOrdersModal && editingTask && (
-        <Modal
-          isOpen={showEditOrdersModal}
-          onClose={() => { setShowEditOrdersModal(false); setEditingTask(null); }}
-          title="Worksheet Sequence Manager"
-          size="xl"
-        >
-          <div className="space-y-6">
-            <div className="bg-indigo-500/5 border border-indigo-500/10 p-4 rounded-2xl flex items-start gap-3">
-              <Info className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
-              <p className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 leading-relaxed uppercase tracking-tight">
-                To maintain database consistency, sequence modifications are only permitted for worksheets below order #36. Later pending items will be proportionally balanced to maintain the original total.
-              </p>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/75 backdrop-blur-md p-3 sm:p-6 transition-all">
+          <div className="bg-white dark:bg-slate-950 w-full max-w-6xl h-[92dvh] max-h-[920px] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden my-auto animate-in zoom-in-95 fade-in duration-200">
+            {/* Modal Header */}
+            <div className="border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between flex-shrink-0 px-6 py-4">
+              <div className="flex items-center gap-4">
+                <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-xs border border-indigo-500/20 shrink-0">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-lg sm:text-xl tracking-tight flex items-center gap-2">
+                    <span>Worksheet Sequence Manager</span>
+                    <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-bold">#{editingTask.id}</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Modifying {editingOrders.length} sequence items for <span className="font-bold text-slate-700 dark:text-slate-200">{editingTask.username}</span>
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 transition-colors cursor-pointer"
+                onClick={() => { setShowEditOrdersModal(false); setEditingTask(null); }}
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1 pr-2 custom-scrollbar">
-              {editingOrders.map((order: any, idx: number) => {
-                const isCompleted = order.status === 'Success';
-                return (
-                  <Card key={idx} className={`p-4 ${isCompleted ? 'opacity-60 grayscale' : 'border-indigo-500/20'}`}>
-                    <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-slate-900 text-white flex items-center justify-center text-[10px] font-black font-mono">
-                          {idx + 1}
-                        </div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sequence Item</span>
-                      </div>
-                      <select
-                        value={order.status}
-                        onChange={(e) => {
-                          const newOrders = [...editingOrders];
-                          newOrders[idx].status = e.target.value;
-                          setEditingOrders(newOrders);
-                        }}
-                        className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border outline-none ${isCompleted ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 border-amber-500/20'}`}
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Success">Success</option>
-                      </select>
-                    </div>
+            {/* Info and Action Bar */}
+            <div className="px-6 py-3 bg-indigo-50/50 dark:bg-indigo-950/30 border-b border-indigo-100 dark:border-indigo-900/40 flex flex-wrap items-center justify-between gap-3 text-xs text-indigo-900 dark:text-indigo-200 flex-shrink-0">
+              <div className="flex items-center gap-2 font-medium">
+                <Info className="w-4 h-4 text-indigo-500 shrink-0" />
+                <span>Edit price or profit of any row. You can click <strong>Recalculate AI Edge Formula</strong> on any row to automatically recalculate subsequent pending items.</span>
+              </div>
+            </div>
 
-                    <div className="space-y-4">
-                      {!isCompleted && canAdjustPrices && (
-                        <select
-                          onChange={(e) => {
-                            if (e.target.value) {
-                              const prod = products[parseInt(e.target.value)];
-                              const pYield = parseFloat(editingTask.profitPercent || '5');
-                              handlePriceChange(idx, prod.price, {
-                                title: prod.title,
-                                image: prod.image,
-                                profit: parseFloat((prod.price * (pYield / 100)).toFixed(2))
-                              });
-                            }
-                          }}
-                          className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-[10px] font-black uppercase tracking-widest text-slate-700 outline-none"
-                        >
-                          <option value="">-- Quick Fill from Catalog --</option>
-                          {products.map((p, pIdx) => (
-                            <option key={pIdx} value={pIdx}>{p.title.substring(0, 40)}... (${p.price})</option>
-                          ))}
-                        </select>
-                      )}
-
-                      <div className="flex gap-4">
-                        <div className="w-16 h-16 rounded-xl border border-slate-200 dark:border-slate-800 p-1 flex items-center justify-center bg-white shrink-0">
-                          {order.image ? <img src={order.image} className="max-w-full max-h-full object-contain" /> : <Package className="w-6 h-6 text-slate-300" />}
-                        </div>
-                        <div className="flex-1 space-y-3">
-                          <input 
-                            type="text"
-                            value={order.title}
-                            onChange={(e) => {
-                              const newOrders = [...editingOrders];
-                              newOrders[idx].title = e.target.value;
-                              setEditingOrders(newOrders);
-                            }}
-                            disabled={isCompleted}
-                            className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-[11px] font-bold text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-600"
-                          />
-                          <div className="grid grid-cols-3 gap-3">
-                            <div className="space-y-1">
-                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Price ($)</span>
+            {/* Modal Body - Compact Sticky Header Table */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 min-h-0 bg-slate-50/30 dark:bg-slate-950/30">
+              <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-sm">
+                <table className="w-full text-sm text-left">
+                  <thead className="sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md z-10 border-b border-slate-200 dark:border-slate-800">
+                    <tr className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 w-16 text-center">Row</th>
+                      <th className="px-4 py-3.5 w-28 text-center">Status</th>
+                      <th className="px-4 py-3.5 min-w-[220px]">Product Info</th>
+                      <th className="px-4 py-3.5 w-36 text-right">Price ($)</th>
+                      <th className="px-4 py-3.5 w-36 text-right">Profit ($)</th>
+                      <th className="px-4 py-3.5 w-36 text-right">Commission ($)</th>
+                      <th className="px-4 py-3.5 w-36 text-center">AI Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
+                    {editingOrders.map((order: any, idx: number) => {
+                      const isCompleted = order.status === 'Success';
+                      return (
+                        <tr key={idx} className={`hover:bg-slate-50/80 dark:hover:bg-slate-950/60 transition-colors ${isCompleted ? 'bg-slate-50/50 dark:bg-slate-900/40 opacity-70' : ''}`}>
+                          <td className="px-4 py-3 text-center align-middle font-mono font-bold text-xs text-slate-500">
+                            #{idx + 1}
+                          </td>
+                          <td className="px-4 py-3 text-center align-middle">
+                            <select
+                              value={order.status}
+                              onChange={(e) => {
+                                const newOrders = [...editingOrders];
+                                newOrders[idx].status = e.target.value;
+                                setEditingOrders(newOrders);
+                              }}
+                              className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg border outline-none cursor-pointer ${
+                                isCompleted 
+                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50' 
+                                  : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800/50'
+                              }`}
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="Success">Success</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-3 align-middle">
+                            <div className="flex items-center gap-3">
+                              {order.image ? (
+                                <div className="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-white p-1 flex items-center justify-center shrink-0 shadow-2xs">
+                                  <img src={order.image} alt="" className="max-w-full max-h-full object-contain" />
+                                </div>
+                              ) : (
+                                <div className="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-400">
+                                  <Package className="w-4 h-4" />
+                                </div>
+                              )}
                               <input 
-                                type="number"
-                                step="0.01"
-                                value={order.price}
-                                onChange={(e) => handlePriceChange(idx, e.target.value)}
-                                disabled={isCompleted}
-                                className="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-mono text-xs font-black text-slate-900 dark:text-white outline-none"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest ml-1">Profit ($)</span>
-                              <input 
-                                type="number"
-                                step="0.01"
-                                value={order.profit}
+                                type="text"
+                                value={order.title}
                                 onChange={(e) => {
                                   const newOrders = [...editingOrders];
-                                  newOrders[idx].profit = e.target.value;
+                                  newOrders[idx].title = e.target.value;
                                   setEditingOrders(newOrders);
                                 }}
                                 disabled={isCompleted}
-                                className="w-full h-9 px-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 font-mono text-xs font-black text-emerald-600 outline-none"
+                                className="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs font-bold text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-60"
                               />
                             </div>
-                            <div className="space-y-1">
-                              <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest ml-1">Commission ($)</span>
-                              <input 
-                                type="number"
-                                step="0.01"
-                                value={order.commission !== undefined ? order.commission : (parseFloat((Number(order.profit || 0) * 0.1).toFixed(2)))}
-                                onChange={(e) => {
-                                  const newOrders = [...editingOrders];
-                                  newOrders[idx].commission = e.target.value;
-                                  setEditingOrders(newOrders);
-                                }}
-                                disabled={isCompleted}
-                                className="w-full h-9 px-3 rounded-xl border border-indigo-500/20 bg-indigo-500/5 font-mono text-xs font-black text-indigo-600 outline-none"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
+                          </td>
+                          <td className="px-4 py-3 text-right align-middle">
+                            <input 
+                              type="number"
+                              step="0.01"
+                              value={order.price}
+                              onChange={(e) => handlePriceChange(idx, e.target.value)}
+                              disabled={isCompleted}
+                              className="w-28 h-9 px-3 text-right font-mono text-xs font-extrabold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-right align-middle">
+                            <input 
+                              type="number"
+                              step="0.01"
+                              value={order.profit}
+                              onChange={(e) => {
+                                const newOrders = [...editingOrders];
+                                newOrders[idx].profit = e.target.value;
+                                setEditingOrders(newOrders);
+                              }}
+                              disabled={isCompleted}
+                              className="w-28 h-9 px-3 text-right font-mono text-xs font-extrabold rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-60"
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-right align-middle">
+                            <input 
+                              type="number"
+                              step="0.01"
+                              value={order.commission !== undefined ? order.commission : (parseFloat((Number(order.profit || 0) * 0.1).toFixed(2)))}
+                              onChange={(e) => {
+                                const newOrders = [...editingOrders];
+                                newOrders[idx].commission = e.target.value;
+                                setEditingOrders(newOrders);
+                              }}
+                              disabled={isCompleted}
+                              className="w-28 h-9 px-3 text-right font-mono text-xs font-extrabold rounded-xl border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/40 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-center align-middle">
+                            {!isCompleted && idx < editingOrders.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRecalculateSubsequentAiOrders(idx)}
+                                title={`Recalculate rows #${idx + 2} to #${editingOrders.length} using AI Edge balance formula`}
+                                className="px-2.5 py-1.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/60 dark:hover:bg-purple-900/80 text-purple-700 dark:text-purple-300 rounded-lg text-[10px] font-bold border border-purple-200 dark:border-purple-800 transition-colors flex items-center justify-center gap-1 mx-auto cursor-pointer"
+                              >
+                                <Sparkles className="w-3 h-3 text-purple-600 dark:text-purple-400 shrink-0" />
+                                <span>Cascade AI</span>
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            {/* Total Task Summary Card */}
-            <div className="p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 shadow-xl grid grid-cols-3 gap-4 text-center">
-              <div>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total Amount</span>
-                <span className="text-sm font-mono font-black text-white">
-                  ${editingOrders.reduce((sum, o) => sum + (parseFloat(o.price) || 0), 0).toFixed(2)}
-                </span>
+            {/* Modal Footer Summary */}
+            <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-800 bg-slate-900 text-white px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-6 text-center sm:text-left">
+                <div>
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Total Amount</span>
+                  <span className="text-base font-mono font-black text-white">
+                    ${editingOrders.reduce((sum, o) => sum + (parseFloat(o.price) || 0), 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="h-8 w-px bg-slate-800 hidden sm:block" />
+                <div>
+                  <span className="text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider block">Total Profit</span>
+                  <span className="text-base font-mono font-black text-emerald-400">
+                    ${editingOrders.reduce((sum, o) => sum + (parseFloat(o.profit) || 0), 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="h-8 w-px bg-slate-800 hidden sm:block" />
+                <div>
+                  <span className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider block">Total Commission</span>
+                  <span className="text-base font-mono font-black text-indigo-400">
+                    ${editingOrders.reduce((sum, o) => sum + (parseFloat(o.commission || 0) || (parseFloat(o.profit || 0) * 0.1)), 0).toFixed(2)}
+                  </span>
+                </div>
               </div>
-              <div>
-                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider block">Total Profit</span>
-                <span className="text-sm font-mono font-black text-emerald-400">
-                  ${editingOrders.reduce((sum, o) => sum + (parseFloat(o.profit) || 0), 0).toFixed(2)}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-wider block">Total Commission</span>
-                <span className="text-sm font-mono font-black text-indigo-400">
-                  ${editingOrders.reduce((sum, o) => sum + (parseFloat(o.commission || 0) || (parseFloat(o.profit || 0) * 0.1)), 0).toFixed(2)}
-                </span>
-              </div>
-            </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <Button variant="secondary" onClick={() => { setShowEditOrdersModal(false); setEditingTask(null); }}>Cancel</Button>
-              <Button onClick={handleSaveEditedOrders} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20">Commit Sequence Changes</Button>
+              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <button 
+                  type="button"
+                  className="px-5 h-11 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                  onClick={() => { setShowEditOrdersModal(false); setEditingTask(null); }}
+                >
+                  Discard Changes
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleSaveEditedOrders}
+                  className="px-6 h-11 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl transition-all shadow-lg shadow-indigo-600/30 flex items-center gap-2 active:scale-95 cursor-pointer"
+                >
+                  <Check className="w-4 h-4 stroke-[3]" />
+                  Save Worksheet Changes
+                </button>
+              </div>
             </div>
           </div>
-        </Modal>
+        </div>
       )}
     </div>
   );

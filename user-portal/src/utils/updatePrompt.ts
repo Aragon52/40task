@@ -1,5 +1,3 @@
-import { registerSW } from 'virtual:pwa-register';
-
 let updateServiceWorkerFn: ((reloadPage?: boolean) => Promise<void>) | null = null;
 
 declare global {
@@ -32,14 +30,17 @@ export async function checkServerVersion(): Promise<void> {
 /**
  * Initializes the PWA service worker with silent background auto-updates.
  */
-export function initPWAUpdatePrompt(): void {
+export async function initPWAUpdatePrompt(): Promise<void> {
   if (typeof window === 'undefined') return;
 
   if (window.__pwa_updater_initialized) return;
   window.__pwa_updater_initialized = true;
 
   try {
-    const updateSW = registerSW({
+    const pwaModule = await import('virtual:pwa-register').catch(() => null);
+    if (!pwaModule || typeof pwaModule.registerSW !== 'function') return;
+
+    const updateSW = pwaModule.registerSW({
       immediate: true,
       onNeedRefresh() {
         if (typeof updateSW === 'function') {
