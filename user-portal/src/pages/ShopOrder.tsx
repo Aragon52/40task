@@ -247,9 +247,9 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
 
                 for (let i = completedIdx + 1; i < taskOrders.length; i++) {
                   if (taskOrders[i].status === 'Pending') {
-                    const reduction = Math.random() * (35 - 18) + 18;
+                    const reduction = Math.random() * (37 - 18) + 18; // $18 to $37 less than running balance
                     const newPrice = Math.max(10, parseFloat((runningBalance - reduction).toFixed(2)));
-                    const profitRate = 0.05 + Math.random() * 0.08; // 5% - 13% profit rate
+                    const profitRate = 0.002 + Math.random() * (0.003 - 0.002); // 0.2% to 0.3% profit rate
                     const newProfit = parseFloat((newPrice * profitRate).toFixed(2));
 
                     taskOrders[i].price = newPrice;

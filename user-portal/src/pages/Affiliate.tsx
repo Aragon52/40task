@@ -111,19 +111,66 @@ export default function Affiliate() {
 
     setBinding(true);
     try {
-      // 1. Find user with this invite_code
-      const { data: foundUsers, error: searchErr } = await supabase
-        .from('cb_users')
-        .select('id, username, referred_by_staff_id, member_of_admin_id')
-        .eq('invite_code', code);
+      const cleanCode = code.trim().toUpperCase();
+      const strippedCode = cleanCode.replace(/[^A-Z0-9]/g, '');
 
-      if (searchErr) throw searchErr;
-      if (!foundUsers || foundUsers.length === 0) {
+      // 1. Check cb_users first
+      const { data: userList } = await supabase
+        .from('cb_users')
+        .select('id, username, phone, invite_code, referred_by_staff_id, member_of_admin_id');
+
+      let targetInviter = (userList || []).find(u => {
+        const uInv = (u.invite_code || '').trim().toUpperCase();
+        const uName = (u.username || '').trim().toUpperCase();
+        const uPhone = (u.phone || '').trim().toUpperCase();
+        const uInvStripped = uInv.replace(/[^A-Z0-9]/g, '');
+
+        return (
+          uInv === cleanCode ||
+          uName === cleanCode ||
+          uPhone === cleanCode ||
+          (uInvStripped && uInvStripped === strippedCode)
+        );
+      });
+
+      if (!targetInviter) {
+        // Check cb_staff
+        const { data: staffList } = await supabase.from('cb_staff').select('*');
+        const matchedStaff = (staffList || []).find(s => {
+          const sRef = (s.referral_code || '').trim().toUpperCase();
+          const sStaffId = (s.staff_id || '').trim().toUpperCase();
+          const sRefStripped = sRef.replace(/[^A-Z0-9]/g, '');
+          const sStaffStripped = sStaffId.replace(/[^A-Z0-9]/g, '');
+
+          return (
+            sRef === cleanCode ||
+            sStaffId === cleanCode ||
+            (sRefStripped && sRefStripped === strippedCode) ||
+            (sStaffStripped && sStaffStripped === strippedCode)
+          );
+        });
+
+        if (matchedStaff) {
+          // Update user's referred_by_staff_id and member_of_admin_id directly
+          const { error: staffUpdateErr } = await supabase
+            .from('cb_users')
+            .update({
+              referred_by_staff_id: matchedStaff.staff_id,
+              member_of_admin_id: matchedStaff.created_by_admin_id
+            })
+            .eq('id', profile.id);
+
+          if (staffUpdateErr) throw staffUpdateErr;
+
+          toast.success(`Successfully linked to staff node: ${matchedStaff.name} (${matchedStaff.staff_id})!`);
+          setReferralInput('');
+          fetchAffiliateData();
+          return;
+        }
+
         toast.error('Invalid referral code. Please verify and try again.');
         return;
       }
-
-      const targetInviter = foundUsers[0];
 
       // 2. Clear out self-binding loops or existing bindings
       // Perform database update

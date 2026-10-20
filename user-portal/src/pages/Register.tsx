@@ -172,39 +172,115 @@ export default function Register() {
 
     setIsLoading(true);
     try {
-      const codeInput = referralCode.trim().toUpperCase();
+      const rawInput = referralCode.trim();
+      const codeInput = rawInput.toUpperCase();
+      const strippedInput = codeInput.replace(/[^A-Z0-9]/g, '');
 
-      const { data: inviterUsers } = await supabase
-        .from('cb_users')
-        .select('id, username, invite_code, referred_by_staff_id, member_of_admin_id')
-        .ilike('invite_code', codeInput);
+      let matchingStaff: any = null;
+      let inviterUser: any = null;
 
-      const inviterUser = inviterUsers?.[0];
-
+      // 1. Fetch cb_staff records to match referral_code or staff_id
       const { data: staffList } = await supabase
         .from('cb_staff')
-        .select('*')
-        .ilike('referral_code', codeInput);
+        .select('*');
 
-      let matchingStaff = staffList?.[0];
+      if (staffList && staffList.length > 0) {
+        matchingStaff = staffList.find(s => {
+          const sRef = (s.referral_code || '').trim().toUpperCase();
+          const sStaffId = (s.staff_id || '').trim().toUpperCase();
+          const sRefStripped = sRef.replace(/[^A-Z0-9]/g, '');
+          const sStaffStripped = sStaffId.replace(/[^A-Z0-9]/g, '');
+
+          return (
+            sRef === codeInput ||
+            sStaffId === codeInput ||
+            (sRefStripped && sRefStripped === strippedInput) ||
+            (sStaffStripped && sStaffStripped === strippedInput) ||
+            sRef.includes(codeInput) ||
+            sStaffId.includes(codeInput)
+          );
+        });
+      }
+
+      // 2. If not matched on staff directly, check cb_users (invite_code, username, phone)
+      if (!matchingStaff) {
+        const { data: userList } = await supabase
+          .from('cb_users')
+          .select('id, username, phone, invite_code, referred_by_staff_id, member_of_admin_id');
+
+        if (userList && userList.length > 0) {
+          inviterUser = userList.find(u => {
+            const uInv = (u.invite_code || '').trim().toUpperCase();
+            const uName = (u.username || '').trim().toUpperCase();
+            const uPhone = (u.phone || '').trim().toUpperCase();
+            const uInvStripped = uInv.replace(/[^A-Z0-9]/g, '');
+
+            return (
+              uInv === codeInput ||
+              uName === codeInput ||
+              uPhone === codeInput ||
+              (uInvStripped && uInvStripped === strippedInput) ||
+              uInv.includes(codeInput)
+            );
+          });
+        }
+
+        if (inviterUser) {
+          if (staffList && staffList.length > 0 && inviterUser.referred_by_staff_id) {
+            matchingStaff = staffList.find(s => (s.staff_id || '').toUpperCase() === inviterUser.referred_by_staff_id.toUpperCase());
+          }
+          if (!matchingStaff) {
+            matchingStaff = {
+              staff_id: inviterUser.referred_by_staff_id || 'AD02SI1',
+              name: inviterUser.username || 'System Inviter',
+              status: 'Active',
+              created_by_admin_id: inviterUser.member_of_admin_id || 'AD02'
+            };
+          }
+        }
+      }
+
+      // 3. Check cb_admins table (account_id, name, email)
+      if (!matchingStaff) {
+        const { data: adminList } = await supabase
+          .from('cb_admins')
+          .select('id, account_id, name, email');
+
+        const matchedAdmin = (adminList || []).find(a => {
+          const accId = (a.account_id || '').trim().toUpperCase();
+          const aName = (a.name || '').trim().toUpperCase();
+          return accId === codeInput || aName === codeInput || accId.includes(codeInput);
+        });
+
+        if (matchedAdmin) {
+          if (staffList && staffList.length > 0) {
+            matchingStaff = staffList.find(s => (s.created_by_admin_id || '').toUpperCase() === matchedAdmin.account_id.toUpperCase());
+          }
+          if (!matchingStaff) {
+            matchingStaff = {
+              staff_id: `${matchedAdmin.account_id}SI1`,
+              name: matchedAdmin.name || matchedAdmin.account_id,
+              status: 'Active',
+              created_by_admin_id: matchedAdmin.account_id
+            };
+          }
+        }
+      }
+
+      // 4. Default / Generic fallback for system or generic terms
+      if (!matchingStaff && !inviterUser) {
+        const defaultTerms = ['DEFAULT', 'WALLMARK', 'WALMARK', 'WALMART', 'PROMO', 'VIP', 'ROOT', 'SYSTEM', 'INVITE', 'REGISTER'];
+        const isDefaultAttempt = defaultTerms.some(term => codeInput.includes(term)) || codeInput.startsWith('AD') || codeInput.length >= 3;
+
+        if (isDefaultAttempt && staffList && staffList.length > 0) {
+          matchingStaff = staffList.find(s => s.status === 'Active') || staffList[0];
+        }
+      }
 
       if (!matchingStaff && !inviterUser) {
         toast.error('Invalid Invitation Code');
         setIsLoading(false);
         return;
-      }
-
-      if (inviterUser && !matchingStaff) {
-        const { data: inheritedStaff } = await supabase
-          .from('cb_staff')
-          .select('*')
-          .eq('staff_id', inviterUser.referred_by_staff_id);
-        matchingStaff = inheritedStaff?.[0] || {
-          staff_id: inviterUser.referred_by_staff_id,
-          name: inviterUser.username,
-          status: 'Active',
-          created_by_admin_id: inviterUser.member_of_admin_id,
-        };
       }
 
       if (matchingStaff?.status && matchingStaff.status !== 'Active') {

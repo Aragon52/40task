@@ -737,8 +737,7 @@ export default function OrdersTasking() {
       updated_wallet_balance = userWalletBalance > 0 ? userWalletBalance : 100;
     }
 
-    const minProfP = (parseFloat(aiMinProfitPercent) || 5) / 100;
-    const maxProfP = (parseFloat(aiMaxProfitPercent) || 13) / 100;
+    // Profit rate randomly between 0.2% to 0.3% of product price
     const minCommP = (parseFloat(aiMinCommissionPercent) || 0.2) / 100;
     const maxCommP = (parseFloat(aiMaxCommissionPercent) || 0.3) / 100;
 
@@ -751,29 +750,16 @@ export default function OrdersTasking() {
     for (let i = 0; i < count; i++) {
       let orderPrice = 0;
 
-      if (i === 0) {
-        // Order #1 MUST be calculated as: updated_wallet_balance - (Math.random() * (37 - 18) + 18)
-        const firstReduction = Math.random() * (37 - 18) + 18;
-        orderPrice = Math.max(10, updated_wallet_balance - firstReduction);
-      } else {
-        // Order #2 onwards: MUST be calculated as: runningUserBalance - (Math.random() * (40 - 20) + 20)
-        const reduction = Math.random() * (40 - 20) + 20;
-        orderPrice = Math.max(10, runningUserBalance - reduction);
-      }
-
+      // Each order (Order #1 to #40): calculated as running balance - ($18 to $37 randomly)
+      const reduction = Math.random() * (37 - 18) + 18;
+      orderPrice = Math.max(10, runningUserBalance - reduction);
       orderPrice = parseFloat(orderPrice.toFixed(2));
 
-      // Profit amount to be collected randomly between 5% to 13% of product base price
-      const profitRate = minProfP + Math.random() * (maxProfP - minProfP);
-      const profitVal = orderPrice * profitRate;
+      // Profit amount: randomly between 0.2% to 0.3% of product price
+      const profitRate = minCommP + Math.random() * (maxCommP - minCommP);
+      const totalProfitVal = parseFloat((orderPrice * profitRate).toFixed(2));
 
-      // Commission to be claimed randomly between 0.2% to 0.3%
-      const commRate = minCommP + Math.random() * (maxCommP - minCommP);
-      const commVal = orderPrice * commRate;
-
-      const totalProfitVal = parseFloat((profitVal + commVal).toFixed(2));
-
-      // User's updated balance after completing this order (principal returned + total profit earned)
+      // User's updated balance after completing this order (principal + profit)
       runningUserBalance = parseFloat((runningUserBalance + totalProfitVal).toFixed(2));
 
       const catalogItem = catalog[i % catalog.length];
