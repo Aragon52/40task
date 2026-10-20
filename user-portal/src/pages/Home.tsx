@@ -179,20 +179,25 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
 
   const LIVE_COMMISSIONS = [
     { user: 'mateo***', amount: '120.00', profit: '3.00', task: 'Order Tasking' },
-    { user: 'sofi***', amount: '340.50', profit: '8.50', task: 'Matching Task' },
-    { user: 'luis***', amount: '680.00', profit: '17.00', task: 'VIP Order' },
-    { user: 'valen***', amount: '1,450.00', profit: '36.25', task: 'Premium Matching' },
-    { user: 'diego***', amount: '2,900.00', profit: '72.50', task: 'Matching Task' },
-    { user: 'cam***', amount: '4,850.00', profit: '121.25', task: 'Order Tasking' },
-    { user: 'thiag***', amount: '8,200.00', profit: '205.00', task: 'VIP Order' },
-    { user: 'isab***', amount: '12,400.00', profit: '310.00', task: 'Premium Matching' },
-    { user: 'gabr***', amount: '18,600.00', profit: '465.00', task: 'Matching Task' },
-    { user: 'fern***', amount: '26,500.00', profit: '662.50', task: 'Order Tasking' },
-    { user: 'pablo***', amount: '35,800.00', profit: '895.00', task: 'VIP Order' },
-    { user: 'santi***', amount: '42,100.00', profit: '1,052.50', task: 'Premium Matching' },
+    { user: 'sofi***', amount: '220.00', profit: '5.50', task: 'Matching Task' },
+    { user: 'luis***', amount: '480.00', profit: '12.00', task: 'VIP Order' },
+    { user: 'valen***', amount: '950.00', profit: '23.75', task: 'Premium Matching' },
+    { user: 'diego***', amount: '1,800.00', profit: '45.00', task: 'Matching Task' },
+    { user: 'cam***', amount: '3,200.00', profit: '80.00', task: 'Order Tasking' },
+    { user: 'thiag***', amount: '5,600.00', profit: '140.00', task: 'VIP Order' },
+    { user: 'isab***', amount: '9,400.00', profit: '235.00', task: 'Premium Matching' },
+    { user: 'gabr***', amount: '14,800.00', profit: '370.00', task: 'Matching Task' },
+    { user: 'fern***', amount: '21,500.00', profit: '537.50', task: 'Order Tasking' },
+    { user: 'pablo***', amount: '28,900.00', profit: '722.50', task: 'VIP Order' },
+    { user: 'santi***', amount: '38,200.00', profit: '955.00', task: 'Premium Matching' },
     { user: 'mari***', amount: '51,440.00', profit: '1,286.00', task: 'Special VIP Task' },
-    { user: 'luc***', amount: '250.00', profit: '6.25', task: 'Order Tasking' },
-    { user: 'jav***', amount: '920.00', profit: '23.00', task: 'Matching Task' }
+    { user: 'lucas***', amount: '310.00', profit: '7.75', task: 'Order Tasking' },
+    { user: 'javi***', amount: '1,120.00', profit: '28.00', task: 'Matching Task' },
+    { user: 'carlos***', amount: '4,500.00', profit: '112.50', task: 'VIP Order' },
+    { user: 'luci***', amount: '8,900.00', profit: '222.50', task: 'Premium Matching' },
+    { user: 'alejo***', amount: '17,600.00', profit: '440.00', task: 'Matching Task' },
+    { user: 'rafa***', amount: '32,100.00', profit: '802.50', task: 'Order Tasking' },
+    { user: 'vale***', amount: '45,800.00', profit: '1,145.00', task: 'Special VIP Task' }
   ];
 
   const [tickerIndex, setTickerIndex] = useState(0);

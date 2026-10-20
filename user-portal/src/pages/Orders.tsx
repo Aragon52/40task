@@ -120,12 +120,67 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
           const task = taskList && taskList[0];
           if (task && matchedOrder.assignedOrderIndex !== undefined && matchedOrder.assignedOrderIndex !== -1) {
             const updatedOrders = [...task.orders];
-            updatedOrders[matchedOrder.assignedOrderIndex].status = 'Success';
+            const completedIdx = matchedOrder.assignedOrderIndex;
+            updatedOrders[completedIdx].status = 'Success';
+
+            // Fetch user's updated balance after deposit and completed order
+            let freshUserBalance = 0;
+            const activeUser = localStorage.getItem('cb_username') || '';
+            if (activeUser) {
+              const { data: userData } = await supabase
+                .from('cb_users')
+                .select('balance')
+                .ilike('username', activeUser.trim());
+              if (userData && userData[0]) {
+                freshUserBalance = parseFloat(userData[0].balance || 0);
+              }
+            }
+
+            if (isNaN(freshUserBalance) || freshUserBalance <= 0) {
+              freshUserBalance = toMoneyAmount(balance) + normalizedProfit;
+            }
+
+            // Recalculate subsequent pending orders to scale value to the user's updated balance
+            const hasPendingSubsequent = updatedOrders.slice(completedIdx + 1).some((o: any) => o.status === 'Pending');
+
+            if (hasPendingSubsequent && freshUserBalance > 0) {
+              let runningBalance = freshUserBalance;
+
+              for (let i = completedIdx + 1; i < updatedOrders.length; i++) {
+                if (updatedOrders[i].status === 'Pending') {
+                  const reduction = Math.random() * (35 - 18) + 18;
+                  const newPrice = Math.max(10, parseFloat((runningBalance - reduction).toFixed(2)));
+                  const profitRate = 0.05 + Math.random() * 0.08;
+                  const newProfit = parseFloat((newPrice * profitRate).toFixed(2));
+
+                  updatedOrders[i].price = newPrice;
+                  updatedOrders[i].profit = newProfit;
+
+                  runningBalance = parseFloat((runningBalance + newProfit).toFixed(2));
+
+                  await supabase
+                    .from('cb_orders')
+                    .update({ price: newPrice, profit: newProfit })
+                    .eq('assigned_task_id', task.id)
+                    .eq('assigned_order_index', i);
+                }
+              }
+            }
+
             const allDone = updatedOrders.every(o => o.status === 'Success');
             const nextStatus = allDone ? 'Completed' : 'In Progress';
+            const newTotalAmount = parseFloat(updatedOrders.reduce((sum: number, o: any) => sum + toMoneyAmount(o.price), 0).toFixed(2));
+            const newTotalProfit = parseFloat(updatedOrders.reduce((sum: number, o: any) => sum + toMoneyAmount(o.profit), 0).toFixed(2));
+            const newProfitPercent = newTotalAmount > 0 ? parseFloat(((newTotalProfit / newTotalAmount) * 100).toFixed(2)) : 0;
+
             await supabase
               .from('cb_assigned_tasks')
-              .update({ orders: updatedOrders, status: nextStatus })
+              .update({ 
+                orders: updatedOrders, 
+                status: nextStatus,
+                total_amount: newTotalAmount,
+                profit_percent: newProfitPercent
+              })
               .eq('id', task.id);
           }
         }
