@@ -456,9 +456,9 @@ export default function Home({ currentTheme, balance, username, orders }: any) {
             </div>
 
             {/* Downward to Upward Sliding Ticket Reel */}
-            <div className="relative h-9 overflow-hidden bg-slate-50/80 dark:bg-slate-950/60 rounded-lg px-2.5 border border-slate-100 dark:border-slate-800/80 flex items-center">
+            <div className="relative h-9 overflow-hidden bg-slate-50/80 dark:bg-slate-950/60 rounded-lg px-2.5 border border-slate-100 dark:border-slate-800/80">
               <div 
-                className="w-full transition-transform duration-500 ease-in-out flex flex-col justify-center"
+                className="absolute inset-x-2.5 transition-transform duration-500 ease-in-out flex flex-col"
                 style={{ transform: `translateY(-${tickerIndex * 36}px)` }}
               >
                 {LIVE_COMMISSIONS.map((item, idx) => (
