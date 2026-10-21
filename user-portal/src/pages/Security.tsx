@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
@@ -13,7 +13,7 @@ import {
   AlertCircle,
   CheckCircle2
 } from 'lucide-react';
-import { Button, Input, Card } from '@/src/shared/UI';
+import { Button, Input } from '@/src/shared/UI';
 
 export default function Security() {
   const navigate = useNavigate();

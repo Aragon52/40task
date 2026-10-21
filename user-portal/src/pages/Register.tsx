@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../supabase';
 import LanguageSwitcher from '../components/LanguageSwitcher';
-import loginBg from '@/login.png';
+import loginBg from '../../../login.png';
 import { 
   User, 
   Phone, 

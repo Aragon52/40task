@@ -1,27 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { 
   Users, 
-  UserPlus, 
   Search, 
   Copy, 
   Check, 
   ShieldCheck, 
   ExternalLink, 
-  AlertTriangle, 
   Phone, 
   Mail, 
-  Building2, 
   Calendar,
-  ChevronRight,
   Fingerprint,
-  Link,
   Globe,
-  Loader2,
   DollarSign
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Button, Card, Input, Badge } from '../shared/UI';
+import { Button, Card, Badge } from '../shared/UI';
 
 export default function SLAStaff() {
   const [session, setSession] = useState<any>(null);

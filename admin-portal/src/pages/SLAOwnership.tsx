@@ -1,24 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { createClient } from '@supabase/supabase-js';
 import { 
   ShieldCheck, 
   UserPlus, 
   Trash2, 
-  CheckCircle2, 
   AlertCircle, 
   Phone, 
   Mail, 
-  UserX,
   Fingerprint,
-  ChevronRight,
   ShieldAlert,
   Loader2,
-  Lock,
-  Plus,
-  RefreshCcw,
-  Zap,
-  Globe
+  Lock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button, Modal, Card, Input, Badge } from '../shared/UI';
@@ -106,7 +99,7 @@ export default function SLAOwnership() {
         return;
       }
 
-      const { data: newUserId, error: rpcError } = await supabase.rpc('create_admin_member', {
+      const { error: rpcError } = await supabase.rpc('create_admin_member', {
         p_email: email,
         p_password: password,
         p_name: name,

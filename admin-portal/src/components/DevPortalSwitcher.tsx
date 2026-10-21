@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { GripVertical, ArrowLeftRight } from 'lucide-react';
 
 export default function DevPortalSwitcher({ currentPortal }: { currentPortal: 'user' | 'admin' }) {

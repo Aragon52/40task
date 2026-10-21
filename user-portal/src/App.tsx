@@ -343,9 +343,6 @@ function AppContent() {
     return nextBalance;
   };
 
-  const addPendingDeposit = () => {};
-  const addPendingWithdraw = () => {};
-
   // Set user online status on session restore, visibility change, and page unload
   useEffect(() => {
     if (!username) return;
@@ -626,9 +623,6 @@ function AppContent() {
                           <Profile 
                             balance={balance} 
                             username={username}
-                            setUsername={setUsername}
-                            setBalance={setBalance}
-                            setOrders={setOrders}
                           />
                         } 
                       />
@@ -642,7 +636,7 @@ function AppContent() {
                       />
                       <Route 
                         path="deposit" 
-                        element={<Deposit addPendingDeposit={addPendingDeposit} />} 
+                        element={<Deposit />} 
                       />
                       <Route 
                         path="withdraw" 
@@ -650,7 +644,6 @@ function AppContent() {
                           <Withdraw 
                             balance={balance} 
                             updateBalance={updateBalance} 
-                            addPendingWithdraw={addPendingWithdraw} 
                           />
                         } 
                       />

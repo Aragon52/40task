@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import OrderDetailsModal from '../components/OrderDetailsModal';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
-import { useLoading } from '../components/GlobalLoader';
 import { 
   Package, 
   ShoppingBag, 
@@ -27,8 +26,6 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('All');
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
-  const { performAsync } = useLoading();
-
   const tabs = ['All', 'Success', 'Frozen'];
 
   // Filter out Pending orders from the page so only Success and Frozen orders are displayed
@@ -149,7 +146,12 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
                 if (updatedOrders[i].status === 'Pending') {
                   // CRITICAL: Preserve any manually edited/customized order or freeze target
                   if (updatedOrders[i].is_manually_edited || updatedOrders[i].isCustom || updatedOrders[i].is_custom || updatedOrders[i].isFreezeTarget || updatedOrders[i].is_freeze_target) {
-                    runningBalance = parseFloat((runningBalance + (parseFloat(updatedOrders[i].profit) || 0)).toFixed(2));
+                    const manualPrice = parseFloat(updatedOrders[i].price) || 0;
+                    const manualProfit = parseFloat(updatedOrders[i].profit) || 0;
+                    if (manualPrice + 20 > runningBalance) {
+                      runningBalance = manualPrice + 25;
+                    }
+                    runningBalance = parseFloat((runningBalance + manualProfit).toFixed(2));
                     continue;
                   }
 
@@ -203,130 +205,142 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
   };
 
   return (
-    <>
-      <div className="orders-page scale-up">
-        {/* Header replicated from Screenshot 4 */}
-        <div className="orders-header">
-          <button 
-            type="button"
-            className="header-back-btn cursor-pointer" 
-            onClick={() => navigate('/home')}
-            aria-label="Back to home"
-          >
-            <ChevronLeft className="w-5 h-5 text-slate-700 dark:text-slate-200" />
-          </button>
-          <span className="orders-title">Worksheet Orders</span>
-          <button 
-            type="button"
-            className="orders-chat-btn cursor-pointer" 
-            onClick={() => navigate('/support')}
-            aria-label="Support chat"
-          >
-            <MessageSquare className="w-5 h-5 text-slate-700 dark:text-slate-200" />
-          </button>
-        </div>
+    <div className="flex flex-col min-h-full pb-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      {/* Page Header */}
+      <header className="sticky top-0 z-30 flex items-center justify-between px-4 h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/80 mb-4 rounded-xl">
+        <button 
+          type="button"
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 active:scale-95 transition-all cursor-pointer" 
+          onClick={() => navigate('/home')}
+          aria-label="Back to home"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <h1 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight">Worksheet Orders</h1>
+        <button 
+          type="button"
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 active:scale-95 transition-all cursor-pointer" 
+          onClick={() => navigate('/support')}
+          aria-label="Support chat"
+        >
+          <MessageSquare className="w-5 h-5" />
+        </button>
+      </header>
 
-        {/* Tab bar */}
-        <div className="tabs-container">
-          {tabs.map((tab, idx) => (
-            <button
-              key={idx}
-              className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab)}
-              id={`btn-tab-${tab.toLowerCase()}`}
-            >
-              {tab}
-              {activeTab === tab && <span className="tab-indicator"></span>}
-            </button>
-          ))}
-        </div>
+      {/* Modern Filter Tabs */}
+      <nav className="flex p-1 bg-slate-100 dark:bg-slate-800/50 rounded-2xl mb-6 mx-1 border border-slate-200/50 dark:border-slate-800/50">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            className={`flex-1 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer ${
+              activeTab === tab 
+                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm ring-1 ring-slate-200/50 dark:ring-white/10' 
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+            }`}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab}
+          </button>
+        ))}
+      </nav>
 
-        {/* Order items list */}
-        <div className="orders-list">
-          {filteredOrders.length === 0 ? (
-            <div className="empty-orders">
-              <ShoppingBag className="w-12 h-12 text-slate-300 mb-2" />
-              <span>No orders found in this category</span>
+      {/* Orders List Grid */}
+      <div className="space-y-4 px-1">
+        {filteredOrders.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center mb-4 text-slate-300 dark:text-slate-600">
+              <ShoppingBag className="w-10 h-10" />
             </div>
-          ) : (
-            filteredOrders.map(order => (
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No matching records found</p>
+          </div>
+        ) : (
+          filteredOrders.map(order => {
+            const isSuccess = ['success', 'completed', 'approved'].includes(order.status.toLowerCase());
+            const isFrozen = order.status.toLowerCase() === 'frozen';
+            const isPending = order.status.toLowerCase() === 'pending';
+            const canAfford = parseFloat(balance || 0) >= parseFloat(order.price);
+
+            return (
               <div 
-                className="order-item-card" 
-                key={order.id} 
-                id={`order-${order.id}`}
+                key={order.id}
                 onClick={() => setSelectedOrderDetails(order)}
-                style={{ cursor: 'pointer' }}
+                className="group relative bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 p-5 shadow-sm hover:shadow-md hover:border-indigo-500/30 dark:hover:border-indigo-400/30 transition-all duration-300 cursor-pointer overflow-hidden active:scale-[0.99]"
               >
-                <div className="order-item-header">
-                  <span className="order-timestamp">
+                {/* Decorative background glow */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-indigo-500/10 transition-colors" />
+
+                <div className="flex items-center justify-between mb-4 relative z-10">
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-800/50 px-2.5 py-1 rounded-full border border-slate-100 dark:border-slate-700/50">
                     <Clock className="w-3 h-3" />
                     {order.timestamp}
-                  </span>
-                  <span className={`badge badge-${order.status.toLowerCase()}`}>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xs ${
+                    isSuccess ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' :
+                    isFrozen ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400' :
+                    'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
+                  }`}>
                     {order.status}
                   </span>
                 </div>
 
-                <div className="order-item-body">
-                  <div className="product-image-container">
+                <div className="flex gap-4 items-center mb-5 relative z-10">
+                  <div className="w-20 h-20 rounded-2xl bg-slate-50 dark:bg-slate-800 p-2 flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-700/50 shadow-inner group-hover:scale-105 transition-transform duration-500">
                     {order.image ? (
-                      <img src={order.image} alt={order.title} className="w-full h-full object-contain" />
+                      <img src={order.image} alt="" className="w-full h-full object-contain" />
                     ) : (
-                      <Package className="w-6 h-6 text-sky-600 dark:text-sky-400" />
+                      <Package className="w-8 h-8 text-slate-300 dark:text-slate-600" />
                     )}
                   </div>
-                  <div className="product-info">
-                    <span className="product-title">{order.title}</span>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-[13px] font-extrabold text-slate-900 dark:text-slate-100 leading-tight line-clamp-2 uppercase tracking-tight">
+                      {order.title}
+                    </h3>
+                    <div className="mt-2 text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">ID: VP{order.id}</div>
                   </div>
                 </div>
 
-                <div className="order-price-box">
-                  <div className="price-col">
-                    <span className="price-label">Price</span>
-                    <span className="price-value">$ {order.price}</span>
+                <div className="grid grid-cols-2 gap-3 mb-4 relative z-10">
+                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 transition-colors group-hover:bg-slate-100 dark:group-hover:bg-slate-800">
+                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em] block mb-1">Price</span>
+                    <span className="text-base font-mono font-black text-slate-900 dark:text-white tabular-nums">$ {order.price}</span>
                   </div>
-                  <div className="profit-col">
-                    <span className="profit-label">Profit</span>
-                    <span className="profit-value">+$ {order.profit}</span>
+                  <div className="bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 transition-colors group-hover:bg-emerald-100/50 dark:group-hover:bg-emerald-900/30">
+                    <span className="text-[9px] font-black text-emerald-600/70 dark:text-emerald-500 uppercase tracking-[0.15em] block mb-1">Profit</span>
+                    <span className="text-base font-mono font-black text-emerald-600 dark:text-emerald-400 tabular-nums">+$ {order.profit}</span>
                   </div>
                 </div>
 
-                {order.status === 'Pending' && parseFloat(balance || 0) < parseFloat(order.price) && (
-                  <div className="diff-amount-badge-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(239, 68, 68, 0.06)', border: '1px solid rgba(239, 68, 68, 0.1)', padding: '10px 12px', borderRadius: '12px', fontSize: '11px' }}>
-                    <span style={{ color: '#ef4444', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      Difference:
-                    </span>
-                    <span style={{ color: '#ef4444', fontWeight: '800', fontFamily: 'monospace' }}>$ {(parseFloat(order.price) - parseFloat(balance || 0)).toFixed(2)}</span>
+                {isPending && !canAfford && (
+                  <div className="mb-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/40 p-3.5 rounded-2xl flex items-center justify-between text-[11px] animate-pulse">
+                    <div className="flex items-center gap-2 font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      Difference
+                    </div>
+                    <span className="font-mono font-black text-rose-700 dark:text-rose-300 tabular-nums">$ {(parseFloat(order.price) - parseFloat(balance || 0)).toFixed(2)}</span>
                   </div>
                 )}
 
-                <div className="flex items-center justify-between mt-1 pt-2 border-t border-slate-50 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 font-medium">Order ID: VP{order.id}</span>
-                  <div className="flex items-center gap-1 text-sky-600 dark:text-sky-400 font-bold text-[11px]">
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-black text-[10px] uppercase tracking-widest group-hover:translate-x-1 transition-transform">
                     View Details
-                    <ChevronRight className="w-3 h-3" />
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </div>
-                </div>
-
-                {order.status === 'Pending' && (
-                  <div className="order-item-actions pt-1">
+                  {isPending && (
                     <button
-                      className="submit-task-btn"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedOrderDetails(order);
                       }}
-                      id={`btn-submit-task-${order.id}`}
+                      className="h-10 px-6 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-black text-[11px] uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
                     >
                       Submit Task
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            ))
-          )}
-        </div>
+            );
+          })
+        )}
       </div>
 
       {selectedOrderDetails && (
@@ -340,272 +354,6 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
           }}
         />
       )}
-
-      <style>{`
-        .orders-page {
-          display: flex;
-          flex-direction: column;
-          background-color: var(--bg-app);
-          width: 100%;
-          padding-bottom: 24px;
-        }
-
-        .orders-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          height: 48px;
-          padding: 0 12px;
-          background-color: var(--bg-nav);
-          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-          border-radius: 12px;
-          margin-bottom: 12px;
-        }
-
-        .header-back-btn, .orders-chat-btn {
-          width: 38px;
-          height: 38px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 12px;
-          color: var(--text-main);
-          background: var(--bg-input);
-          transition: all 0.2s;
-        }
-
-        .header-back-btn:active, .orders-chat-btn:active {
-          transform: scale(0.92);
-          background: rgba(0, 0, 0, 0.08);
-        }
-
-        .orders-title {
-          font-size: 16px;
-          font-weight: 700;
-          color: var(--text-main);
-          letter-spacing: -0.2px;
-        }
-
-        /* Tabs styles */
-        .tabs-container {
-          display: flex;
-          background-color: var(--bg-nav);
-          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-          height: 48px;
-          padding: 0 8px;
-          gap: 4px;
-        }
-
-        .tab-btn {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 13px;
-          font-weight: 600;
-          color: var(--text-muted);
-          position: relative;
-          transition: all 0.2s;
-          border-radius: 10px;
-          margin: 6px 0;
-        }
-
-        .tab-btn.active {
-          color: var(--primary-color);
-          background: var(--primary-light);
-        }
-
-        .tab-indicator {
-          position: absolute;
-          bottom: -6px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 20px;
-          height: 3px;
-          background-color: var(--primary-color);
-          border-radius: 2px;
-        }
-
-        /* Order card list styles */
-        .orders-list {
-          padding: 24px 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-
-        @media (min-width: 640px) {
-          .orders-list {
-            display: flex;
-            flex-direction: column;
-            max-width: 680px;
-            margin: 0 auto;
-            width: 100%;
-          }
-        }
-
-        .order-item-card {
-          background-color: var(--bg-card);
-          border-radius: 20px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-          padding: 24px; /* min p-6 */
-          display: flex;
-          flex-direction: column;
-          gap: 16px; /* space-y feel */
-          border: 1px solid rgba(0, 0, 0, 0.04);
-          transition: all 0.2s;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .order-item-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-          border-color: rgba(0, 113, 206, 0.1);
-        }
-
-        .order-item-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .order-timestamp {
-          font-size: 12px;
-          font-weight: 500;
-          color: var(--text-light);
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-
-        .badge {
-          font-size: 11px;
-          font-weight: 700;
-          padding: 5px 12px;
-          border-radius: 8px;
-          text-transform: uppercase;
-          letter-spacing: 0.4px;
-        }
-
-        .badge-pending {
-          background-color: #fef3c7;
-          color: #92400e;
-        }
-
-        .badge-success {
-          background-color: #d1fae5;
-          color: #065f46;
-        }
-
-        .badge-frozen {
-          background-color: #fee2e2;
-          color: #991b1b;
-        }
-
-        .order-item-body {
-          display: flex;
-          gap: 16px;
-          align-items: center;
-        }
-
-        .product-image-container {
-          width: 72px;
-          height: 72px;
-          border-radius: 12px;
-          background: var(--bg-input);
-          border: 1px solid rgba(0, 0, 0, 0.04);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          overflow: hidden;
-        }
-
-        .product-info {
-          flex: 1;
-          min-width: 0;
-        }
-
-        .product-title {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--text-main);
-          line-height: 1.4;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        .order-price-box {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          background: #f8fafc;
-          border-radius: 14px;
-          padding: 16px; /* p-4 minimum */
-          gap: 12px;
-          border: 1px solid rgba(0, 0, 0, 0.02);
-        }
-
-        .dark .order-price-box {
-          background: #0f172a;
-        }
-
-        .price-col, .profit-col {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .price-value {
-          font-size: 16px;
-          font-weight: 800;
-          color: var(--text-main);
-          font-family: var(--font-secondary);
-        }
-
-        .profit-value {
-          font-size: 16px;
-          font-weight: 800;
-          color: #10b981;
-          font-family: var(--font-secondary);
-        }
-
-        .price-label, .profit-label {
-          font-size: 11px;
-          font-weight: 700;
-          color: var(--text-light);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .submit-task-btn {
-          width: 100%;
-          height: 48px; /* h-12 touch target */
-          background: var(--primary-gradient);
-          color: white;
-          border-radius: 12px;
-          font-size: 14px;
-          font-weight: 700;
-          box-shadow: 0 4px 12px rgba(0, 113, 206, 0.2);
-          transition: all 0.2s;
-        }
-
-        .submit-task-btn:active {
-          transform: scale(0.98);
-          opacity: 0.9;
-        }
-
-        .empty-orders {
-          padding: 80px 20px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          color: var(--text-light);
-        }
-      `}</style>
-    </>
+    </div>
   );
 }

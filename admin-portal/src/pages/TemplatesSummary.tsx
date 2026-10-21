@@ -1,15 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   Layers, 
   CheckCircle2, 
-  AlertTriangle, 
   Eye, 
-  Info,
-  DollarSign, 
-  Percent, 
   TrendingUp,
   Search,
-  Check,
   FileText,
   X
 } from 'lucide-react';
@@ -118,7 +113,6 @@ export default function TemplatesSummary() {
     return i.title.toLowerCase().includes(q) || i.price.toString().includes(q);
   });
 
-  const selectedStats = stats.find(s => s.id === selectedTemplate) || stats[0];
 
   return (
     <div className="admin-page-container space-y-6">

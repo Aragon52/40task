@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Dispatch, SetStateAction } from 'react';
 import { useNavigate } from 'react-router-dom';
 import OrderDetailsModal from '../components/OrderDetailsModal';
 import { supabase } from '../supabase';
-import { useLoading } from '../components/GlobalLoader';
 import { PRODUCT_CATALOG, TEMPLATE_M_1 } from '../data/products';
 import toast from 'react-hot-toast';
 import {
@@ -36,7 +35,7 @@ interface ShopOrderProps {
   balance: number | string;
   updateBalance: (amount: number) => void;
   orders: any[];
-  setOrders: React.Dispatch<React.SetStateAction<any[]>>;
+  setOrders: Dispatch<SetStateAction<any[]>>;
 }
 
 export default function ShopOrder({ balance, updateBalance, orders, setOrders }: ShopOrderProps) {
@@ -60,7 +59,7 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
     if (!activeUser) return;
     if (document.hidden) return;
     try {
-      const { data: tasks, error: taskError } = await supabase
+      const { data: tasks } = await supabase
         .from('cb_assigned_tasks')
         .select('*')
         .ilike('username', activeUser)
@@ -266,7 +265,12 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
                   if (taskOrders[i].status === 'Pending') {
                     // CRITICAL: Preserve any manually edited/customized order or freeze target
                     if (taskOrders[i].is_manually_edited || taskOrders[i].isCustom || taskOrders[i].is_custom || taskOrders[i].isFreezeTarget || taskOrders[i].is_freeze_target) {
-                      runningBalance = parseFloat((runningBalance + (parseFloat(taskOrders[i].profit) || 0)).toFixed(2));
+                      const manualPrice = parseFloat(taskOrders[i].price) || 0;
+                      const manualProfit = parseFloat(taskOrders[i].profit) || 0;
+                      if (manualPrice + 20 > runningBalance) {
+                        runningBalance = manualPrice + 25;
+                      }
+                      runningBalance = parseFloat((runningBalance + manualProfit).toFixed(2));
                       continue;
                     }
 
@@ -800,7 +804,6 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
           order={activeOrderDetails}
           balance={balance}
           onClose={() => setActiveOrderDetails(null)}
-          onCancel={() => setActiveOrderDetails(null)}
           onSubmit={handleModalSubmit}
         />
       )}

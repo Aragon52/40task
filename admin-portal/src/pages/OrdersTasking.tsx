@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { PRODUCT_CATALOG } from '../data/products';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
@@ -6,33 +6,22 @@ import {
   ClipboardList, 
   UserPlus, 
   ListOrdered, 
-  TrendingUp, 
-  DollarSign, 
   Plus, 
   Trash2, 
   Edit3, 
   Check, 
   X, 
-  Layers, 
   AlertCircle,
-  HelpCircle,
   Briefcase,
-  Layers3,
   Sparkles,
-  Award,
-  Database,
-  Eye,
   Info,
-  Layers as LayersIcon,
-  BadgeAlert,
   FileText,
   ChevronDown,
   ChevronUp,
   CheckCircle2,
   ShieldCheck,
   Loader2,
-  ArrowRight,
-  UserCheck
+  ArrowRight
 } from 'lucide-react';
 
 export const TEMPLATE_M_1 = [
@@ -491,9 +480,6 @@ export default function OrdersTasking() {
   // Form assignment states
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState('custom'); // 'custom', 'ai_edge', 'smart', 'M-1', ...
-  const [totalAmount, setTotalAmount] = useState('1000');
-  const [orderCount, setOrderCount] = useState('5');
-  const [profitPercent, setProfitPercent] = useState('5');
   const [showModal, setShowModal] = useState(false);
   const [newAssignOrders, setNewAssignOrders] = useState([]);
   const [freezeTarget, setFreezeTarget] = useState('');
@@ -1043,7 +1029,8 @@ export default function OrdersTasking() {
         }
         return updated;
       }
-      return order;
+      // Enforce single edit: if we are setting a new manual edit, clear others
+      return { ...order, is_manually_edited: false };
     }));
   };
 
@@ -1074,30 +1061,28 @@ export default function OrdersTasking() {
         
       if (taskError) throw taskError;
       
-      // Update individual orders in cb_orders in parallel
+      // Update individual orders in cb_orders in parallel reliably
       const orderUpdates = updatedOrders.map(async (order, idx) => {
-        if (order.id) {
-          const { error: idErr } = await supabase
-            .from('cb_orders')
-            .update({
-              title: order.title,
-              image: order.image,
-              price: order.price,
-              profit: order.profit
-            })
-            .eq('id', order.id);
-          if (!idErr) return;
-        }
+        const updateData: any = {
+          title: order.title,
+          image: order.image || null,
+          price: order.price,
+          profit: order.profit,
+          status: order.status
+        };
+
         await supabase
           .from('cb_orders')
-          .update({
-            title: order.title,
-            image: order.image,
-            price: order.price,
-            profit: order.profit
-          })
+          .update(updateData)
           .eq('assigned_task_id', editingTask.id)
           .eq('assigned_order_index', idx);
+
+        if (order.id) {
+          await supabase
+            .from('cb_orders')
+            .update(updateData)
+            .eq('id', String(order.id));
+        }
       });
 
       await Promise.all(orderUpdates);
@@ -1127,11 +1112,6 @@ export default function OrdersTasking() {
       </span>
     );
   };
-
-  // Preview computations
-  const avgAmt = selectedUser ? (parseFloat(totalAmount) / parseInt(orderCount || '1')).toFixed(2) : '0.00';
-  const profPerOrd = selectedUser ? (parseFloat(avgAmt) * (parseFloat(profitPercent || '0') / 100)).toFixed(2) : '0.00';
-  const totalProf = selectedUser ? (parseFloat(profPerOrd) * parseInt(orderCount || '1')).toFixed(2) : '0.00';
 
   const filteredUsers = getFilteredUsers();
   const filteredTasks = getFilteredTasks();
@@ -1326,22 +1306,34 @@ export default function OrdersTasking() {
                         {t.createdAt}
                       </td>
                       <td className="px-5 py-5 text-right align-middle">
-                         <button 
-                          className="px-3.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer ml-auto"
-                          onClick={() => {
-                            setEditingTask(t);
-                            setEditingOrders((t.orders || []).map(o => ({
-                              ...o,
-                              price: String(o.price ?? 0),
-                              profit: String(o.profit ?? 0),
-                              commission: String(o.commission !== undefined ? o.commission : (parseFloat((Number(o.profit || 0) * 0.1).toFixed(2))))
-                            })));
-                            setShowEditOrdersModal(true);
-                          }}
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                          Edit Orders
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            className="px-3.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                            onClick={() => {
+                              setEditingTask(t);
+                              setEditingOrders((t.orders || []).map(o => ({
+                                ...o,
+                                price: String(o.price ?? 0),
+                                profit: String(o.profit ?? 0),
+                                commission: String(o.commission !== undefined ? o.commission : (parseFloat((Number(o.profit || 0) * 0.1).toFixed(2)))),
+                                is_manually_edited: Boolean(o.is_manually_edited)
+                              })));
+                              setShowEditOrdersModal(true);
+                            }}
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            Edit Orders
+                          </button>
+                          {t.status !== 'Completed' && (
+                            <button
+                              className="px-3 py-1.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                              onClick={() => handleCancelTask(t.id)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Cancel
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -2370,6 +2362,9 @@ export default function OrdersTasking() {
                         Order Item
                         {order.status === 'Success' && (
                           <span className="ml-2 px-2.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">Completed</span>
+                        )}
+                        {order.is_manually_edited && (
+                          <span className="ml-2 px-2.5 py-0.5 rounded text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 font-bold border border-purple-200 dark:border-purple-800/40">Adjusted</span>
                         )}
                       </span>
                     </div>

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLoading } from '../components/GlobalLoader';
 import { supabase } from '../supabase';
 import { TrendingUp, Sparkles, Calendar, Wallet, ShieldCheck, Lock, Headphones, Zap } from 'lucide-react';
 

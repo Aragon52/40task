@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { 
@@ -18,7 +18,6 @@ import toast from 'react-hot-toast';
 interface WithdrawProps {
   balance: number;
   updateBalance: (amount: number) => void;
-  addPendingWithdraw?: (req: any) => void;
 }
 
 export default function Withdraw({ balance, updateBalance }: WithdrawProps) {

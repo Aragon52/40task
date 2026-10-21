@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   LayoutGrid, 
   ShieldCheck, 
@@ -12,7 +12,6 @@ import {
   Settings,
   Layers,
   ChevronLeft,
-  ChevronRight,
   X,
   LucideIcon
 } from 'lucide-react';

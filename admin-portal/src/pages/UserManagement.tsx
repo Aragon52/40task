@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 import { 
@@ -17,11 +17,7 @@ import {
   Edit3, 
   Activity, 
   Filter, 
-  Calendar, 
-  X, 
   FileText, 
-  CheckCircle, 
-  Ban, 
   Award, 
   ArrowUpRight, 
   Globe,
@@ -31,7 +27,6 @@ import {
   AlertTriangle,
   History,
   ShieldCheck,
-  ChevronRight,
   ArrowRight
 } from 'lucide-react';
 import { Button, Modal, Card, Input, Badge } from '../shared/UI';
@@ -59,7 +54,7 @@ export default function UserManagement() {
   const [viewUser, setViewUser] = useState<any>(null);
 
   // Compute dynamic stats for the top cards
-  const stats = React.useMemo(() => {
+  const stats = useMemo(() => {
     const total = users.length;
     const online = users.filter(u => u.online === 'Online').length;
     const totalBalance = users.reduce((acc, u) => acc + (u.balance || 0), 0);

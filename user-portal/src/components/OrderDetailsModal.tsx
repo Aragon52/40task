@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface Order {
@@ -19,15 +19,13 @@ interface OrderDetailsModalProps {
   balance?: number | string;
   onClose: () => void;
   onSubmit: (id: string | number, price: number | string, profit: number | string) => void;
-  onCancel?: () => void;
 }
 
 export default function OrderDetailsModal({
   order,
   balance = 0,
   onClose,
-  onSubmit,
-  onCancel
+  onSubmit
 }: OrderDetailsModalProps) {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);

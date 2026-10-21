@@ -1,0 +1,15 @@
+
+> react-example@0.0.0 lint
+> tsc --noEmit
+
+user-portal/src/App.tsx(629,29): error TS2322: Type '{ balance: number; username: string; setUsername: Dispatch<SetStateAction<string>>; setBalance: Dispatch<SetStateAction<number>>; setOrders: Dispatch<...>; }' is not assignable to type 'IntrinsicAttributes & { balance: any; username: any; }'.
+  Property 'setUsername' does not exist on type 'IntrinsicAttributes & { balance: any; username: any; }'. Did you mean 'username'?
+user-portal/src/App.tsx(645,43): error TS2322: Type '{ addPendingDeposit: () => void; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'addPendingDeposit' does not exist on type 'IntrinsicAttributes'.
+user-portal/src/pages/Register.tsx(432,16): error TS2552: Cannot find name 'Input'. Did you mean 'oninput'?
+user-portal/src/pages/Register.tsx(546,18): error TS2552: Cannot find name 'Input'. Did you mean 'oninput'?
+user-portal/src/pages/Register.tsx(560,18): error TS2552: Cannot find name 'Input'. Did you mean 'oninput'?
+user-portal/src/pages/Register.tsx(578,18): error TS2552: Cannot find name 'Input'. Did you mean 'oninput'?
+user-portal/src/pages/Register.tsx(592,18): error TS2552: Cannot find name 'Input'. Did you mean 'oninput'?
+user-portal/src/pages/ShopOrder.tsx(807,11): error TS2322: Type '{ order: any; balance: string | number; onClose: () => void; onCancel: () => void; onSubmit: (orderId: string | number, price: string | number, profit: string | number) => Promise<void>; }' is not assignable to type 'IntrinsicAttributes & OrderDetailsModalProps'.
+  Property 'onCancel' does not exist on type 'IntrinsicAttributes & OrderDetailsModalProps'.

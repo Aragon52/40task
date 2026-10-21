@@ -1,41 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { PRODUCT_CATALOG } from '../data/products';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 import { 
   ClipboardList, 
-  ListOrdered, 
-  TrendingUp, 
   LineChart,
   DollarSign, 
-  Plus, 
-  Trash2, 
   Edit3, 
   Check, 
   X, 
-  Layers, 
-  AlertCircle,
-  HelpCircle,
-  Briefcase,
-  Database,
-  Eye,
   Info,
-  Layers3,
   Sparkles,
-  Award,
   Search,
-  Filter,
   Package,
-  ChevronRight,
-  RefreshCcw,
   ShieldCheck,
   Zap
 } from 'lucide-react';
-import { Button, Modal, Card, Input, Badge } from '@/src/shared/UI';
+import { Button, Card, Badge } from '@/src/shared/UI';
 
 export default function OrdersInProgress() {
   const [assignedTasks, setAssignedTasks] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>(PRODUCT_CATALOG);
   const [searchQuery, setSearchQuery] = useState('');
   const [session, setSession] = useState<any>({});
   const [statusFilter, setStatusFilter] = useState<'All' | 'In Progress' | 'Completed' | 'Pending'>('All');
@@ -78,26 +61,6 @@ export default function OrdersInProgress() {
       }
     } catch (err) {
       console.error("Error loading tasks:", err);
-    }
-  };
-
-  const loadProducts = async () => {
-    try {
-      let activeProducts = PRODUCT_CATALOG;
-      const { data: dbProducts } = await supabase.from('cb_products').select('*');
-      if (dbProducts && dbProducts.length > 0) {
-        activeProducts = dbProducts.map((p, idx) => ({
-          id: p.id || `db-prod-${idx}`,
-          title: p.title,
-          image: p.image_url || p.image,
-          type: p.type || 'gear',
-          price: parseFloat(p.price || 0),
-          profit: parseFloat(p.profit || 0)
-        }));
-      }
-      setProducts(activeProducts);
-    } catch (err) {
-      console.error("Error loading products catalog:", err);
     }
   };
 
@@ -165,7 +128,6 @@ export default function OrdersInProgress() {
 
   useEffect(() => {
     fetchTasks();
-    loadProducts();
 
     // Realtime channel subscription with debounced batch-update approach
     const channel = supabase
@@ -275,7 +237,8 @@ export default function OrdersInProgress() {
         }
         return updated;
       }
-      return order;
+      // Enforce single edit: if we are setting a new manual edit, clear others
+      return { ...order, is_manually_edited: false };
     }));
   };
 
@@ -287,17 +250,27 @@ export default function OrdersInProgress() {
     const firstOrderPrice = parseFloat(updated[0]?.price || 100);
     const initialBalEstimate = firstOrderPrice + 25;
     
-    // Calculate running balance through fromIndex
+    // Calculate running balance through fromIndex taking into account manual adjustments
     let runningBal = initialBalEstimate;
     for (let i = 0; i <= fromIndex; i++) {
-      runningBal = parseFloat((runningBal + (parseFloat(updated[i].profit) || 0)).toFixed(2));
+      const orderPrice = parseFloat(updated[i].price) || 0;
+      const orderProfit = parseFloat(updated[i].profit) || 0;
+      if (orderPrice + 20 > runningBal) {
+        runningBal = orderPrice + 25;
+      }
+      runningBal = parseFloat((runningBal + orderProfit).toFixed(2));
     }
 
     for (let i = fromIndex + 1; i < updated.length; i++) {
       if (updated[i].status === 'Pending') {
         // If row was manually edited or has freeze target, do NOT overwrite it, just advance running balance
         if (updated[i].is_manually_edited || updated[i].isFreezeTarget) {
-          runningBal = parseFloat((runningBal + (parseFloat(updated[i].profit) || 0)).toFixed(2));
+          const manualPrice = parseFloat(updated[i].price) || 0;
+          const manualProfit = parseFloat(updated[i].profit) || 0;
+          if (manualPrice + 20 > runningBal) {
+            runningBal = manualPrice + 25;
+          }
+          runningBal = parseFloat((runningBal + manualProfit).toFixed(2));
           continue;
         }
 
@@ -362,32 +335,30 @@ export default function OrdersInProgress() {
         return;
       }
 
-      // Parallelize individual order updates across cb_orders
+      // Parallelize individual order updates across cb_orders reliably
       const orderUpdatePromises = cleanedOrders.map(async (o, idx) => {
-        if (o.id) {
-          const { error: idErr } = await supabase
-            .from('cb_orders')
-            .update({
-              title: o.title,
-              image: o.image || null,
-              price: o.price,
-              profit: o.profit,
-              status: o.status
-            })
-            .eq('id', o.id);
-          if (!idErr) return;
-        }
+        const updateData: any = {
+          title: o.title,
+          image: o.image || null,
+          price: o.price,
+          profit: o.profit,
+          status: o.status
+        };
+
+        // Always update by canonical assigned_task_id & assigned_order_index
         await supabase
           .from('cb_orders')
-          .update({
-            title: o.title,
-            image: o.image || null,
-            price: o.price,
-            profit: o.profit,
-            status: o.status
-          })
+          .update(updateData)
           .eq('assigned_task_id', editingTask.id)
           .eq('assigned_order_index', idx);
+
+        // Also update by id if present
+        if (o.id) {
+          await supabase
+            .from('cb_orders')
+            .update(updateData)
+            .eq('id', String(o.id));
+        }
       });
 
       await Promise.all(orderUpdatePromises);
@@ -405,7 +376,6 @@ export default function OrdersInProgress() {
   const inProgressCount = assignedTasks.filter(t => t.status === 'In Progress').length;
   const completedTaskCount = assignedTasks.filter(t => t.status === 'Completed').length;
   const totalVolume = assignedTasks.reduce((sum, t) => sum + (t.totalAmount || 0), 0);
-  const canAdjustPrices = true;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">

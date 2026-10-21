@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 
 import toast from 'react-hot-toast';
-export default function Profile({ balance, username, setUsername, setBalance, setOrders }) {
+export default function Profile({ balance, username }) {
   const navigate = useNavigate();
   const [clientProfile, setClientProfile] = useState(null);
   const [showPoliciesModal, setShowPoliciesModal] = useState(false);

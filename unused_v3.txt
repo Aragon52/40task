@@ -1,0 +1,6 @@
+
+> react-example@0.0.0 lint
+> tsc --noEmit
+
+user-portal/src/App.tsx(346,9): error TS6133: 'addPendingDeposit' is declared but its value is never read.
+user-portal/src/components/OrderDetailsModal.tsx(30,3): error TS6133: 'onCancel' is declared but its value is never read.

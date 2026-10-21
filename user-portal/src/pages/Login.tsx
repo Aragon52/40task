@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 import LanguageSwitcher from '../components/LanguageSwitcher';
-import loginBg from '@/login.png';
+import loginBg from '../../../login.png';
 import { 
   Phone, 
   Lock, 
@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Globe
 } from 'lucide-react';
-import { Button, Modal, Input } from '@/src/shared/UI';
+import { Button, Modal } from '@/src/shared/UI';
 import toast from 'react-hot-toast';
 
 const COUNTRIES = [

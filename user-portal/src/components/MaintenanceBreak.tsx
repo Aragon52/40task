@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  ShieldCheck, Zap, Clock, Activity, CheckCircle2, 
-  Lock, Globe, RefreshCw, Bell, ChevronRight, Server, Sparkles, AlertTriangle, ArrowRight, X
+  Clock, Activity, CheckCircle2, 
+  Lock, RefreshCw, Bell, ChevronRight, Sparkles, AlertTriangle, ArrowRight, X
 } from 'lucide-react';
 import { supabase } from '../supabase.ts';
 import toast from 'react-hot-toast';
@@ -11,7 +11,6 @@ interface MaintenanceBreakProps {
 }
 
 export default function MaintenanceBreak({ onBypass }: MaintenanceBreakProps) {
-  const [lang, setLang] = useState<string>('en');
   const [emailInput, setEmailInput] = useState<string>('');
   const [subscribed, setSubscribed] = useState<boolean>(false);
   const [pingStatus, setPingStatus] = useState<{ ok: boolean; ms: number; text: string } | null>(null);

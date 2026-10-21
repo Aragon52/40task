@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { Search, DollarSign, Briefcase, Check, Info, AlertCircle, X, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -6,10 +6,6 @@ export default function FinancialCenter() {
   const [activeSubTab, setActiveSubTab] = useState('deposits');
   const [deposits, setDeposits] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
-  const [settings, setSettings] = useState({
-    usdtAddress: 'TY3N9dSk8sHDKsi8s9DKks82kdJS9k1nsD',
-    qrCodeUrl: ''
-  });
   
   const [session, setSession] = useState({ role: 'Owner', name: 'System Owner', email: 'owner@wallmark.com' });
   
@@ -91,7 +87,6 @@ export default function FinancialCenter() {
           usdtAddress: settingsData.usdt_address,
           qrCodeUrl: settingsData.qr_code_url || ''
         };
-        setSettings(currentSettings);
         setEditAddress(currentSettings.usdtAddress);
         setEditQrCode(currentSettings.qrCodeUrl);
       }
@@ -418,7 +413,6 @@ export default function FinancialCenter() {
         return;
       }
 
-      setSettings({ usdtAddress: editAddress, qrCodeUrl: editQrCode });
       toast.success('Payment node settings saved successfully!');
       fetchFinancialData();
     } catch (err) {

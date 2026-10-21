@@ -1,21 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 import { 
-  Shield, 
   Key, 
   Camera, 
   Save, 
-  Coins, 
   Lock, 
   User, 
-  Check, 
   Link, 
   AlertTriangle,
-  Eye,
-  Settings as SettingsIcon,
   Bitcoin,
-  TrendingUp,
   Mail,
   ShieldCheck,
   RefreshCcw,

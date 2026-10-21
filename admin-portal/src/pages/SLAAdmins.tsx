@@ -1,25 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import { createClient } from '@supabase/supabase-js';
 import toast from 'react-hot-toast';
 import { 
-  Users, 
   UserPlus, 
-  Shield, 
   ShieldCheck, 
-  ShieldAlert, 
-  MoreVertical, 
   Mail, 
   Smartphone, 
   Building2, 
-  Calendar, 
-  CheckCircle2, 
-  X,
-  Plus,
   Lock,
-  Loader2,
-  Trash2,
-  ChevronRight,
   Fingerprint
 } from 'lucide-react';
 import { Button, Modal, Card, Input, Badge } from '../shared/UI';

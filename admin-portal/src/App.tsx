@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { DollarSign, Users, Briefcase, TrendingUp, Activity } from 'lucide-react';
 import Sidebar from './components/Sidebar.tsx';
 import Navbar from './components/Navbar.tsx';

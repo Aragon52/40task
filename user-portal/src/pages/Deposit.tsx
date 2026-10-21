@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { QRCodeSVG } from 'qrcode.react';
@@ -10,7 +10,6 @@ import {
   Globe, 
   AlertTriangle, 
   Info,
-  CreditCard,
   QrCode,
   RefreshCcw
 } from 'lucide-react';
@@ -31,11 +30,7 @@ const NETWORKS = [
   { id: 'DOGE',         label: 'DOGE', sub: 'Dogecoin',  color: '#c2a633', dbKey: 'doge_address',        iconUrl: `${CDN}/doge.svg` },
 ];
 
-interface DepositProps {
-  addPendingDeposit?: (req: any) => void;
-}
-
-export default function Deposit({ addPendingDeposit }: DepositProps) {
+export default function Deposit() {
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
   const [selectedNet, setSelectedNet] = useState(NETWORKS[0]);
