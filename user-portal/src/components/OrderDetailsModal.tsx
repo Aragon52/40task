@@ -65,6 +65,7 @@ export default function OrderDetailsModal({
     if (submitting) return;
     setSubmitting(true);
     try {
+      await new Promise(resolve => setTimeout(resolve, 800));
       await onSubmit(order.id, order.price, order.profit);
     } finally {
       setSubmitting(false);
