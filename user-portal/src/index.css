@@ -357,8 +357,8 @@ body.theme-red {
 
   /* Match Animation Styles */
   .slot-container {
-    height: 165px;
-    min-height: 165px;
+    height: 195px;
+    min-height: 195px;
     overflow: hidden;
     position: relative;
     border-radius: var(--border-radius-md);
@@ -376,7 +376,7 @@ body.theme-red {
   }
 
   .slot-item {
-    height: 165px;
+    height: 195px;
     display: flex;
     flex-direction: column;
     justify-content: center;

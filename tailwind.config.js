@@ -56,9 +56,16 @@ export default {
         'premium': '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
         'luxury': '0 20px 40px -12px rgba(0, 0, 0, 0.1)',
       },
+      keyframes: {
+        'pulse-flash': {
+          '0%, 100%': { backgroundColor: 'transparent' },
+          '50%': { backgroundColor: 'rgba(16, 185, 129, 0.25)', transform: 'scale(1.005)' }
+        }
+      },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'spin-slow': 'spin 3s linear infinite',
+        'pulse-flash': 'pulse-flash 1.2s ease-in-out 1',
       }
     },
   },

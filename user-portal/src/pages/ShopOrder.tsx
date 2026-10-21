@@ -22,7 +22,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 
-const ITEM_HEIGHT = 165; // Pixel height of each item in the slot reel
+const ITEM_HEIGHT = 195; // Pixel height of each item in the slot reel
 
 const toMoneyAmount = (value: any) => {
   const parsed = Number.parseFloat(String(value ?? '').replace(/[$,\s]/g, ''));
@@ -158,9 +158,9 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
     toast.success(`Task submitted successfully! Earned $${normalizedProfit.toFixed(2)} commission.`);
     setActiveOrderDetails(null);
 
-    // 2. PARALLEL BACKGROUND DATABASE SYNCHRONIZATION
-    try {
-      const orderUpdatePromise = (async () => {
+    // 2. PARALLEL BACKGROUND DATABASE SYNCHRONIZATION (NON-BLOCKING)
+    Promise.all([
+      (async () => {
         if (orderId) {
           await supabase.from('cb_orders').update({ status: 'Success' }).eq('id', orderId);
         }
@@ -171,11 +171,9 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
             .eq('assigned_task_id', activeOrderDetails.assignedTaskId)
             .eq('assigned_order_index', activeOrderDetails.assignedOrderIndex);
         }
-      })();
-
-      const affiliatePromise = (async () => {
+      })(),
+      (async () => {
         try {
-          // Check if active task disables referral commission
           if (activeOrderDetails && activeOrderDetails.assignedTaskId) {
             const { data: taskList } = await supabase
               .from('cb_assigned_tasks')
@@ -191,10 +189,7 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
               taskOrders?.[0]?.disable_referral_commission
             );
 
-            if (isAiEdgeTask) {
-              console.log("Auto referral commission disabled for this AI Edge task assignment.");
-              return;
-            }
+            if (isAiEdgeTask) return;
           }
 
           const currentUsername = localStorage.getItem('cb_username');
@@ -227,9 +222,8 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
         } catch (affErr) {
           console.error("Affiliate reward error:", affErr);
         }
-      })();
-
-      const taskUpdatePromise = (async () => {
+      })(),
+      (async () => {
         if (activeOrderDetails && activeOrderDetails.assignedTaskId) {
           const { data: taskList } = await supabase
             .from('cb_assigned_tasks')
@@ -246,7 +240,6 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
             if (taskOrders[completedIdx]) {
               taskOrders[completedIdx].status = 'Success';
 
-              // Fetch user's updated balance after deposit and completed order
               let freshUserBalance = 0;
               const activeUser = localStorage.getItem('cb_username') || '';
               if (activeUser) {
@@ -264,7 +257,6 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
                 freshUserBalance = currentEffectiveBalance;
               }
 
-              // Recalculate subsequent pending orders to scale value to the user's updated balance
               const hasPendingSubsequent = taskOrders.slice(completedIdx + 1).some((o: any) => o.status === 'Pending');
 
               if (hasPendingSubsequent && freshUserBalance > 0) {
@@ -272,22 +264,15 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
 
                 for (let i = completedIdx + 1; i < taskOrders.length; i++) {
                   if (taskOrders[i].status === 'Pending') {
-                    const reduction = Math.random() * (37 - 18) + 18; // $18 to $37 less than running balance
+                    const reduction = Math.random() * (37 - 18) + 18;
                     const newPrice = Math.max(10, parseFloat((runningBalance - reduction).toFixed(2)));
-                    const profitRate = 0.002 + Math.random() * (0.003 - 0.002); // 0.2% to 0.3% profit rate
+                    const profitRate = 0.002 + Math.random() * (0.003 - 0.002);
                     const newProfit = parseFloat((newPrice * profitRate).toFixed(2));
 
                     taskOrders[i].price = newPrice;
                     taskOrders[i].profit = newProfit;
 
                     runningBalance = parseFloat((runningBalance + newProfit).toFixed(2));
-
-                    // Async background update for corresponding individual cb_orders row
-                    await supabase
-                      .from('cb_orders')
-                      .update({ price: newPrice, profit: newProfit })
-                      .eq('assigned_task_id', task.id)
-                      .eq('assigned_order_index', i);
                   }
                 }
               }
@@ -298,7 +283,6 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
               const newTotalProfit = parseFloat(taskOrders.reduce((sum: number, o: any) => sum + toMoneyAmount(o.profit), 0).toFixed(2));
               const newProfitPercent = newTotalAmount > 0 ? parseFloat(((newTotalProfit / newTotalAmount) * 100).toFixed(2)) : 0;
 
-              // Immediately update local React active task state to sync 0ms UI transition
               setActiveTaskState((prev: any) => prev ? { 
                 ...prev, 
                 orders: [...taskOrders], 
@@ -327,13 +311,10 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
             }
           }
         }
-      })();
-
-      await Promise.all([orderUpdatePromise, affiliatePromise, taskUpdatePromise]);
-      await fetchActiveTaskAndStats();
-    } catch (err) {
-      console.error("Background task sync error:", err);
-    }
+      })()
+    ]).catch(err => {
+      console.error("Background sync error:", err);
+    });
   };
 
   const handleBeginPicking = async () => {

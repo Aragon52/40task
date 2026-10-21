@@ -93,6 +93,8 @@ export default function OrdersInProgress() {
   const [editingOrders, setEditingOrders] = useState<any[]>([]);
   const lastValidPrices = useRef<number[]>([]);
 
+  const [flashingTaskIds, setFlashingTaskIds] = useState<Record<string, boolean>>({});
+
   const fetchTasks = async () => {
     try {
       const savedSession = localStorage.getItem('cb_admin_session');
@@ -147,14 +149,95 @@ export default function OrdersInProgress() {
     }
   };
 
+  const pendingBatchUpdates = useRef<Set<string>>(new Set());
+  const batchTimeoutRef = useRef<any>(null);
+
+  const processBatchUpdates = async () => {
+    const taskIdsToUpdate = Array.from(pendingBatchUpdates.current);
+    pendingBatchUpdates.current.clear();
+
+    if (taskIdsToUpdate.length === 0) return;
+
+    try {
+      const { data: updatedTasks } = await supabase
+        .from('cb_assigned_tasks')
+        .select('*')
+        .in('id', taskIdsToUpdate);
+
+      if (updatedTasks && updatedTasks.length > 0) {
+        setAssignedTasks(prevTasks => {
+          const map = new Map(prevTasks.map(t => [t.id, t]));
+          updatedTasks.forEach(t => {
+            map.set(t.id, {
+              id: t.id,
+              userId: t.user_id,
+              username: t.username,
+              totalAmount: parseFloat(t.total_amount || 0),
+              orderCount: t.order_count,
+              profitPercent: parseFloat(t.profit_percent || 0),
+              status: t.status,
+              createdAt: new Date(t.created_at).toLocaleString(),
+              assignedBy: t.assigned_by,
+              orders: typeof t.orders === 'string' ? JSON.parse(t.orders) : t.orders,
+              referred_by_staff_id: t.referred_by_staff_id || 'None',
+              member_of_admin_id: t.member_of_admin_id || 'None'
+            });
+          });
+          return Array.from(map.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        });
+
+        const newFlashMap: Record<string, boolean> = {};
+        taskIdsToUpdate.forEach(id => {
+          newFlashMap[id] = true;
+        });
+        setFlashingTaskIds(prev => ({ ...prev, ...newFlashMap }));
+        setTimeout(() => {
+          setFlashingTaskIds(prev => {
+            const next = { ...prev };
+            taskIdsToUpdate.forEach(id => delete next[id]);
+            return next;
+          });
+        }, 1500);
+      }
+    } catch (err) {
+      console.error("Batch update error:", err);
+      fetchTasks();
+    }
+  };
+
+  const queueBatchUpdate = (taskId: string) => {
+    pendingBatchUpdates.current.add(taskId);
+    if (batchTimeoutRef.current) clearTimeout(batchTimeoutRef.current);
+    batchTimeoutRef.current = setTimeout(processBatchUpdates, 150);
+  };
+
   useEffect(() => {
     fetchTasks();
     loadProducts();
+
+    // Realtime channel subscription with debounced batch-update approach
+    const channel = supabase
+      .channel('admin-orders-in-progress-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cb_assigned_tasks' }, (payload: any) => {
+        const updatedId = payload?.new?.id || payload?.old?.id;
+        if (updatedId) queueBatchUpdate(updatedId);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cb_orders' }, (payload: any) => {
+        const assignedTaskId = payload?.new?.assigned_task_id || payload?.old?.assigned_task_id;
+        if (assignedTaskId) queueBatchUpdate(assignedTaskId);
+      })
+      .subscribe();
+
     const interval = setInterval(() => {
       if (document.hidden) return; 
       fetchTasks();
     }, 15000); 
-    return () => clearInterval(interval);
+
+    return () => {
+      clearInterval(interval);
+      if (batchTimeoutRef.current) clearTimeout(batchTimeoutRef.current);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const getFilteredTasks = () => {
@@ -442,8 +525,10 @@ export default function OrdersInProgress() {
                   const isCompleted = t.status === 'Completed';
                   const isInProgress = t.status === 'In Progress';
                   
+                  const isFlashing = flashingTaskIds[t.id];
+                  
                   return (
-                    <tr key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+                    <tr key={t.id} className={`transition-all duration-700 ${isFlashing ? 'animate-pulse-flash bg-emerald-100 dark:bg-emerald-950/85 shadow-lg transform scale-[1.005] border-l-4 border-emerald-500' : 'hover:bg-slate-50/50 dark:hover:bg-slate-900/30'}`}>
                       <td className="px-6 py-4">
                         <span className="font-mono text-[10px] font-bold text-indigo-500 bg-indigo-500/5 px-2 py-1 rounded border border-indigo-500/10">#{t.id}</span>
                       </td>

@@ -1,0 +1,5 @@
+{
+  "summary":  "Complete, production-ready Supabase database schema SQL script for cloning the database from scratch. Includes all tables, RLS policies, real-time publications, storage bucket configuration, authentication RPC functions, and default seed settings.",
+  "updatedAt":  "2026-10-21T06:59:41.486964481Z",
+  "userFacing":  true
+}

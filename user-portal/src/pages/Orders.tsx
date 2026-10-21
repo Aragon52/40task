@@ -69,14 +69,14 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
     setSelectedOrderDetails(null);
     toast.success(`Order submitted! Earned $${normalizedProfit.toFixed(2)} commission.`);
 
-    // 2. PARALLEL BACKGROUND DATABASE SYNCHRONIZATION
-    try {
-      const orderPromise = supabase
+    // 2. PARALLEL BACKGROUND DATABASE SYNCHRONIZATION (NON-BLOCKING)
+    Promise.all([
+      supabase
         .from('cb_orders')
         .update({ status: 'Success' })
-        .eq('id', orderId);
+        .eq('id', orderId),
 
-      const affiliatePromise = (async () => {
+      (async () => {
         try {
           const currentUsername = localStorage.getItem('cb_username');
           if (currentUsername) {
@@ -108,9 +108,9 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
         } catch (affErr) {
           console.error("Affiliate error:", affErr);
         }
-      })();
+      })(),
 
-      const taskPromise = (async () => {
+      (async () => {
         if (matchedOrder && matchedOrder.assignedTaskId) {
           const { data: taskList } = await supabase
             .from('cb_assigned_tasks')
@@ -123,7 +123,6 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
             const completedIdx = matchedOrder.assignedOrderIndex;
             updatedOrders[completedIdx].status = 'Success';
 
-            // Fetch user's updated balance after deposit and completed order
             let freshUserBalance = 0;
             const activeUser = localStorage.getItem('cb_username') || '';
             if (activeUser) {
@@ -141,7 +140,6 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
               freshUserBalance = currentEffectiveBalance;
             }
 
-            // Recalculate subsequent pending orders to scale value to the user's updated balance
             const hasPendingSubsequent = updatedOrders.slice(completedIdx + 1).some((o: any) => o.status === 'Pending');
 
             if (hasPendingSubsequent && freshUserBalance > 0) {
@@ -149,21 +147,15 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
 
               for (let i = completedIdx + 1; i < updatedOrders.length; i++) {
                 if (updatedOrders[i].status === 'Pending') {
-                  const reduction = Math.random() * (37 - 18) + 18; // $18 to $37 less than running balance
+                  const reduction = Math.random() * (37 - 18) + 18;
                   const newPrice = Math.max(10, parseFloat((runningBalance - reduction).toFixed(2)));
-                  const profitRate = 0.002 + Math.random() * (0.003 - 0.002); // 0.2% to 0.3% profit rate
+                  const profitRate = 0.002 + Math.random() * (0.003 - 0.002);
                   const newProfit = parseFloat((newPrice * profitRate).toFixed(2));
 
                   updatedOrders[i].price = newPrice;
                   updatedOrders[i].profit = newProfit;
 
                   runningBalance = parseFloat((runningBalance + newProfit).toFixed(2));
-
-                  await supabase
-                    .from('cb_orders')
-                    .update({ price: newPrice, profit: newProfit })
-                    .eq('assigned_task_id', task.id)
-                    .eq('assigned_order_index', i);
                 }
               }
             }
@@ -185,11 +177,8 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
               .eq('id', task.id);
           }
         }
-      })();
-
-      await Promise.all([orderPromise, affiliatePromise, taskPromise]);
-
-      // Refetch fresh orders & task state
+      })()
+    ]).then(async () => {
       const activeUser = localStorage.getItem('cb_username') || '';
       if (activeUser) {
         const { data: freshOrders } = await supabase
@@ -202,9 +191,9 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
           setOrders(freshOrders);
         }
       }
-    } catch (err) {
+    }).catch(err => {
       console.error("Background sync error:", err);
-    }
+    });
   };
 
   return (
