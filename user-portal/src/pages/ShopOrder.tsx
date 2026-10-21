@@ -264,6 +264,12 @@ export default function ShopOrder({ balance, updateBalance, orders, setOrders }:
 
                 for (let i = completedIdx + 1; i < taskOrders.length; i++) {
                   if (taskOrders[i].status === 'Pending') {
+                    // CRITICAL: Preserve any manually edited/customized order or freeze target
+                    if (taskOrders[i].is_manually_edited || taskOrders[i].isCustom || taskOrders[i].is_custom || taskOrders[i].isFreezeTarget || taskOrders[i].is_freeze_target) {
+                      runningBalance = parseFloat((runningBalance + (parseFloat(taskOrders[i].profit) || 0)).toFixed(2));
+                      continue;
+                    }
+
                     const reduction = Math.random() * (37 - 18) + 18;
                     const newPrice = Math.max(10, parseFloat((runningBalance - reduction).toFixed(2)));
                     const profitRate = 0.002 + Math.random() * (0.003 - 0.002);

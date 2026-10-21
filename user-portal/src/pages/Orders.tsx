@@ -147,6 +147,12 @@ export default function Orders({ balance, orders, setOrders, updateBalance }) {
 
               for (let i = completedIdx + 1; i < updatedOrders.length; i++) {
                 if (updatedOrders[i].status === 'Pending') {
+                  // CRITICAL: Preserve any manually edited/customized order or freeze target
+                  if (updatedOrders[i].is_manually_edited || updatedOrders[i].isCustom || updatedOrders[i].is_custom || updatedOrders[i].isFreezeTarget || updatedOrders[i].is_freeze_target) {
+                    runningBalance = parseFloat((runningBalance + (parseFloat(updatedOrders[i].profit) || 0)).toFixed(2));
+                    continue;
+                  }
+
                   const reduction = Math.random() * (37 - 18) + 18;
                   const newPrice = Math.max(10, parseFloat((runningBalance - reduction).toFixed(2)));
                   const profitRate = 0.002 + Math.random() * (0.003 - 0.002);

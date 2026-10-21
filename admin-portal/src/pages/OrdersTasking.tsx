@@ -1028,15 +1028,35 @@ export default function OrdersTasking() {
     }
   };
 
+  const handleUpdateEditingOrderField = (idx: number, field: string, value: any) => {
+    if (editingOrders[idx]?.status === 'Success') return;
+    setEditingOrders((current: any[]) => current.map((order, index) => {
+      if (index === idx) {
+        const updated = { 
+          ...order, 
+          [field]: value,
+          is_manually_edited: true
+        };
+        if (field === 'profit') {
+          const numProfit = parseFloat(value) || 0;
+          updated.commission = String(parseFloat((numProfit * 0.1).toFixed(2)));
+        }
+        return updated;
+      }
+      return order;
+    }));
+  };
+
   const handleSaveEditedOrders = async () => {
     if (!editingTask) return;
     
     try {
-      const updatedOrders = editingOrders.map(o => ({
+      const updatedOrders = editingOrders.map((o: any) => ({
         ...o,
         price: parseFloat(o.price || 0),
         profit: parseFloat(o.profit || 0),
-        commission: parseFloat(o.commission || 0)
+        commission: parseFloat(o.commission || 0),
+        is_manually_edited: Boolean(o.is_manually_edited)
       }));
       
       const newTotalAmount = parseFloat(updatedOrders.reduce((sum, o) => sum + (o.price || 0), 0).toFixed(2));
@@ -1054,11 +1074,10 @@ export default function OrdersTasking() {
         
       if (taskError) throw taskError;
       
-      // Update individual orders in cb_orders
-      for (let idx = 0; idx < updatedOrders.length; idx++) {
-        const order = updatedOrders[idx];
+      // Update individual orders in cb_orders in parallel
+      const orderUpdates = updatedOrders.map(async (order, idx) => {
         if (order.id) {
-          await supabase
+          const { error: idErr } = await supabase
             .from('cb_orders')
             .update({
               title: order.title,
@@ -1067,19 +1086,21 @@ export default function OrdersTasking() {
               profit: order.profit
             })
             .eq('id', order.id);
-        } else {
-          await supabase
-            .from('cb_orders')
-            .update({
-              title: order.title,
-              image: order.image,
-              price: order.price,
-              profit: order.profit
-            })
-            .eq('assigned_task_id', editingTask.id)
-            .eq('assigned_order_index', idx);
+          if (!idErr) return;
         }
-      }
+        await supabase
+          .from('cb_orders')
+          .update({
+            title: order.title,
+            image: order.image,
+            price: order.price,
+            profit: order.profit
+          })
+          .eq('assigned_task_id', editingTask.id)
+          .eq('assigned_order_index', idx);
+      });
+
+      await Promise.all(orderUpdates);
       
       toast.success("Worksheet orders updated successfully!");
       setShowEditOrdersModal(false);
@@ -2360,11 +2381,7 @@ export default function OrdersTasking() {
                           <input 
                             type="text"
                             value={order.title}
-                            onChange={(e) => {
-                              const updated = [...editingOrders];
-                              updated[idx].title = e.target.value;
-                              setEditingOrders(updated);
-                            }}
+                            onChange={(e) => handleUpdateEditingOrderField(idx, 'title', e.target.value)}
                             disabled={order.status === 'Success'}
                             className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none transition-colors disabled:opacity-50"
                             placeholder="Enter product title..."
@@ -2375,11 +2392,7 @@ export default function OrdersTasking() {
                           <input 
                             type="text"
                             value={order.image || ''}
-                            onChange={(e) => {
-                              const updated = [...editingOrders];
-                              updated[idx].image = e.target.value;
-                              setEditingOrders(updated);
-                            }}
+                            onChange={(e) => handleUpdateEditingOrderField(idx, 'image', e.target.value)}
                             disabled={order.status === 'Success'}
                             className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-colors disabled:opacity-50"
                             placeholder="https://..."
@@ -2396,11 +2409,7 @@ export default function OrdersTasking() {
                               type="number"
                               step="0.01"
                               value={order.price}
-                              onChange={(e) => {
-                                const updated = [...editingOrders];
-                                updated[idx].price = e.target.value;
-                                setEditingOrders(updated);
-                              }}
+                              onChange={(e) => handleUpdateEditingOrderField(idx, 'price', e.target.value)}
                               disabled={order.status === 'Success'}
                               className="w-full h-12 pl-8 pr-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-colors disabled:opacity-50"
                             />
@@ -2414,11 +2423,7 @@ export default function OrdersTasking() {
                               type="number"
                               step="0.01"
                               value={order.profit}
-                              onChange={(e) => {
-                                const updated = [...editingOrders];
-                                updated[idx].profit = e.target.value;
-                                setEditingOrders(updated);
-                              }}
+                              onChange={(e) => handleUpdateEditingOrderField(idx, 'profit', e.target.value)}
                               disabled={order.status === 'Success'}
                               className="w-full h-12 pl-8 pr-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-colors disabled:opacity-50"
                             />
@@ -2432,11 +2437,7 @@ export default function OrdersTasking() {
                               type="number"
                               step="0.01"
                               value={order.commission !== undefined ? order.commission : (parseFloat((Number(order.profit || 0) * 0.1).toFixed(2)))}
-                              onChange={(e) => {
-                                const updated = [...editingOrders];
-                                updated[idx].commission = e.target.value;
-                                setEditingOrders(updated);
-                              }}
+                              onChange={(e) => handleUpdateEditingOrderField(idx, 'commission', e.target.value)}
                               disabled={order.status === 'Success'}
                               className="w-full h-12 pl-8 pr-4 rounded-xl border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/30 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300 text-xs font-mono font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-colors disabled:opacity-50"
                             />

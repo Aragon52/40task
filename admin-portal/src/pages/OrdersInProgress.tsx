@@ -33,53 +33,6 @@ import {
 } from 'lucide-react';
 import { Button, Modal, Card, Input, Badge } from '@/src/shared/UI';
 
-const toCents = (value: any) => {
-  const amount = Number(value);
-  return Number.isFinite(amount) ? Math.round(amount * 100) : null;
-};
-
-const rebalanceFollowingPrices = (orders: any[], editedIndex: number, updatedPriceCents: number) => {
-  const adjustedOrders = orders.map(order => ({ ...order }));
-  const previousPriceCents = toCents(adjustedOrders[editedIndex]?.price);
-  if (previousPriceCents === null || updatedPriceCents < 1) return null;
-
-  const deltaCents = updatedPriceCents - previousPriceCents;
-  adjustedOrders[editedIndex].price = updatedPriceCents / 100;
-  if (deltaCents === 0) return adjustedOrders;
-
-  const followingPendingIndexes = adjustedOrders
-    .map((order, index) => ({ order, index }))
-    .filter(({ order, index }) => index > editedIndex && order.status === 'Pending')
-    .map(({ index }) => index);
-  if (followingPendingIndexes.length === 0) return null;
-
-  const oldFollowingTotal = followingPendingIndexes.reduce(
-    (sum, index) => sum + (toCents(adjustedOrders[index].price) || 0),
-    0
-  );
-  const newFollowingTotal = oldFollowingTotal - deltaCents;
-  if (newFollowingTotal < followingPendingIndexes.length) return null;
-
-  const weights = followingPendingIndexes.map(index => Math.max(1, toCents(adjustedOrders[index].price) || 1));
-  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
-  const distributableCents = newFollowingTotal - followingPendingIndexes.length;
-  const shares = weights.map(weight => (distributableCents * weight) / totalWeight);
-  const allocatedCents = shares.map(share => Math.floor(share));
-  const remainingCents = distributableCents - allocatedCents.reduce((sum, amount) => sum + amount, 0);
-
-  const remainderOrder = shares
-    .map((share, index) => ({ index, remainder: share - allocatedCents[index] }))
-    .sort((a, b) => b.remainder - a.remainder);
-  for (let index = 0; index < remainingCents; index++) {
-    allocatedCents[remainderOrder[index].index] += 1;
-  }
-
-  followingPendingIndexes.forEach((orderIndex, index) => {
-    adjustedOrders[orderIndex].price = (allocatedCents[index] + 1) / 100;
-  });
-  return adjustedOrders;
-};
-
 export default function OrdersInProgress() {
   const [assignedTasks, setAssignedTasks] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>(PRODUCT_CATALOG);
@@ -91,7 +44,6 @@ export default function OrdersInProgress() {
   const [showEditOrdersModal, setShowEditOrdersModal] = useState(false);
   const [editingTask, setEditingTask] = useState<any>(null);
   const [editingOrders, setEditingOrders] = useState<any[]>([]);
-  const lastValidPrices = useRef<number[]>([]);
 
   const [flashingTaskIds, setFlashingTaskIds] = useState<Record<string, boolean>>({});
 
@@ -297,26 +249,31 @@ export default function OrdersInProgress() {
 
   const handleOpenEditOrdersModal = (task: any) => {
     setEditingTask(task);
-    setEditingOrders(task.orders.map((o: any) => ({
+    setEditingOrders((task.orders || []).map((o: any) => ({
       ...o,
       price: o.price !== undefined ? o.price : 0,
       profit: o.profit !== undefined ? o.profit : 0,
-      commission: o.commission !== undefined ? o.commission : parseFloat((Number(o.profit || 0) * 0.1).toFixed(2))
+      commission: o.commission !== undefined ? o.commission : parseFloat((Number(o.profit || 0) * 0.1).toFixed(2)),
+      is_manually_edited: Boolean(o.is_manually_edited)
     })));
-    lastValidPrices.current = task.orders.map((order: any) => toCents(order.price) || 0);
     setShowEditOrdersModal(true);
   };
 
-  const handlePriceChange = (idx: number, value: any, orderUpdates = {}) => {
+  const handleUpdateOrderField = (idx: number, field: string, value: any) => {
     if (editingOrders[idx]?.status === 'Success') return;
-    const numVal = parseFloat(value) || 0;
     setEditingOrders(current => current.map((order, index) => {
       if (index === idx) {
-        return { 
+        const updated = { 
           ...order, 
-          ...orderUpdates, 
-          price: value
+          [field]: value,
+          is_manually_edited: true
         };
+        // Auto-calculate commission if profit is edited
+        if (field === 'profit') {
+          const numProfit = parseFloat(value) || 0;
+          updated.commission = parseFloat((numProfit * 0.1).toFixed(2));
+        }
+        return updated;
       }
       return order;
     }));
@@ -326,19 +283,24 @@ export default function OrdersInProgress() {
     if (!editingOrders || editingOrders.length <= fromIndex + 1) return;
     const updated = editingOrders.map(o => ({ ...o }));
 
-    // Estimate running balance after order at fromIndex
-    const startPrice = parseFloat(updated[fromIndex].price || 0);
-    const startProfit = parseFloat(updated[fromIndex].profit || 0);
-
-    // Calculate cumulative profit up to fromIndex
-    const priorProfits = updated.slice(0, fromIndex + 1).reduce((sum, o) => sum + (parseFloat(o.profit) || 0), 0);
+    // Estimate user starting balance based on first order's price + typical initial margin ($25)
+    const firstOrderPrice = parseFloat(updated[0]?.price || 100);
+    const initialBalEstimate = firstOrderPrice + 25;
     
-    // User starting balance estimated from task initial amount or current balance
-    const userInitialBal = parseFloat(editingTask?.totalAmount || '100');
-    let runningBal = userInitialBal + priorProfits;
+    // Calculate running balance through fromIndex
+    let runningBal = initialBalEstimate;
+    for (let i = 0; i <= fromIndex; i++) {
+      runningBal = parseFloat((runningBal + (parseFloat(updated[i].profit) || 0)).toFixed(2));
+    }
 
     for (let i = fromIndex + 1; i < updated.length; i++) {
       if (updated[i].status === 'Pending') {
+        // If row was manually edited or has freeze target, do NOT overwrite it, just advance running balance
+        if (updated[i].is_manually_edited || updated[i].isFreezeTarget) {
+          runningBal = parseFloat((runningBal + (parseFloat(updated[i].profit) || 0)).toFixed(2));
+          continue;
+        }
+
         const reduction = Math.random() * (37 - 18) + 18; // $18 to $37
         const newPrice = Math.max(10, parseFloat((runningBal - reduction).toFixed(2)));
         const profitRate = 0.002 + Math.random() * (0.003 - 0.002); // 0.2% to 0.3%
@@ -354,7 +316,7 @@ export default function OrdersInProgress() {
     }
 
     setEditingOrders(updated);
-    toast.success(`Recalculated AI Edge sequence for rows #${fromIndex + 2} to #${updated.length}`);
+    toast.success(`Recalculated subsequent pending orders (manually adjusted rows preserved)`);
   };
 
   const handleSaveEditedOrders = async (e: React.FormEvent) => {
@@ -373,11 +335,13 @@ export default function OrdersInProgress() {
     }
 
     try {
-      const cleanedOrders = editingOrders.map(o => ({
+      const cleanedOrders = editingOrders.map((o, idx) => ({
         ...o,
+        id: o.id || `order-${editingTask.id}-${idx}`,
         price: parseFloat(parseFloat(o.price || 0).toFixed(2)),
         profit: parseFloat(parseFloat(o.profit || 0).toFixed(2)),
-        commission: parseFloat(parseFloat(o.commission || 0).toFixed(2))
+        commission: parseFloat(parseFloat(o.commission || 0).toFixed(2)),
+        is_manually_edited: Boolean(o.is_manually_edited)
       }));
 
       const newTotalAmount = parseFloat(cleanedOrders.reduce((sum, o) => sum + parseFloat(o.price || 0), 0).toFixed(2));
@@ -398,9 +362,22 @@ export default function OrdersInProgress() {
         return;
       }
 
-      for (let idx = 0; idx < cleanedOrders.length; idx++) {
-        const o = cleanedOrders[idx];
-        const { error: orderErr } = await supabase
+      // Parallelize individual order updates across cb_orders
+      const orderUpdatePromises = cleanedOrders.map(async (o, idx) => {
+        if (o.id) {
+          const { error: idErr } = await supabase
+            .from('cb_orders')
+            .update({
+              title: o.title,
+              image: o.image || null,
+              price: o.price,
+              profit: o.profit,
+              status: o.status
+            })
+            .eq('id', o.id);
+          if (!idErr) return;
+        }
+        await supabase
           .from('cb_orders')
           .update({
             title: o.title,
@@ -411,10 +388,9 @@ export default function OrdersInProgress() {
           })
           .eq('assigned_task_id', editingTask.id)
           .eq('assigned_order_index', idx);
-        if (orderErr) {
-          console.warn(`Order #${idx + 1} sync warning: ${orderErr.message}`);
-        }
-      }
+      });
+
+      await Promise.all(orderUpdatePromises);
 
       toast.success("Worksheet sequence changes committed successfully!");
       setShowEditOrdersModal(false);
@@ -668,16 +644,19 @@ export default function OrdersInProgress() {
                       return (
                         <tr key={idx} className={`hover:bg-slate-50/80 dark:hover:bg-slate-950/60 transition-colors ${isCompleted ? 'bg-slate-50/50 dark:bg-slate-900/40 opacity-70' : ''}`}>
                           <td className="px-4 py-3 text-center align-middle font-mono font-bold text-xs text-slate-500">
-                            #{idx + 1}
+                            <div className="flex flex-col items-center justify-center gap-1">
+                              <span>#{idx + 1}</span>
+                              {order.is_manually_edited && (
+                                <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-900/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                  Adjusted
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-center align-middle">
                             <select
                               value={order.status}
-                              onChange={(e) => {
-                                const newOrders = [...editingOrders];
-                                newOrders[idx].status = e.target.value;
-                                setEditingOrders(newOrders);
-                              }}
+                              onChange={(e) => handleUpdateOrderField(idx, 'status', e.target.value)}
                               className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg border outline-none cursor-pointer ${
                                 isCompleted 
                                   ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50' 
@@ -702,11 +681,7 @@ export default function OrdersInProgress() {
                               <input 
                                 type="text"
                                 value={order.title}
-                                onChange={(e) => {
-                                  const newOrders = [...editingOrders];
-                                  newOrders[idx].title = e.target.value;
-                                  setEditingOrders(newOrders);
-                                }}
+                                onChange={(e) => handleUpdateOrderField(idx, 'title', e.target.value)}
                                 disabled={isCompleted}
                                 className="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs font-bold text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-60"
                               />
@@ -717,7 +692,7 @@ export default function OrdersInProgress() {
                               type="number"
                               step="0.01"
                               value={order.price}
-                              onChange={(e) => handlePriceChange(idx, e.target.value)}
+                              onChange={(e) => handleUpdateOrderField(idx, 'price', e.target.value)}
                               disabled={isCompleted}
                               className="w-28 h-9 px-3 text-right font-mono text-xs font-extrabold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                             />
@@ -727,11 +702,7 @@ export default function OrdersInProgress() {
                               type="number"
                               step="0.01"
                               value={order.profit}
-                              onChange={(e) => {
-                                const newOrders = [...editingOrders];
-                                newOrders[idx].profit = e.target.value;
-                                setEditingOrders(newOrders);
-                              }}
+                              onChange={(e) => handleUpdateOrderField(idx, 'profit', e.target.value)}
                               disabled={isCompleted}
                               className="w-28 h-9 px-3 text-right font-mono text-xs font-extrabold rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-60"
                             />
@@ -741,11 +712,7 @@ export default function OrdersInProgress() {
                               type="number"
                               step="0.01"
                               value={order.commission !== undefined ? order.commission : (parseFloat((Number(order.profit || 0) * 0.1).toFixed(2)))}
-                              onChange={(e) => {
-                                const newOrders = [...editingOrders];
-                                newOrders[idx].commission = e.target.value;
-                                setEditingOrders(newOrders);
-                              }}
+                              onChange={(e) => handleUpdateOrderField(idx, 'commission', e.target.value)}
                               disabled={isCompleted}
                               className="w-28 h-9 px-3 text-right font-mono text-xs font-extrabold rounded-xl border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/40 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
                             />
@@ -755,7 +722,7 @@ export default function OrdersInProgress() {
                               <button
                                 type="button"
                                 onClick={() => handleRecalculateSubsequentAiOrders(idx)}
-                                title={`Recalculate rows #${idx + 2} to #${editingOrders.length} using AI Edge balance formula`}
+                                title={`Recalculate rows #${idx + 2} to #${editingOrders.length} using AI Edge balance formula (preserves adjusted rows)`}
                                 className="px-2.5 py-1.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/60 dark:hover:bg-purple-900/80 text-purple-700 dark:text-purple-300 rounded-lg text-[10px] font-bold border border-purple-200 dark:border-purple-800 transition-colors flex items-center justify-center gap-1 mx-auto cursor-pointer"
                               >
                                 <Sparkles className="w-3 h-3 text-purple-600 dark:text-purple-400 shrink-0" />
