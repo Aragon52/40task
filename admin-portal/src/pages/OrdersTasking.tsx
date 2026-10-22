@@ -126,7 +126,7 @@ export const TEMPLATE_C_2 = [
   { sr: 13, price: 45.9, profit: 0.14, title: "Autel Maxisys CV MS908CV", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-8.png" },
   { sr: 14, price: 43.8, profit: 0.11, title: "Woeoe Thick Warm Winter Hat Yellow", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-2.png" },
   { sr: 15, price: 47.8, profit: 0.14, title: "Scales Of Justice Blue Navy Blue", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-6.png" },
-  { sr: 16, price: 81.87, profit: 14, title: "CARTMAN 3 Pack Warning Triangle DOT", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-12.png" },
+  { sr: 16, price: 81.874, profit: 14, title: "CARTMAN 3 Pack Warning Triangle DOT", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-12.png" },
   { sr: 17, price: 94.11, profit: 0.23, title: "Walker Products 350-34652 Oxygen Sensor", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-21.png" },
   { sr: 18, price: 93.24, profit: 0.22, title: "ProFormX Velocity 14 Golf Cart Wheels", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-15.png" },
   { sr: 19, price: 91.88, profit: 0.2, title: "Touch Screen Android Head Unit for", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-14.png" },
@@ -140,7 +140,7 @@ export const TEMPLATE_C_2 = [
   { sr: 27, price: 91.88, profit: 0.2, title: "Touch Screen Android Head Unit for", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-14.png" },
   { sr: 28, price: 94.99, profit: 0.3, title: "NOCO Boost HD GB70 2000 Amp", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-10.png" },
   { sr: 29, price: 97.01, profit: 0.34, title: "Schumacher DSR115 DSR ProSeries Rechargeable Pro", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-13.png" },
-  { sr: 30, price: 161.99, profit: 26, title: "Rebecca Taylor Women’s Rib Knit Cardi", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-32.png" },
+  { sr: 30, price: 161.994, profit: 26, title: "Rebecca Taylor Women’s Rib Knit Cardi", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-32.png" },
   { sr: 31, price: 180.55, profit: 0.5, title: "Women's Sports Mom Embroidered Ladies Fit", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-29.png" },
   { sr: 32, price: 187.01, profit: 0.6, title: "Pampers Pure Protection Diapers Size 6", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-33.png" },
   { sr: 33, price: 164.88, profit: 0.4, title: "Mob Armor Mob Mount Switch Magnetic", image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/cj-16.png" },
@@ -455,9 +455,7 @@ export const TEMPLATE_M_5 = [
 ];
 
 export const PRESET_OPTIONS = [
-  { value: 'custom', name: 'Custom Worksheet (Manual)', details: 'Build custom worksheet step-by-step', badge: 'Manual' },
   { value: 'ai_edge', name: 'AI edge functioning Orders Assignment', details: 'Auto-populated dynamic progression (Order #1 -$18 to -$37 from balance, #2+ -$20 to -$40 balance adjustment, 5%-13% profit, 0.2%-0.3% commission)', badge: 'AI Edge' },
-  { value: 'smart', name: 'Manual Parameter Generator', details: 'Generate random orders based on custom bounds', badge: 'Dynamic' },
   { value: 'M-1', name: 'Preset M-1', details: '40 Items • $30,000 Total • $210.00 Comm.', badge: 'Preset' },
   { value: 'M-2', name: 'Preset M-2', details: '40 Items • $98,000 Total • $496.00 Comm.', badge: 'Preset' },
   { value: 'M-3', name: 'Preset M-3', details: '40 Items • $353,000 Total • $4.6k Comm.', badge: 'Preset' },
@@ -479,21 +477,12 @@ export default function OrdersTasking() {
 
   // Form assignment states
   const [selectedUser, setSelectedUser] = useState(null);
-  const [selectedTemplate, setSelectedTemplate] = useState('custom'); // 'custom', 'ai_edge', 'smart', 'M-1', ...
+  const [selectedTemplate, setSelectedTemplate] = useState('ai_edge'); // 'custom', 'ai_edge', 'smart', 'M-1', ...
   const [showModal, setShowModal] = useState(false);
   const [newAssignOrders, setNewAssignOrders] = useState([]);
   const [freezeTarget, setFreezeTarget] = useState('');
   const [presetDropdownOpen, setPresetDropdownOpen] = useState(false);
   const [isCustomizingPreset, setIsCustomizingPreset] = useState(false);
-
-  // Smart Generator States
-  const [genOrderCount, setGenOrderCount] = useState('40');
-  const [genMinPrice, setGenMinPrice] = useState('100');
-  const [genMaxPrice, setGenMaxPrice] = useState('500');
-  const [genMinCommission, setGenMinCommission] = useState('1');
-  const [genMaxCommission, setGenMaxCommission] = useState('10');
-  const [genMinProfit, setGenMinProfit] = useState('1');
-  const [genMaxProfit, setGenMaxProfit] = useState('10');
 
   // AI Edge Generator States
   const [aiBasePrice, setAiBasePrice] = useState('100');
@@ -1443,47 +1432,6 @@ export default function OrdersTasking() {
           }
         };
 
-        const handleGenerateSmartSequence = () => {
-          const count = parseInt(genOrderCount) || 40;
-          const minP = parseFloat(genMinPrice) || 100;
-          const maxP = parseFloat(genMaxPrice) || 500;
-          const minComm = parseFloat(genMinCommission) || 1;
-          const maxComm = parseFloat(genMaxCommission) || 10;
-          const minProf = parseFloat(genMinProfit) || 1;
-          const maxProf = parseFloat(genMaxProfit) || 10;
-
-          if (maxP < minP) {
-            toast.error("Max Price must be greater than Min Price");
-            return;
-          }
-          
-          const generated = [];
-          for (let i = 0; i < count; i++) {
-            // Pick a random product from catalog for title/image
-            const randomProd = PRODUCT_CATALOG[Math.floor(Math.random() * PRODUCT_CATALOG.length)];
-            const randomPrice = parseFloat((Math.random() * (maxP - minP) + minP).toFixed(2));
-            
-            // Calculate random commission and random profit components
-            const rComm = parseFloat((Math.random() * (maxComm - minComm) + minComm).toFixed(2));
-            const rProf = parseFloat((Math.random() * (maxProf - minProf) + minProf).toFixed(2));
-            
-            // The final 'profit' field in the system will be the sum of both components
-            const finalProfit = (rComm + rProf).toFixed(2);
-
-            generated.push({
-              title: randomProd.title,
-              image: randomProd.image,
-              price: randomPrice.toString(),
-              profit: finalProfit,
-              status: 'Pending'
-            });
-          }
-
-          setNewAssignOrders(generated);
-          setIsCustomizingPreset(true); // Switch to list view so they can edit
-          toast.success(`Generated ${count} random orders with combined Commission + Profit components.`);
-        };
-
         const currentPreset = PRESET_OPTIONS.find(p => p.value === selectedTemplate) || PRESET_OPTIONS[0];
 
         return (
@@ -1744,96 +1692,7 @@ export default function OrdersTasking() {
                     </div>
                   )}
 
-                  {(selectedTemplate === 'custom' || selectedTemplate === 'smart') && !isCustomizingPreset && (
-                    <div className="p-6 sm:p-7 bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800/60 rounded-3xl flex flex-col gap-6 shadow-sm">
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                          <Sparkles className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-slate-900 dark:text-white text-lg">Manual Parameter Generator</h4>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Automate worksheet creation with random bounds</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                        <div className="flex flex-col gap-2">
-                          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Order Count</label>
-                          <input 
-                            type="number" 
-                            value={genOrderCount} 
-                            onChange={(e) => setGenOrderCount(e.target.value)}
-                            className="h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                          />
-                        </div>
-                        <div className="flex flex-col gap-2 text-indigo-700 dark:text-indigo-300">
-                          <label className="text-[11px] font-bold uppercase tracking-wider">Min Product Value ($)</label>
-                          <input 
-                            type="number" 
-                            value={genMinPrice} 
-                            onChange={(e) => setGenMinPrice(e.target.value)}
-                            className="h-11 px-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                          />
-                        </div>
-                        <div className="flex flex-col gap-2 text-indigo-700 dark:text-indigo-300">
-                          <label className="text-[11px] font-bold uppercase tracking-wider">Max Product Value ($)</label>
-                          <input 
-                            type="number" 
-                            value={genMaxPrice} 
-                            onChange={(e) => setGenMaxPrice(e.target.value)}
-                            className="h-11 px-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                          />
-                        </div>
-                        <div className="flex flex-col gap-2 text-blue-600 dark:text-blue-400">
-                          <label className="text-[11px] font-bold uppercase tracking-wider">Min Commission ($)</label>
-                          <input 
-                            type="number" 
-                            value={genMinCommission} 
-                            onChange={(e) => setGenMinCommission(e.target.value)}
-                            className="h-11 px-4 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-900 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                          />
-                        </div>
-                        <div className="flex flex-col gap-2 text-blue-600 dark:text-blue-400">
-                          <label className="text-[11px] font-bold uppercase tracking-wider">Max Commission ($)</label>
-                          <input 
-                            type="number" 
-                            value={genMaxCommission} 
-                            onChange={(e) => setGenMaxCommission(e.target.value)}
-                            className="h-11 px-4 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-900 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                          />
-                        </div>
-                        <div className="flex flex-col gap-2 text-emerald-600 dark:text-emerald-400">
-                          <label className="text-[11px] font-bold uppercase tracking-wider">Min Profit ($)</label>
-                          <input 
-                            type="number" 
-                            value={genMinProfit} 
-                            onChange={(e) => setGenMinProfit(e.target.value)}
-                            className="h-11 px-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                          />
-                        </div>
-                        <div className="flex flex-col gap-2 text-emerald-600 dark:text-emerald-400">
-                          <label className="text-[11px] font-bold uppercase tracking-wider">Max Profit ($)</label>
-                          <input 
-                            type="number" 
-                            value={genMaxProfit} 
-                            onChange={(e) => setGenMaxProfit(e.target.value)}
-                            className="h-11 px-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <button 
-                        type="button"
-                        onClick={handleGenerateSmartSequence}
-                        className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-[0.99] flex items-center justify-center gap-2.5 cursor-pointer"
-                      >
-                        <Sparkles className="w-5 h-5" />
-                        Generate Custom Worksheet Sequence
-                      </button>
-                    </div>
-                  )}
-
-                  {(selectedTemplate === 'custom' || selectedTemplate === 'ai_edge' || selectedTemplate === 'smart' || isCustomizingPreset) && (
+                  {(selectedTemplate === 'ai_edge' || isCustomizingPreset) && (
                     <div className="p-5 sm:p-6 bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
                       <div>
                         <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base">Worksheet Row Builder</h4>
@@ -1865,7 +1724,7 @@ export default function OrdersTasking() {
                   )}
 
                   {/* Sequence Preview or Configuration Cards Container */}
-                  {selectedTemplate !== 'custom' && !isCustomizingPreset ? (
+                  {!isCustomizingPreset ? (
                     <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-sm">
                       <div className="px-6 py-4 bg-slate-50/80 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-wider">
                         <span className="flex items-center gap-2.5"><ListOrdered className="w-4 h-4 text-indigo-500" /> Worksheet Sequence Preview</span>

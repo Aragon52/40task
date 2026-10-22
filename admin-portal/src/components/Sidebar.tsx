@@ -11,6 +11,7 @@ import {
   MessageSquare, 
   Settings,
   Layers,
+  Database,
   ChevronLeft,
   X,
   LucideIcon
@@ -89,6 +90,7 @@ export default function Sidebar({
     { id: 'templates-summary', label: 'Templates Matrix', icon: Layers, roles: ['Owner', 'Admin', 'Staff'] },
     { id: 'orders-in-progress', label: 'Orders In Progress', icon: TrendingUp, roles: ['Owner', 'Admin', 'Staff'] },
     { id: 'financial-center', label: 'Financial Center', icon: DollarSign, roles: ['Owner', 'Admin', 'Staff'] },
+    { id: 'db-management', label: 'DB Management', icon: Database, roles: ['Owner', 'Admin'] },
     { id: 'support-chat', label: 'Support & Chat', icon: MessageSquare, roles: ['Owner', 'Admin', 'Staff'] },
     { id: 'settings', label: 'Settings', icon: Settings, roles: ['Owner', 'Admin'] }
   ];

@@ -10,6 +10,7 @@ import FinancialCenter from './pages/FinancialCenter.tsx';
 import OrdersTasking from './pages/OrdersTasking.tsx';
 import TemplatesSummary from './pages/TemplatesSummary.tsx';
 import OrdersInProgress from './pages/OrdersInProgress.tsx';
+import DbManagement from './pages/DbManagement.tsx';
 import Settings from './pages/Settings.tsx';
 import SupportChat from './pages/SupportChat.tsx';
 import Login from './pages/Login.tsx';
@@ -197,6 +198,7 @@ export default function App() {
       case 'templates-summary': return 'Presets Matrix & Verification';
       case 'orders-in-progress': return 'Orders In Progress';
       case 'financial-center': return 'Financial Center';
+      case 'db-management': return 'Database Management';
       case 'support-chat': return 'Support & Chat Inbox';
       case 'settings': return 'System Settings';
       case 'my-profile': return 'My Profile';
@@ -229,6 +231,9 @@ export default function App() {
 
       case 'financial-center':
         return <FinancialCenter />;
+
+      case 'db-management':
+        return <DbManagement />;
         
       case 'dashboard': {
         const statCards = [

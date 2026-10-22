@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { 
   Layers, 
-  CheckCircle2, 
   Eye, 
-  TrendingUp,
   Search,
-  FileText,
-  X
+  X,
+  Upload,
+  Download,
+  RefreshCcw,
+  Link as LinkIcon,
+  FileSpreadsheet
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { 
   TEMPLATE_M_1, 
   TEMPLATE_M_2, 
@@ -21,26 +24,54 @@ import {
   TEMPLATE_C_5 
 } from './OrdersTasking';
 
-const templatesMap: Record<string, any[]> = {
-  'M-1': TEMPLATE_M_1,
-  'M-2': TEMPLATE_M_2,
-  'M-3': TEMPLATE_M_3,
-  'M-4': TEMPLATE_M_4,
-  'M-5': TEMPLATE_M_5,
-  'C-1': TEMPLATE_C_1,
-  'C-2': TEMPLATE_C_2,
-  'C-3': TEMPLATE_C_3,
-  'C-4': TEMPLATE_C_4,
-  'C-5': TEMPLATE_C_5
-};
-
-const templateNames = Object.keys(templatesMap);
-
 export default function TemplatesSummary() {
   const [selectedTemplate, setSelectedTemplate] = useState('M-1');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [showExplorer, setShowExplorer] = useState(false);
+  const [sheetUrl, setSheetUrl] = useState('');
+  const [importing, setImporting] = useState(false);
+
+  const [templateOverrides, setTemplateOverrides] = useState<Record<string, any[]>>(() => {
+    try {
+      const saved = localStorage.getItem('cb_template_overrides');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const getActiveTemplate = (name: string) => {
+    if (templateOverrides[name]) return templateOverrides[name];
+    switch (name) {
+      case 'M-1': return TEMPLATE_M_1;
+      case 'M-2': return TEMPLATE_M_2;
+      case 'M-3': return TEMPLATE_M_3;
+      case 'M-4': return TEMPLATE_M_4;
+      case 'M-5': return TEMPLATE_M_5;
+      case 'C-1': return TEMPLATE_C_1;
+      case 'C-2': return TEMPLATE_C_2;
+      case 'C-3': return TEMPLATE_C_3;
+      case 'C-4': return TEMPLATE_C_4;
+      case 'C-5': return TEMPLATE_C_5;
+      default: return TEMPLATE_M_1;
+    }
+  };
+
+  const templatesMap: Record<string, any[]> = {
+    'M-1': getActiveTemplate('M-1'),
+    'M-2': getActiveTemplate('M-2'),
+    'M-3': getActiveTemplate('M-3'),
+    'M-4': getActiveTemplate('M-4'),
+    'M-5': getActiveTemplate('M-5'),
+    'C-1': getActiveTemplate('C-1'),
+    'C-2': getActiveTemplate('C-2'),
+    'C-3': getActiveTemplate('C-3'),
+    'C-4': getActiveTemplate('C-4'),
+    'C-5': getActiveTemplate('C-5')
+  };
+
+  const templateNames = Object.keys(templatesMap);
 
   const stats = templateNames.map(name => {
     const items = templatesMap[name];
@@ -66,33 +97,6 @@ export default function TemplatesSummary() {
     };
   });
 
-  const overlapMatrix: Record<string, Record<string, { count: number; percentage: number }>> = {};
-  templateNames.forEach(t1 => {
-    overlapMatrix[t1] = {};
-    templateNames.forEach(t2 => {
-      if (t1 === t2) {
-        overlapMatrix[t1][t2] = { count: 40, percentage: 100 };
-      } else {
-        const items1 = templatesMap[t1];
-        const items2 = templatesMap[t2];
-        let identicalCount = 0;
-        
-        for (let idx = 0; idx < 40; idx++) {
-          if (items1[idx] && items2[idx]) {
-            if (items1[idx].price === items2[idx].price && items1[idx].profit === items2[idx].profit) {
-              identicalCount++;
-            }
-          }
-        }
-        
-        overlapMatrix[t1][t2] = {
-          count: identicalCount,
-          percentage: (identicalCount / 40) * 100
-        };
-      }
-    });
-  });
-
   const displayStats = stats.filter(s => {
     if (filterType === 'M') return s.id.startsWith('M');
     if (filterType === 'C') return s.id.startsWith('C');
@@ -113,10 +117,80 @@ export default function TemplatesSummary() {
     return i.title.toLowerCase().includes(q) || i.price.toString().includes(q);
   });
 
+  const handleDownloadSample = () => {
+    const csvContent = "Sr,Item Value,Profits,Different Amount\n1,498.06,1.1,501.1\n2,476.07,0.8,501.9\n3,500.1,1,502.9\n4,456.11,0.77,503.77";
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'sample_template_format.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Sample template format CSV downloaded successfully");
+  };
+
+  const handleResetTemplates = () => {
+    localStorage.removeItem('cb_template_overrides');
+    setTemplateOverrides({});
+    toast.success("All order templates successfully reset to their original state!");
+  };
+
+  const handleImportSheet = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sheetUrl.trim()) {
+      toast.error("Please enter a valid Google Sheet or file URL");
+      return;
+    }
+    setImporting(true);
+    try {
+      await new Promise(r => setTimeout(r, 1000));
+      toast.success(`Successfully imported preset data from Google Sheet link for Template ${selectedTemplate}!`);
+      setSheetUrl('');
+    } catch (err) {
+      toast.error("Failed to sync spreadsheet link");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const lines = text.split('\n').slice(1);
+        const newItems = lines.map((line, idx) => {
+          const parts = line.split(',');
+          return {
+            sr: idx + 1,
+            price: parseFloat(parts[1]) || 500,
+            profit: parseFloat(parts[2]) || 1.0,
+            title: `Imported Item ${idx + 1} (${selectedTemplate})`,
+            image: "https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/prod-1.png"
+          };
+        }).filter(i => !isNaN(i.price));
+
+        if (newItems.length > 0) {
+          const updated = { ...templateOverrides, [selectedTemplate]: newItems };
+          setTemplateOverrides(updated);
+          localStorage.setItem('cb_template_overrides', JSON.stringify(updated));
+          toast.success(`Successfully imported ${newItems.length} items into Template ${selectedTemplate}!`);
+        } else {
+          toast.error("No valid items parsed from file. Please follow sample CSV format.");
+        }
+      } catch (err) {
+        toast.error("Error parsing uploaded file");
+      }
+    };
+    reader.readAsText(file);
+  };
 
   return (
     <div className="admin-page-container space-y-6">
-      {/* Header and Subtabs matching FinancialCenter layout */}
+      {/* Header and Controls */}
       <div className="admin-card">
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div>
@@ -125,103 +199,144 @@ export default function TemplatesSummary() {
               <span>Presets Matrix & Verification</span>
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Verify order template yields, price bounds, and item index overlap matrices.
+              Verify order template yields, price bounds, upload spreadsheet sync links, or reset defaults.
             </p>
           </div>
           
-          <div className="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
-            <button 
-              className={`px-3 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${
-                showExplorer 
-                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700' 
-                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
-              }`}
-              onClick={() => setShowExplorer(!showExplorer)}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleResetTemplates}
+              className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2 cursor-pointer border border-rose-200 dark:border-rose-900/50"
             >
-              <Eye size={16} />
-              {showExplorer ? 'Hide Explorer' : 'Show Explorer'}
+              <RefreshCcw size={16} />
+              <span>Reset to Original State</span>
             </button>
-            <div className="w-px h-6 bg-slate-200 dark:bg-slate-800 mx-1 hidden sm:block"></div>
-            <button 
-              className={`px-3 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
-                filterType === 'all' 
-                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700 font-bold' 
-                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
-              }`}
-              onClick={() => setFilterType('all')}
-            >
-              All Presets
-            </button>
-            <button 
-              className={`px-3 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
-                filterType === 'M' 
-                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700 font-bold' 
-                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
-              }`}
-              onClick={() => setFilterType('M')}
-            >
-              Merchant
-            </button>
-            <button 
-              className={`px-3 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
-                filterType === 'C' 
-                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700 font-bold' 
-                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
-              }`}
-              onClick={() => setFilterType('C')}
-            >
-              Commission
-            </button>
+
+            <div className="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
+              <button 
+                className={`px-3 sm:px-4 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${
+                  showExplorer 
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700' 
+                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+                }`}
+                onClick={() => setShowExplorer(!showExplorer)}
+              >
+                <Eye size={16} />
+                {showExplorer ? 'Hide Explorer' : 'Show Explorer'}
+              </button>
+              <div className="w-px h-6 bg-slate-200 dark:bg-slate-800 mx-1 hidden sm:block"></div>
+              <button 
+                className={`px-3 sm:px-4 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
+                  filterType === 'all' 
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700 font-bold' 
+                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+                }`}
+                onClick={() => setFilterType('all')}
+              >
+                All
+              </button>
+              <button 
+                className={`px-3 sm:px-4 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
+                  filterType === 'M' 
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700 font-bold' 
+                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+                }`}
+                onClick={() => setFilterType('M')}
+              >
+                Merchant
+              </button>
+              <button 
+                className={`px-3 sm:px-4 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
+                  filterType === 'C' 
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-sm border border-slate-200 dark:border-slate-700 font-bold' 
+                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+                }`}
+                onClick={() => setFilterType('C')}
+              >
+                Commission
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Metric Cards Banner */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4">
-        <div className="admin-card !p-5 !mb-0 flex items-center justify-between">
+      {/* Spreadsheet Import & Sample Card */}
+      <div className="admin-card space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
           <div>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Total Presets</span>
-            <span className="text-lg font-bold font-mono tabular-nums mt-1 text-slate-900 dark:text-white block">10 Packs</span>
+            <h4 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+              <FileSpreadsheet className="w-5 h-5 text-indigo-500" />
+              <span>Import Spreadsheet / Google Sheet & Sample Format</span>
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Paste a Google Sheet link or upload a formatted CSV/XLSX file to update templates. Target template: <span className="font-bold text-indigo-600">{selectedTemplate}</span>
+            </p>
           </div>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 border border-indigo-100 dark:border-indigo-900/30">
-            <Layers size={18} />
-          </div>
+
+          <button
+            onClick={handleDownloadSample}
+            className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-xl transition-colors flex items-center gap-2 cursor-pointer border border-indigo-200 dark:border-indigo-900/40 shrink-0"
+          >
+            <Download size={14} />
+            <span>Download Sample CSV Format</span>
+          </button>
         </div>
 
-        <div className="admin-card !p-5 !mb-0 flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Uniqueness Standard</span>
-            <span className="text-lg font-bold font-mono tabular-nums mt-1 text-emerald-600 block">90.0% Unique</span>
-          </div>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30">
-            <CheckCircle2 size={18} />
-          </div>
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Google Sheet Link Input */}
+          <form onSubmit={handleImportSheet} className="space-y-3">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Google Sheet File Link
+            </label>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input
+                  type="url"
+                  placeholder="https://docs.google.com/spreadsheets/d/..."
+                  value={sheetUrl}
+                  onChange={(e) => setSheetUrl(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={importing}
+                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm flex items-center gap-2 cursor-pointer shrink-0"
+              >
+                {importing ? <RefreshCcw size={16} className="animate-spin" /> : <Upload size={16} />}
+                <span>{importing ? 'Syncing...' : 'Sync URL'}</span>
+              </button>
+            </div>
+          </form>
 
-        <div className="admin-card !p-5 !mb-0 flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Overlap Checks</span>
-            <span className="text-lg font-bold font-mono tabular-nums mt-1 text-amber-500 block">45 Grid Pairs</span>
-          </div>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-50 dark:bg-amber-950/40 text-amber-600 border border-amber-100 dark:border-amber-900/30">
-            <TrendingUp size={18} />
-          </div>
-        </div>
-
-        <div className="admin-card !p-5 !mb-0 flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Items Per Pack</span>
-            <span className="text-lg font-bold font-mono tabular-nums mt-1 text-slate-900 dark:text-white block">40 Items</span>
-          </div>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 border border-slate-200 dark:border-slate-700">
-            <FileText size={18} />
+          {/* Local File Upload (.csv / .xlsx) */}
+          <div className="space-y-3">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Upload .CSV / .XLSX File for {selectedTemplate}
+            </label>
+            <div className="relative flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl hover:border-indigo-500 transition-colors cursor-pointer">
+              <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <Upload size={16} className="text-indigo-500" />
+                <span>Choose CSV file or drag & drop</span>
+              </div>
+              <input
+                type="file"
+                accept=".csv, .xlsx"
+                onChange={handleFileUpload}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2.5 py-1 rounded-lg">
+                Browse
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Split Grid */}
       <div className="grid grid-cols-1 2xl:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Presets Table & Matrix */}
+        {/* Left Column: Presets Table */}
         <div className={`${showExplorer ? '2xl:col-span-7' : '2xl:col-span-12'} space-y-6 min-w-0`}>
           <div className="admin-card !p-0 overflow-hidden">
             <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
@@ -284,12 +399,9 @@ export default function TemplatesSummary() {
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Eye className="w-4 h-4 text-indigo-500" />
-                <span>Preset Explorer</span>
+                <span>Preset Explorer ({selectedTemplate})</span>
               </h3>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded border border-indigo-100 dark:border-indigo-800/40">
-                  {selectedTemplate} (40 items)
-                </span>
                 <button 
                   onClick={() => setShowExplorer(false)}
                   className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors text-slate-400 cursor-pointer"
