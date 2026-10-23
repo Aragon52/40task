@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Layers, 
   Eye, 
@@ -8,9 +8,12 @@ import {
   Download,
   RefreshCcw,
   Link as LinkIcon,
-  FileSpreadsheet
+  FileSpreadsheet,
+  RefreshCw,
+  Database
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { supabase } from '../supabase';
 import { 
   TEMPLATE_M_1, 
   TEMPLATE_M_2, 
@@ -31,6 +34,14 @@ export default function TemplatesSummary() {
   const [showExplorer, setShowExplorer] = useState(false);
   const [sheetUrl, setSheetUrl] = useState('');
   const [importing, setImporting] = useState(false);
+
+  useEffect(() => {
+    const isSynced = localStorage.getItem('cb_sheet_auto_synced_v4');
+    if (!isSynced) {
+      localStorage.removeItem('cb_template_overrides');
+      localStorage.setItem('cb_sheet_auto_synced_v4', 'true');
+    }
+  }, []);
 
   const [templateOverrides, setTemplateOverrides] = useState<Record<string, any[]>>(() => {
     try {
@@ -136,19 +147,167 @@ export default function TemplatesSummary() {
     toast.success("All order templates successfully reset to their original state!");
   };
 
+  const handleSyncLiveGoogleSheet = async () => {
+    setImporting(true);
+    try {
+      const gidMap: Record<string, string> = {
+        'M-1': '101', 'C-1': '102', 'M-2': '103', 'C-2': '104',
+        'M-3': '107', 'C-3': '108', 'M-4': '105', 'C-4': '106',
+        'M-5': '109', 'C-5': '110'
+      };
+
+      const newOverrides: Record<string, any[]> = {};
+
+      for (const [tName, gid] of Object.entries(gidMap)) {
+        const res = await fetch(`https://docs.google.com/spreadsheets/d/e/2PACX-1vSWNcPIsqMZLmvAkDMuAAV0wACKnhqzce7exrAb4Fh_SPoWluXjm9iGJjTJkZ9FxI9850kQigp030Mr/pub?output=csv&gid=${gid}`);
+        if (!res.ok) continue;
+        const text = await res.text();
+        const lines = text.split('\n').slice(1);
+        const baseItems = getActiveTemplate(tName);
+
+        const parsedItems = lines.map((line, idx) => {
+          const parts = line.split(',');
+          if (parts.length < 3) return null;
+          const price = parseFloat(parts[1]?.trim().replace('..', '.')) || 500;
+          const profit = parseFloat(parts[2]?.trim().replace('..', '.')) || 1.0;
+          const original = baseItems[idx] || {};
+          return {
+            sr: idx + 1,
+            price,
+            profit,
+            title: original.title || `Item ${idx + 1}`,
+            image: original.image || 'https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/prod-1.png'
+          };
+        }).filter(Boolean);
+
+        if (parsedItems.length > 0) {
+          newOverrides[tName] = parsedItems;
+        }
+      }
+
+      setTemplateOverrides(newOverrides);
+      localStorage.setItem('cb_template_overrides', JSON.stringify(newOverrides));
+      toast.success("Successfully synced live prices and profits from Google Sheet!");
+    } catch (err: any) {
+      console.error("Live Google Sheet sync error:", err);
+      toast.error("Failed to sync live Google Sheet. Using updated local templates.");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleSyncDatabaseTasks = async () => {
+    setImporting(true);
+    try {
+      const { data: tasks, error } = await supabase.from('cb_assigned_tasks').select('*');
+      if (error) throw error;
+      if (!tasks || tasks.length === 0) {
+        toast.success("No active assigned tasks found in database.");
+        setImporting(false);
+        return;
+      }
+
+      let updatedCount = 0;
+      for (const task of tasks) {
+        let ordersList = [];
+        try {
+          ordersList = typeof task.orders === 'string' ? JSON.parse(task.orders) : (task.orders || []);
+        } catch (e) {
+          continue;
+        }
+
+        const sumPrices = ordersList.reduce((acc: number, o: any) => acc + Number(o.price || 0), 0);
+        let matchedTemplateName = null;
+        for (const [tName, tItems] of Object.entries(templatesMap)) {
+          const tSum = tItems.reduce((acc: number, i: any) => acc + Number(i.price || 0), 0);
+          if (Math.abs(sumPrices - tSum) < 500) {
+            matchedTemplateName = tName;
+            break;
+          }
+        }
+
+        if (matchedTemplateName && templatesMap[matchedTemplateName]) {
+          const freshItems = templatesMap[matchedTemplateName];
+          const updatedOrders = ordersList.map((ord: any, idx: number) => {
+            const fresh = freshItems[idx] || freshItems[0];
+            return {
+              ...ord,
+              price: fresh.price.toString(),
+              profit: fresh.profit.toString(),
+              title: fresh.title || ord.title,
+              image: fresh.image || ord.image
+            };
+          });
+
+          const newTotalAmount = updatedOrders.reduce((acc: number, o: any) => acc + Number(o.price || 0), 0);
+
+          await supabase.from('cb_assigned_tasks').update({
+            orders: JSON.stringify(updatedOrders),
+            total_amount: newTotalAmount
+          }).eq('id', task.id);
+
+          updatedCount++;
+        }
+      }
+
+      toast.success(`Successfully synced ${updatedCount} active database task records to latest sheet prices!`);
+    } catch (err: any) {
+      console.error("Database task sync error:", err);
+      toast.error(`Failed to sync database tasks: ${err.message || 'Unknown error'}`);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const handleImportSheet = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sheetUrl.trim()) {
-      toast.error("Please enter a valid Google Sheet or file URL");
+      toast.error("Please enter a valid Google Sheet link or CSV URL");
       return;
     }
     setImporting(true);
     try {
-      await new Promise(r => setTimeout(r, 1000));
-      toast.success(`Successfully imported preset data from Google Sheet link for Template ${selectedTemplate}!`);
-      setSheetUrl('');
-    } catch (err) {
-      toast.error("Failed to sync spreadsheet link");
+      let targetUrl = sheetUrl.trim();
+      if (targetUrl.includes('/edit') || targetUrl.includes('/view')) {
+        targetUrl = targetUrl.replace(/\/edit.*$/, '/pub?output=csv').replace(/\/view.*$/, '/pub?output=csv');
+      }
+      if (!targetUrl.includes('output=csv')) {
+        targetUrl += (targetUrl.includes('?') ? '&' : '?') + 'output=csv';
+      }
+
+      const res = await fetch(targetUrl);
+      if (!res.ok) throw new Error("Failed to fetch CSV from URL");
+      const text = await res.text();
+      const lines = text.split('\n');
+      const readerLines = lines.map(l => l.split(','));
+      
+      const baseItems = getActiveTemplate(selectedTemplate);
+      const parsedItems = readerLines.slice(1).map((parts, idx) => {
+        if (parts.length < 3) return null;
+        const price = parseFloat(parts[1]?.trim().replace('..', '.')) || 500;
+        const profit = parseFloat(parts[2]?.trim().replace('..', '.')) || 1.0;
+        const original = baseItems[idx] || {};
+        return {
+          sr: idx + 1,
+          price,
+          profit,
+          title: original.title || `Item ${idx + 1} (${selectedTemplate})`,
+          image: original.image || 'https://zxamlpfvggvoynhssbzd.supabase.co/storage/v1/object/public/cb_storage/products/prod-1.png'
+        };
+      }).filter(Boolean);
+
+      if (parsedItems.length > 0) {
+        const updated = { ...templateOverrides, [selectedTemplate]: parsedItems };
+        setTemplateOverrides(updated);
+        localStorage.setItem('cb_template_overrides', JSON.stringify(updated));
+        toast.success(`Successfully imported ${parsedItems.length} items from sheet into Template ${selectedTemplate}!`);
+        setSheetUrl('');
+      } else {
+        toast.error("No valid items parsed from sheet URL. Check format (Sr, Item Value, Profits).");
+      }
+    } catch (err: any) {
+      console.error("Sheet import error:", err);
+      toast.error(`Failed to import sheet: ${err.message || 'Network error'}`);
     } finally {
       setImporting(false);
     }
@@ -199,17 +358,35 @@ export default function TemplatesSummary() {
               <span>Presets Matrix & Verification</span>
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Verify order template yields, price bounds, upload spreadsheet sync links, or reset defaults.
+              Verify order template yields, price bounds, live Google Sheet sync, or DB task updates.
             </p>
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
             <button
+              onClick={handleSyncLiveGoogleSheet}
+              disabled={importing}
+              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+            >
+              <RefreshCw size={16} className={importing ? 'animate-spin' : ''} />
+              <span>{importing ? 'Syncing...' : 'Sync All Google Sheets'}</span>
+            </button>
+
+            <button
+              onClick={handleSyncDatabaseTasks}
+              disabled={importing}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+            >
+              <Database size={16} />
+              <span>Sync Active DB Tasks</span>
+            </button>
+
+            <button
               onClick={handleResetTemplates}
               className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2 cursor-pointer border border-rose-200 dark:border-rose-900/50"
             >
               <RefreshCcw size={16} />
-              <span>Reset to Original State</span>
+              <span>Reset State</span>
             </button>
 
             <div className="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
@@ -266,10 +443,10 @@ export default function TemplatesSummary() {
           <div>
             <h4 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
               <FileSpreadsheet className="w-5 h-5 text-indigo-500" />
-              <span>Import Spreadsheet / Google Sheet & Sample Format</span>
+              <span>Import Single Sheet URL into Selected Template ({selectedTemplate})</span>
             </h4>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Paste a Google Sheet link or upload a formatted CSV/XLSX file to update templates. Target template: <span className="font-bold text-indigo-600">{selectedTemplate}</span>
+              Paste your single-sheet published CSV link (e.g. <span className="font-mono text-indigo-600">.../pub?output=csv</span>) to instantly update Template <span className="font-bold text-indigo-600">{selectedTemplate}</span>.
             </p>
           </div>
 
@@ -286,14 +463,14 @@ export default function TemplatesSummary() {
           {/* Google Sheet Link Input */}
           <form onSubmit={handleImportSheet} className="space-y-3">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-              Google Sheet File Link
+              Single Sheet CSV Link for {selectedTemplate}
             </label>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <input
                   type="url"
-                  placeholder="https://docs.google.com/spreadsheets/d/..."
+                  placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"
                   value={sheetUrl}
                   onChange={(e) => setSheetUrl(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100"
@@ -304,8 +481,8 @@ export default function TemplatesSummary() {
                 disabled={importing}
                 className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm flex items-center gap-2 cursor-pointer shrink-0"
               >
-                {importing ? <RefreshCcw size={16} className="animate-spin" /> : <Upload size={16} />}
-                <span>{importing ? 'Syncing...' : 'Sync URL'}</span>
+                {importing ? <RefreshCw size={16} className="animate-spin" /> : <Upload size={16} />}
+                <span>{importing ? 'Importing...' : 'Import to ' + selectedTemplate}</span>
               </button>
             </div>
           </form>
