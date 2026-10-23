@@ -36,10 +36,10 @@ export default function TemplatesSummary() {
   const [importing, setImporting] = useState(false);
 
   useEffect(() => {
-    const isSynced = localStorage.getItem('cb_sheet_auto_synced_v4');
+    const isSynced = localStorage.getItem('cb_sheet_auto_synced_v5');
     if (!isSynced) {
       localStorage.removeItem('cb_template_overrides');
-      localStorage.setItem('cb_sheet_auto_synced_v4', 'true');
+      localStorage.setItem('cb_sheet_auto_synced_v5', 'true');
     }
   }, []);
 
@@ -159,7 +159,8 @@ export default function TemplatesSummary() {
       const newOverrides: Record<string, any[]> = {};
 
       for (const [tName, gid] of Object.entries(gidMap)) {
-        const res = await fetch(`https://docs.google.com/spreadsheets/d/e/2PACX-1vSWNcPIsqMZLmvAkDMuAAV0wACKnhqzce7exrAb4Fh_SPoWluXjm9iGJjTJkZ9FxI9850kQigp030Mr/pub?output=csv&gid=${gid}`);
+        const rawUrl = `https://docs.google.com/spreadsheets/d/e/2PACX-1vSWNcPIsqMZLmvAkDMuAAV0wACKnhqzce7exrAb4Fh_SPoWluXjm9iGJjTJkZ9FxI9850kQigp030Mr/pub?output=csv&gid=${gid}`;
+        const res = await fetch(`/api/fetch-sheet?url=${encodeURIComponent(rawUrl)}`);
         if (!res.ok) continue;
         const text = await res.text();
         const lines = text.split('\n').slice(1);
@@ -187,10 +188,10 @@ export default function TemplatesSummary() {
 
       setTemplateOverrides(newOverrides);
       localStorage.setItem('cb_template_overrides', JSON.stringify(newOverrides));
-      toast.success("Successfully synced live prices and profits from Google Sheet!");
+      toast.success("Successfully synced live prices and profits from Google Sheet via secure server proxy!");
     } catch (err: any) {
       console.error("Live Google Sheet sync error:", err);
-      toast.error("Failed to sync live Google Sheet. Using updated local templates.");
+      toast.error("Failed to sync live Google Sheet due to network error. Using updated local templates.");
     } finally {
       setImporting(false);
     }
@@ -275,8 +276,8 @@ export default function TemplatesSummary() {
         targetUrl += (targetUrl.includes('?') ? '&' : '?') + 'output=csv';
       }
 
-      const res = await fetch(targetUrl);
-      if (!res.ok) throw new Error("Failed to fetch CSV from URL");
+      const res = await fetch(`/api/fetch-sheet?url=${encodeURIComponent(targetUrl)}`);
+      if (!res.ok) throw new Error("Failed to fetch CSV through server proxy");
       const text = await res.text();
       const lines = text.split('\n');
       const readerLines = lines.map(l => l.split(','));
@@ -358,7 +359,7 @@ export default function TemplatesSummary() {
               <span>Presets Matrix & Verification</span>
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Verify order template yields, price bounds, live Google Sheet sync, or DB task updates.
+              Verify order template yields, price bounds, live Google Sheet sync via proxy, or DB task updates.
             </p>
           </div>
           
